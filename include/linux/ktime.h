@@ -196,6 +196,22 @@ static inline s64 ktime_divns(const ktime_t kt, s64 div)
 }
 #endif
 
+#if BITS_PER_LONG < 64
+extern u64 __ktime_divns(const ktime_t kt, s64 div);
+static inline u64 ktime_divns(const ktime_t kt, s64 div)
+{
+	if (__builtin_constant_p(div) && !(div >> 32)) {
+		u64 ns = kt.tv64;
+		do_div(ns, div);
+		return ns;
+	} else {
+		return __ktime_divns(kt, div);
+	}
+}
+#else /* BITS_PER_LONG < 64 */
+# define ktime_divns(kt, div)		(u64)((kt).tv64 / (div))
+#endif
+
 static inline s64 ktime_to_us(const ktime_t kt)
 {
 	return ktime_divns(kt, NSEC_PER_USEC);
