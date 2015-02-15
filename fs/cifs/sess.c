@@ -678,20 +678,24 @@ sess_auth_lanman(struct sess_data *sess_data)
 
 	pSMB->req.hdr.Flags2 &= ~SMBFLG2_UNICODE;
 
-	/* no capabilities flags in old lanman negotiation */
-	pSMB->old_req.PasswordLength = cpu_to_le16(CIFS_AUTH_RESP_SIZE);
+	if (ses->user_name != NULL) {
+		/* no capabilities flags in old lanman negotiation */
+		pSMB->old_req.PasswordLength = cpu_to_le16(CIFS_AUTH_RESP_SIZE);
 
-	/* Calculate hash with password and copy into bcc_ptr.
-	 * Encryption Key (stored as in cryptkey) gets used if the
-	 * security mode bit in Negottiate Protocol response states
-	 * to use challenge/response method (i.e. Password bit is 1).
-	 */
-	rc = calc_lanman_hash(ses->password, ses->server->cryptkey,
-			      ses->server->sec_mode & SECMODE_PW_ENCRYPT ?
-			      true : false, lnm_session_key);
+		/* Calculate hash with password and copy into bcc_ptr.
+		 * Encryption Key (stored as in cryptkey) gets used if the
+		 * security mode bit in Negottiate Protocol response states
+		 * to use challenge/response method (i.e. Password bit is 1).
+		 */
+		rc = calc_lanman_hash(ses->password, ses->server->cryptkey,
+				      ses->server->sec_mode & SECMODE_PW_ENCRYPT ?
+				      true : false, lnm_session_key);
 
-	memcpy(bcc_ptr, (char *)lnm_session_key, CIFS_AUTH_RESP_SIZE);
-	bcc_ptr += CIFS_AUTH_RESP_SIZE;
+		memcpy(bcc_ptr, (char *)lnm_session_key, CIFS_AUTH_RESP_SIZE);
+		bcc_ptr += CIFS_AUTH_RESP_SIZE;
+	} else {
+		pSMB->old_req.PasswordLength = 0;
+	}
 
 	/*
 	 * can not sign if LANMAN negotiated so no need
@@ -777,26 +781,31 @@ sess_auth_ntlm(struct sess_data *sess_data)
 	capabilities = cifs_ssetup_hdr(ses, pSMB);
 
 	pSMB->req_no_secext.Capabilities = cpu_to_le32(capabilities);
-	pSMB->req_no_secext.CaseInsensitivePasswordLength =
-			cpu_to_le16(CIFS_AUTH_RESP_SIZE);
-	pSMB->req_no_secext.CaseSensitivePasswordLength =
-			cpu_to_le16(CIFS_AUTH_RESP_SIZE);
+	if (ses->user_name != NULL) {
+		pSMB->req_no_secext.CaseInsensitivePasswordLength =
+				cpu_to_le16(CIFS_AUTH_RESP_SIZE);
+		pSMB->req_no_secext.CaseSensitivePasswordLength =
+				cpu_to_le16(CIFS_AUTH_RESP_SIZE);
 
-	/* calculate ntlm response and session key */
-	rc = setup_ntlm_response(ses, sess_data->nls_cp);
-	if (rc) {
-		cifs_dbg(VFS, "Error %d during NTLM authentication\n",
-				 rc);
-		goto out;
+		/* calculate ntlm response and session key */
+		rc = setup_ntlm_response(ses, sess_data->nls_cp);
+		if (rc) {
+			cifs_dbg(VFS, "Error %d during NTLM authentication\n",
+					 rc);
+			goto out;
+		}
+
+		/* copy ntlm response */
+		memcpy(bcc_ptr, ses->auth_key.response + CIFS_SESS_KEY_SIZE,
+				CIFS_AUTH_RESP_SIZE);
+		bcc_ptr += CIFS_AUTH_RESP_SIZE;
+		memcpy(bcc_ptr, ses->auth_key.response + CIFS_SESS_KEY_SIZE,
+				CIFS_AUTH_RESP_SIZE);
+		bcc_ptr += CIFS_AUTH_RESP_SIZE;
+	} else {
+		pSMB->req_no_secext.CaseInsensitivePasswordLength = 0;
+		pSMB->req_no_secext.CaseSensitivePasswordLength = 0;
 	}
-
-	/* copy ntlm response */
-	memcpy(bcc_ptr, ses->auth_key.response + CIFS_SESS_KEY_SIZE,
-			CIFS_AUTH_RESP_SIZE);
-	bcc_ptr += CIFS_AUTH_RESP_SIZE;
-	memcpy(bcc_ptr, ses->auth_key.response + CIFS_SESS_KEY_SIZE,
-			CIFS_AUTH_RESP_SIZE);
-	bcc_ptr += CIFS_AUTH_RESP_SIZE;
 
 	if (ses->capabilities & CAP_UNICODE) {
 		/* unicode strings must be word aligned */
@@ -886,22 +895,26 @@ sess_auth_ntlmv2(struct sess_data *sess_data)
 	/* LM2 password would be here if we supported it */
 	pSMB->req_no_secext.CaseInsensitivePasswordLength = 0;
 
-	/* calculate nlmv2 response and session key */
-	rc = setup_ntlmv2_rsp(ses, sess_data->nls_cp);
-	if (rc) {
-		cifs_dbg(VFS, "Error %d during NTLMv2 authentication\n", rc);
-		goto out;
+	if (ses->user_name != NULL) {
+		/* calculate nlmv2 response and session key */
+		rc = setup_ntlmv2_rsp(ses, sess_data->nls_cp);
+		if (rc) {
+			cifs_dbg(VFS, "Error %d during NTLMv2 authentication\n", rc);
+			goto out;
+		}
+
+		memcpy(bcc_ptr, ses->auth_key.response + CIFS_SESS_KEY_SIZE,
+				ses->auth_key.len - CIFS_SESS_KEY_SIZE);
+		bcc_ptr += ses->auth_key.len - CIFS_SESS_KEY_SIZE;
+
+		/* set case sensitive password length after tilen may get
+		 * assigned, tilen is 0 otherwise.
+		 */
+		pSMB->req_no_secext.CaseSensitivePasswordLength =
+			cpu_to_le16(ses->auth_key.len - CIFS_SESS_KEY_SIZE);
+	} else {
+		pSMB->req_no_secext.CaseSensitivePasswordLength = 0;
 	}
-
-	memcpy(bcc_ptr, ses->auth_key.response + CIFS_SESS_KEY_SIZE,
-			ses->auth_key.len - CIFS_SESS_KEY_SIZE);
-	bcc_ptr += ses->auth_key.len - CIFS_SESS_KEY_SIZE;
-
-	/* set case sensitive password length after tilen may get
-	 * assigned, tilen is 0 otherwise.
-	 */
-	pSMB->req_no_secext.CaseSensitivePasswordLength =
-		cpu_to_le16(ses->auth_key.len - CIFS_SESS_KEY_SIZE);
 
 	if (ses->capabilities & CAP_UNICODE) {
 		if (sess_data->iov[0].iov_len % 2) {
