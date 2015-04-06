@@ -7020,7 +7020,7 @@ static void handle_usb_removal(struct smbchg_chip *chip)
 #ifdef CONFIG_LGE_PM_PARALLEL_CHARGING
 	cancel_delayed_work_sync(&chip->battchg_protect_work);
 #endif
-	smbchg_change_usb_supply_type(chip, POWER_SUPPLY_TYPE_UNKNOWN);
+	smbchg_change_usb_supply_type(chip, POWER_SUPPLY_TYPE_USB);
 
 	if (chip->parallel.use_parallel_aicl) {
 		complete_all(&chip->hvdcp_det_done);
