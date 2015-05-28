@@ -58,7 +58,7 @@ int cpuidle_play_dead(void)
 		return -ENODEV;
 
 	/* Find lowest-power state that supports long-term idle */
-	for (i = drv->state_count - 1; i >= CPUIDLE_DRIVER_STATE_START; i--)
+	for (i = drv->state_count - 1; i >= 0; i--)
 		if (drv->states[i].enter_dead)
 			return drv->states[i].enter_dead(dev, i);
 
@@ -89,9 +89,9 @@ static int cpuidle_find_deepest_state(struct cpuidle_driver *drv,
 				      struct cpuidle_device *dev)
 {
 	unsigned int latency_req = 0;
-	int i, ret = CPUIDLE_DRIVER_STATE_START - 1;
+	int i, ret = -ENXIO;
 
-	for (i = CPUIDLE_DRIVER_STATE_START; i < drv->state_count; i++) {
+	for (i = 0; i < drv->state_count; i++) {
 		struct cpuidle_state *s = &drv->states[i];
 		struct cpuidle_state_usage *su = &dev->states_usage[i];
 
