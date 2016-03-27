@@ -2015,6 +2015,7 @@ no_bw:
 	xhci->usb3_ports = NULL;
 	xhci->port_array = NULL;
 	xhci->rh_bw = NULL;
+	xhci->ext_caps = NULL;
 
 	xhci->page_size = 0;
 	xhci->page_shift = 0;
