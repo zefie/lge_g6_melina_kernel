@@ -231,6 +231,7 @@ static void mdss_mdp_kcal_update_pcc(struct kcal_lut_data *lut_data)
 
 	if (!mdss_mdp_kcal_store_fb0_ctl()) return;
 	mdss_mdp_pcc_config(fb0_ctl->mfd, &pcc_config, &copyback);
+	kfree(payload);
 }
 
 static void mdss_mdp_kcal_update_pa(struct kcal_lut_data *lut_data)
@@ -288,6 +289,7 @@ static void mdss_mdp_kcal_update_pa(struct kcal_lut_data *lut_data)
 		pa_v2_config.cfg_payload = payload;
 
 		mdss_mdp_pa_v2_config(fb0_ctl->mfd, &pa_v2_config, &copyback);
+		kfree(payload);
 	}
 }
 
@@ -318,6 +320,7 @@ static void mdss_mdp_kcal_update_igc(struct kcal_lut_data *lut_data)
 	igc_config.cfg_payload = payload;
 
 	mdss_mdp_igc_lut_config(fb0_ctl->mfd, &igc_config, &copyback, copy_from_kernel);
+	kfree(payload);
 }
 
 static ssize_t kcal_store(struct device *dev, struct device_attribute *attr,
