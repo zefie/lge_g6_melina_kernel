@@ -81,6 +81,10 @@
 #include <soc/qcom/lge/lge_monitor_thermal.h>
 #endif
 
+#ifdef CONFIG_FORCE_FAST_CHARGE
+#include <linux/fastchg.h>
+#endif
+
 /* Mask/Bit helpers */
 #define _SMB_MASK(BITS, POS) \
 	((unsigned char)(((1 << (BITS)) - 1) << (POS)))
@@ -2277,6 +2281,14 @@ static int smbchg_set_high_usb_chg_current(struct smbchg_chip *chip,
 	return rc;
 }
 
+#ifdef CONFIG_FORCE_FAST_CHARGE
+static int fcharge_enabled(void) {
+	if (force_fast_charge == 1) {
+		return 1;
+	} else return 0;
+}
+#endif
+
 /* if APSD results are used
  *	if SDP is detected it will look at 500mA setting
  *		if set it will draw 500mA
@@ -2308,6 +2320,18 @@ static int smbchg_set_usb_current_max(struct smbchg_chip *chip,
 	} else {
 		rc = vote(chip->usb_suspend_votable, USB_EN_VOTER, false, 0);
 	}
+
+// fastcharge
+#ifdef CONFIG_FORCE_FAST_CHARGE
+	if (fcharge_enabled()) {
+		pr_err("%s FCHARGE supplytype %d\n", __func__ , chip->usb_supply_type);
+		if (chip->usb_supply_type == POWER_SUPPLY_TYPE_UNKNOWN) {
+			chip->usb_supply_type = POWER_SUPPLY_TYPE_USB;
+		}
+		pr_err("%s FCHARGE final supplytype %d current_ma %d\n", __func__ , chip->usb_supply_type, current_ma);
+	}
+#endif
+// end of fastcharge
 
 	switch (chip->usb_supply_type) {
 	case POWER_SUPPLY_TYPE_USB:
@@ -2383,6 +2407,10 @@ static int smbchg_set_usb_current_max(struct smbchg_chip *chip,
 			chip->usb_max_current_ma = 150;
 		}
 		if (current_ma == CURRENT_500_MA) {
+// fastcharge
+#ifdef CONFIG_FORCE_FAST_CHARGE
+		if (!fcharge_enabled()) {
+#endif
 			rc = smbchg_sec_masked_write(chip,
 					chip->usb_chgpth_base + CHGPTH_CFG,
 					CFG_USB_2_3_SEL_BIT, CFG_USB_2);
@@ -2399,6 +2427,31 @@ static int smbchg_set_usb_current_max(struct smbchg_chip *chip,
 				goto out;
 			}
 			chip->usb_max_current_ma = 500;
+#if 1
+		} else {
+			// overriding with the 900 mA chip settings on the charger hardware too
+			// but only for 500 ma case, so it's remaining safe with new USB technologies
+			rc = smbchg_sec_masked_write(chip,
+					chip->usb_chgpth_base + CHGPTH_CFG,
+					CFG_USB_2_3_SEL_BIT, CFG_USB_3);
+			pr_err("%s FCHARGE sec_masked_write USB_3 rc %d current_ma %d\n", __func__ , rc, current_ma);
+			if (rc < 0) {
+				pr_err("Couldn't set CHGPTH_CFG rc = %d\n", rc);
+				goto out;
+			}
+			rc = smbchg_masked_write(chip,
+					chip->usb_chgpth_base + CMD_IL,
+					USBIN_MODE_CHG_BIT | USB51_MODE_BIT,
+					USBIN_LIMITED_MODE | USB51_500MA);
+			pr_err("%s FCHARGE sec_masked_write USB51_500MA rc %d current_ma %d\n", __func__ , rc, current_ma);
+			if (rc < 0) {
+				pr_err("Couldn't set CMD_IL rc = %d\n", rc);
+				goto out;
+			}
+			chip->usb_max_current_ma = 900;
+			pr_err("%s FCHARGE overridden max current ma on chip 900 \n", __func__ );
+		}
+#endif
 		}
 			if ((current_ma == CURRENT_500_MA) || (current_ma == CURRENT_900_MA)) {	// AP: Fast charge for USB
 			rc = smbchg_sec_masked_write(chip,
