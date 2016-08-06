@@ -2427,7 +2427,7 @@ static int smbchg_set_usb_current_max(struct smbchg_chip *chip,
 				goto out;
 			}
 			chip->usb_max_current_ma = 500;
-#if 1
+#ifdef CONFIG_FORCE_FAST_CHARGE
 		} else {
 			// overriding with the 900 mA chip settings on the charger hardware too
 			// but only for 500 ma case, so it's remaining safe with new USB technologies
