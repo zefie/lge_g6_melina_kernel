@@ -83,6 +83,33 @@ struct lpm_debug {
 
 struct lpm_cluster *lpm_root_node;
 
+#define MAXSAMPLES 5
+
+static bool lpm_prediction = true;
+module_param_named(lpm_prediction,
+	lpm_prediction, bool, S_IRUGO | S_IWUSR | S_IWGRP);
+
+static uint32_t ref_stddev = 100;
+module_param_named(
+	ref_stddev, ref_stddev, uint, S_IRUGO | S_IWUSR | S_IWGRP
+);
+
+static uint32_t tmr_add = 100;
+module_param_named(
+	tmr_add, tmr_add, uint, S_IRUGO | S_IWUSR | S_IWGRP
+);
+
+struct lpm_history {
+	uint32_t resi[MAXSAMPLES];
+	int mode[MAXSAMPLES];
+	int nsamp;
+	uint32_t hptr;
+	uint32_t hinvalid;
+	uint32_t htmr_wkup;
+	int64_t stime;
+};
+
+
 static DEFINE_PER_CPU(struct lpm_cluster*, cpu_cluster);
 static bool suspend_in_progress;
 static struct hrtimer lpm_hrtimer;
