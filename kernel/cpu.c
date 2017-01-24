@@ -391,9 +391,10 @@ static int __ref _cpu_down(unsigned int cpu, int tasks_frozen)
 	 *
 	 * Wait for the stop thread to go away.
 	 */
-	while (!idle_cpu(cpu))
-		cpu_relax();
-
+	while (!idle_cpu_relaxed(cpu)) {
+		cpu_read_relax();
+	}
+	
 	hotplug_cpu__broadcast_tick_pull(cpu);
 	/* This actually kills the CPU. */
 	__cpu_die(cpu);
@@ -416,12 +417,10 @@ int __ref cpu_down(unsigned int cpu)
 	int err;
 
 	cpu_maps_update_begin();
-
 	if (cpu_hotplug_disabled) {
 		err = -EBUSY;
 		goto out;
 	}
-
 	err = _cpu_down(cpu, 0);
 
 out:
