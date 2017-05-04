@@ -3524,7 +3524,7 @@ static int mdss_dsi_ctrl_probe(struct platform_device *pdev)
 		init_completion(&ctrl_pdata->te_irq_comp);
 		rc = devm_request_irq(&pdev->dev,
 			gpio_to_irq(ctrl_pdata->disp_te_gpio),
-			hw_vsync_handler, IRQF_TRIGGER_FALLING,
+			hw_vsync_handler, IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
 			"VSYNC_GPIO", ctrl_pdata);
 		if (rc) {
 			pr_err("%s: TE request_irq failed for ESD\n", __func__);
