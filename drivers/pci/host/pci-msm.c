@@ -1,4 +1,4 @@
-/* Copyright (c) 2014-2018, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2014-2017, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -297,7 +297,6 @@
 
 #define PERST_PROPAGATION_DELAY_US_MIN	  1000
 #define PERST_PROPAGATION_DELAY_US_MAX	  1005
-#define SWITCH_DELAY_MAX	  20
 
 #ifdef CONFIG_BCMDHD_PCIE
 #define PERST_DEASSERT_PROPAGATION_DELAY_US_MIN	  18000
@@ -415,7 +414,7 @@
 			"INFO:%s: " fmt, __func__, arg); \
 	if ((dev) && (dev)->ipc_log)   \
 		ipc_log_string((dev)->ipc_log, "%s: " fmt, __func__, arg); \
-	pr_debug("%s: " fmt, __func__, arg);  \
+	pr_info("%s: " fmt, __func__, arg);  \
 	} while (0)
 
 #define PCIE_ERR(dev, fmt, arg...) do {			 \
@@ -638,7 +637,6 @@ struct msm_pcie_dev_t {
 	bool				 ext_ref_clk;
 	bool				common_phy;
 	uint32_t			   ep_latency;
-	uint32_t			switch_latency;
 	uint32_t			wr_halt_size;
 	uint32_t			cpl_timeout;
 	uint32_t			current_bdf;
@@ -1630,15 +1628,9 @@ static void pcie_pcs_port_phy_init(struct msm_pcie_dev_t *dev)
 	msm_pcie_write_reg(dev->phy,
 		PCIE_N_PWRUP_RESET_DLY_TIME_AUXCLK(dev->rc_idx, common_phy),
 		0x00);
-#if !defined(CONFIG_MACH_MSM8996_LUCYE)
 	msm_pcie_write_reg(dev->phy,
 		PCIE_N_LP_WAKEUP_DLY_TIME_AUXCLK(dev->rc_idx, common_phy),
-		0x08); /* Wait 8 AuxClk cycles when return from L1ss */
-#else
-        msm_pcie_write_reg(dev->phy,
-                PCIE_N_LP_WAKEUP_DLY_TIME_AUXCLK(dev->rc_idx, common_phy),
-                0x04); /* Wait 4 AuxClk cycles when return from L1ss */
-#endif
+		0x01);
 	msm_pcie_write_reg(dev->phy,
 		PCIE_N_PLL_LOCK_CHK_DLY_TIME(dev->rc_idx, common_phy),
 		0x05);
@@ -1955,8 +1947,6 @@ static void msm_pcie_show_status(struct msm_pcie_dev_t *dev)
 		dev->common_phy);
 	PCIE_DBG_FS(dev, "ep_latency: %dms\n",
 		dev->ep_latency);
-	PCIE_DBG_FS(dev, "switch_latency: %dms\n",
-		dev->switch_latency);
 	PCIE_DBG_FS(dev, "wr_halt_size: 0x%x\n",
 		dev->wr_halt_size);
 	PCIE_DBG_FS(dev, "cpl_timeout: 0x%x\n",
@@ -2387,13 +2377,6 @@ static void msm_pcie_sel_debug_testcase(struct msm_pcie_dev_t *dev,
 			break;
 		}
 
-		if (((base_sel - 1) >= MSM_PCIE_MAX_RES) ||
-					(!dev->res[base_sel - 1].resource)) {
-			PCIE_DBG_FS(dev, "PCIe: RC%d Resource does not exist\n",
-								dev->rc_idx);
-			break;
-		}
-
 		PCIE_DBG_FS(dev,
 			"base: %s: 0x%p\nwr_offset: 0x%x\nwr_mask: 0x%x\nwr_value: 0x%x\n",
 			dev->res[base_sel - 1].name,
@@ -2413,13 +2396,6 @@ static void msm_pcie_sel_debug_testcase(struct msm_pcie_dev_t *dev,
 
 		break;
 	case 13: /* dump all registers of base_sel */
-		if (((base_sel - 1) >= MSM_PCIE_MAX_RES) ||
-					(!dev->res[base_sel - 1].resource)) {
-			PCIE_DBG_FS(dev, "PCIe: RC%d Resource does not exist\n",
-								dev->rc_idx);
-			break;
-		}
-
 		if (!base_sel) {
 			PCIE_DBG_FS(dev, "Invalid base_sel: 0x%x\n", base_sel);
 			break;
@@ -2462,14 +2438,12 @@ int msm_pcie_debug_info(struct pci_dev *dev, u32 option, u32 base,
 			u32 offset, u32 mask, u32 value)
 {
 	int ret = 0;
-	struct msm_pcie_dev_t *pdev = NULL;
+	struct msm_pcie_dev_t *pdev;
 
 	if (!dev) {
 		pr_err("PCIe: the input pci dev is NULL.\n");
 		return -ENODEV;
 	}
-
-	pdev = PCIE_BUS_PRIV_DATA(dev->bus);
 
 	if (option == 12 || option == 13) {
 		if (!base || base > 5) {
@@ -2497,6 +2471,7 @@ int msm_pcie_debug_info(struct pci_dev *dev, u32 option, u32 base,
 		}
 	}
 
+	pdev = PCIE_BUS_PRIV_DATA(dev->bus);
 	rc_sel = 1 << pdev->rc_idx;
 
 	msm_pcie_sel_debug_testcase(pdev, option);
@@ -3857,7 +3832,7 @@ static int msm_pcie_config_link_state(struct msm_pcie_dev_t *dev)
 
 	while (current_offset) {
 		if (msm_pcie_check_align(dev, current_offset)) {
-#ifndef CONFIG_BCMDHD_PCIE
+#ifndef CONFIG_BCMDHD_PCIE			
 			return;
 #else
 			return MSM_PCIE_ERROR;
@@ -3877,7 +3852,7 @@ static int msm_pcie_config_link_state(struct msm_pcie_dev_t *dev)
 		PCIE_DBG(dev,
 			"RC%d endpoint does not support PCIe capability registers\n",
 			dev->rc_idx);
-#ifndef CONFIG_BCMDHD_PCIE
+#ifndef CONFIG_BCMDHD_PCIE			
 		return;
 #else
 		return MSM_PCIE_ERROR;
@@ -3973,7 +3948,7 @@ static int msm_pcie_config_link_state(struct msm_pcie_dev_t *dev)
 		current_offset = PCIE_EXT_CAP_OFFSET;
 		while (current_offset) {
 			if (msm_pcie_check_align(dev, current_offset)) {
-#ifndef CONFIG_BCMDHD_PCIE
+#ifndef CONFIG_BCMDHD_PCIE	
 				return;
 #else
 				return MSM_PCIE_ERROR;	
@@ -3994,7 +3969,7 @@ static int msm_pcie_config_link_state(struct msm_pcie_dev_t *dev)
 			PCIE_DBG(dev,
 				"RC%d endpoint does not support l1ss registers\n",
 				dev->rc_idx);
-#ifndef CONFIG_BCMDHD_PCIE
+#ifndef CONFIG_BCMDHD_PCIE			
 			return;
 #else
 			return MSM_PCIE_ERROR;
@@ -4127,7 +4102,7 @@ static int msm_pcie_get_resources(struct msm_pcie_dev_t *dev,
 	cnt = of_property_count_strings((&pdev->dev)->of_node,
 			"clock-names");
 	if (cnt > 0) {
-		clkfreq = kcalloc(cnt, sizeof(*clkfreq),
+		clkfreq = kzalloc(cnt * sizeof(*clkfreq),
 					GFP_KERNEL);
 		if (!clkfreq) {
 			PCIE_ERR(dev, "PCIe: memory alloc failed for RC%d\n",
@@ -4468,7 +4443,7 @@ int msm_pcie_enable(struct msm_pcie_dev_t *dev, u32 options)
 
 	/* assert PCIe reset link to keep EP in reset */
 
-	PCIE_DBG(dev, "PCIe: Assert the reset of endpoint of RC%d.\n",
+	PCIE_INFO(dev, "PCIe: Assert the reset of endpoint of RC%d.\n",
 		dev->rc_idx);
 	gpio_set_value(dev->gpio[MSM_PCIE_GPIO_PERST].num,
 				dev->gpio[MSM_PCIE_GPIO_PERST].on);
@@ -4595,7 +4570,7 @@ int msm_pcie_enable(struct msm_pcie_dev_t *dev, u32 options)
 		dev->rc_idx, retries);
 
 	if (pcie_phy_is_ready(dev))
-		PCIE_DBG(dev, "PCIe RC%d PHY is ready!\n", dev->rc_idx);
+		PCIE_INFO(dev, "PCIe RC%d PHY is ready!\n", dev->rc_idx);
 	else {
 		PCIE_ERR(dev, "PCIe PHY RC%d failed to come up!\n",
 			dev->rc_idx);
@@ -4615,7 +4590,7 @@ int msm_pcie_enable(struct msm_pcie_dev_t *dev, u32 options)
 
 	/* de-assert PCIe reset link to bring EP out of reset */
 
-	PCIE_DBG(dev, "PCIe: Release the reset of endpoint of RC%d.\n",
+	PCIE_INFO(dev, "PCIe: Release the reset of endpoint of RC%d.\n",
 		dev->rc_idx);
 	gpio_set_value(dev->gpio[MSM_PCIE_GPIO_PERST].num,
 				1 - dev->gpio[MSM_PCIE_GPIO_PERST].on);
@@ -4648,9 +4623,9 @@ int msm_pcie_enable(struct msm_pcie_dev_t *dev, u32 options)
 		msm_pcie_confirm_linkup(dev, false, false, NULL)) {
 		PCIE_DBG(dev, "Link is up after %d checkings\n",
 			link_check_count);
-		PCIE_DBG(dev, "PCIe RC%d link initialized\n", dev->rc_idx);
+		PCIE_INFO(dev, "PCIe RC%d link initialized\n", dev->rc_idx);
 	} else {
-		PCIE_DBG(dev, "PCIe: Assert the reset of endpoint of RC%d.\n",
+		PCIE_INFO(dev, "PCIe: Assert the reset of endpoint of RC%d.\n",
 			dev->rc_idx);
 		gpio_set_value(dev->gpio[MSM_PCIE_GPIO_PERST].num,
 			dev->gpio[MSM_PCIE_GPIO_PERST].on);
@@ -4658,16 +4633,6 @@ int msm_pcie_enable(struct msm_pcie_dev_t *dev, u32 options)
 			dev->rc_idx);
 		ret = -1;
 		goto link_fail;
-	}
-
-	if (dev->switch_latency) {
-		PCIE_DBG(dev, "switch_latency: %dms\n",
-			dev->switch_latency);
-		if (dev->switch_latency <= SWITCH_DELAY_MAX)
-			usleep_range(dev->switch_latency * 1000,
-				dev->switch_latency * 1000);
-		else
-			msleep(dev->switch_latency);
 	}
 
 	msm_pcie_config_controller(dev);
@@ -4750,7 +4715,7 @@ void msm_pcie_disable(struct msm_pcie_dev_t *dev, u32 options)
 	dev->power_on = false;
 	dev->link_turned_off_counter++;
 
-	PCIE_DBG(dev, "PCIe: Assert the reset of endpoint of RC%d.\n",
+	PCIE_INFO(dev, "PCIe: Assert the reset of endpoint of RC%d.\n",
 		dev->rc_idx);
 
 	gpio_set_value(dev->gpio[MSM_PCIE_GPIO_PERST].num,
@@ -6177,20 +6142,6 @@ static int msm_pcie_probe(struct platform_device *pdev)
 		PCIE_DBG(&msm_pcie_dev[rc_idx], "RC%d: ep-latency: 0x%x.\n",
 			rc_idx, msm_pcie_dev[rc_idx].ep_latency);
 
-	msm_pcie_dev[rc_idx].switch_latency = 0;
-	ret = of_property_read_u32((&pdev->dev)->of_node,
-					"qcom,switch-latency",
-					&msm_pcie_dev[rc_idx].switch_latency);
-
-	if (ret)
-		PCIE_DBG(&msm_pcie_dev[rc_idx],
-				"RC%d: switch-latency does not exist.\n",
-				rc_idx);
-	else
-		PCIE_DBG(&msm_pcie_dev[rc_idx],
-				"RC%d: switch-latency: 0x%x.\n",
-				rc_idx, msm_pcie_dev[rc_idx].switch_latency);
-
 	msm_pcie_dev[rc_idx].wr_halt_size = 0;
 	ret = of_property_read_u32(pdev->dev.of_node,
 				"qcom,wr-halt-size",
@@ -6515,7 +6466,6 @@ int __init pcie_init(void)
 
 	for (i = 0; i < MAX_RC_NUM; i++) {
 		snprintf(rc_name, MAX_RC_NAME_LEN, "pcie%d-short", i);
-#ifdef CONFIG_IPC_LOGGING
 		msm_pcie_dev[i].ipc_log =
 			ipc_log_context_create(PCIE_LOG_PAGES, rc_name, 0);
 		if (msm_pcie_dev[i].ipc_log == NULL)
@@ -6545,7 +6495,6 @@ int __init pcie_init(void)
 			PCIE_DBG(&msm_pcie_dev[i],
 				"PCIe IPC logging %s is enable for RC%d\n",
 				rc_name, i);
-#endif
 		spin_lock_init(&msm_pcie_dev[i].cfg_lock);
 		msm_pcie_dev[i].cfg_access = true;
 		mutex_init(&msm_pcie_dev[i].setup_lock);
