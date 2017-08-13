@@ -1331,9 +1331,9 @@
 &soc {
 	qcom,freq-mitigation-value = <1056000>;
 	qcom,msm-thermal {
-		qcom,poll-ms = <50>;
-		qcom,limit-temp = <80>;
+		qcom,limit-temp = <70>;
 		qcom,core-limit-temp = <90>;
+		qcom,freq-mitigation-value = <768000>;
 		msm_thermal_freq: qcom,vdd-apps-rstr {
 			qcom,max-freq-level = <1209600>;
 			qcom,levels = <1056000 1516800 1516800>;
@@ -1344,6 +1344,13 @@
 		msm_thermal_freq: qcom,vdd-apps-rstr{
 			qcom,max-freq-level = <1209600>;
 			qcom,levels = <1056000 1516800 1516800>;
+		};
+	};
+
+	qcom,bcl {
+		qcom,ibat-monitor {
+			/* Adjust VDD restriction phandle for BCL. */
+			qcom,mitigation-freq-khz = <1056000>;
 		};
 	};
 };
