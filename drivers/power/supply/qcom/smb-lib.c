@@ -420,19 +420,21 @@ static int smblib_set_adapter_allowance(struct smb_charger *chg,
 {
 	int rc = 0;
 
-	switch (allowed_voltage) {
-	case USBIN_ADAPTER_ALLOW_12V:
-	case USBIN_ADAPTER_ALLOW_5V_OR_12V:
-	case USBIN_ADAPTER_ALLOW_9V_TO_12V:
-	case USBIN_ADAPTER_ALLOW_5V_OR_9V_TO_12V:
-	case USBIN_ADAPTER_ALLOW_5V_TO_12V:
-		/* PM660 only support max. 9V */
-		if (chg->smb_version == PM660_SUBTYPE) {
-			smblib_dbg(chg, PR_MISC, "voltage not supported=%d\n",
-					allowed_voltage);
+	/* PM660 only support max. 9V */
+	if (chg->smb_version == PM660_SUBTYPE) {
+		switch (allowed_voltage) {
+		case USBIN_ADAPTER_ALLOW_12V:
+		case USBIN_ADAPTER_ALLOW_9V_TO_12V:
+			allowed_voltage = USBIN_ADAPTER_ALLOW_9V;
+			break;
+		case USBIN_ADAPTER_ALLOW_5V_OR_12V:
+		case USBIN_ADAPTER_ALLOW_5V_OR_9V_TO_12V:
 			allowed_voltage = USBIN_ADAPTER_ALLOW_5V_OR_9V;
+			break;
+		case USBIN_ADAPTER_ALLOW_5V_TO_12V:
+			allowed_voltage = USBIN_ADAPTER_ALLOW_5V_TO_9V;
+			break;
 		}
-		break;
 	}
 
 	rc = smblib_write(chg, USBIN_ADAPTER_ALLOW_CFG_REG, allowed_voltage);
@@ -1843,6 +1845,19 @@ int smblib_get_prop_charge_qnovo_enable(struct smb_charger *chg,
 	return 0;
 }
 
+int smblib_get_prop_batt_charge_counter(struct smb_charger *chg,
+				     union power_supply_propval *val)
+{
+	int rc;
+
+	if (!chg->bms_psy)
+		return -EINVAL;
+
+	rc = power_supply_get_property(chg->bms_psy,
+				       POWER_SUPPLY_PROP_CHARGE_COUNTER, val);
+	return rc;
+}
+
 /***********************
  * BATTERY PSY SETTERS *
  ***********************/
@@ -2187,6 +2202,25 @@ int smblib_get_prop_usb_online(struct smb_charger *chg,
 	return rc;
 }
 
+int smblib_get_prop_usb_voltage_max(struct smb_charger *chg,
+				    union power_supply_propval *val)
+{
+	switch (chg->real_charger_type) {
+	case POWER_SUPPLY_TYPE_USB_HVDCP:
+	case POWER_SUPPLY_TYPE_USB_PD:
+		if (chg->smb_version == PM660_SUBTYPE)
+			val->intval = MICRO_9V;
+		else
+			val->intval = MICRO_12V;
+		break;
+	default:
+		val->intval = MICRO_5V;
+		break;
+	}
+
+	return 0;
+}
+
 int smblib_get_prop_usb_voltage_now(struct smb_charger *chg,
 				    union power_supply_propval *val)
 {
@@ -2204,21 +2238,6 @@ int smblib_get_prop_usb_voltage_now(struct smb_charger *chg,
 		return PTR_ERR(chg->iio.usbin_v_chan);
 
 	return iio_read_channel_processed(chg->iio.usbin_v_chan, &val->intval);
-}
-
-int smblib_get_prop_pd_current_max(struct smb_charger *chg,
-				    union power_supply_propval *val)
-{
-	val->intval = get_client_vote_locked(chg->usb_icl_votable, PD_VOTER);
-	return 0;
-}
-
-int smblib_get_prop_usb_current_max(struct smb_charger *chg,
-				    union power_supply_propval *val)
-{
-	val->intval = get_client_vote_locked(chg->usb_icl_votable,
-			USB_PSY_VOTER);
-	return 0;
 }
 
 int smblib_get_prop_usb_current_now(struct smb_charger *chg,
@@ -2558,7 +2577,7 @@ static int smblib_handle_usb_current(struct smb_charger *chg,
 	return rc;
 }
 
-int smblib_set_prop_usb_current_max(struct smb_charger *chg,
+int smblib_set_prop_sdp_current_max(struct smb_charger *chg,
 				    const union power_supply_propval *val)
 {
 	int rc = 0;
@@ -2645,7 +2664,7 @@ int smblib_set_prop_typec_power_role(struct smb_charger *chg,
 	return rc;
 }
 
-int smblib_set_prop_usb_voltage_min(struct smb_charger *chg,
+int smblib_set_prop_pd_voltage_min(struct smb_charger *chg,
 				    const union power_supply_propval *val)
 {
 	int rc, min_uv;
@@ -2664,7 +2683,7 @@ int smblib_set_prop_usb_voltage_min(struct smb_charger *chg,
 	return rc;
 }
 
-int smblib_set_prop_usb_voltage_max(struct smb_charger *chg,
+int smblib_set_prop_pd_voltage_max(struct smb_charger *chg,
 				    const union power_supply_propval *val)
 {
 	int rc, max_uv;
@@ -3597,6 +3616,32 @@ static void smblib_force_legacy_icl(struct smb_charger *chg, int pst)
 	}
 }
 
+static void smblib_notify_extcon_props(struct smb_charger *chg)
+{
+	union power_supply_propval val;
+
+	smblib_get_prop_typec_cc_orientation(chg, &val);
+	extcon_set_cable_state_(chg->extcon, EXTCON_USB_CC,
+					(val.intval == 2) ? 1 : 0);
+	extcon_set_cable_state_(chg->extcon, EXTCON_USB_SPEED, true);
+}
+
+static void smblib_notify_device_mode(struct smb_charger *chg, bool enable)
+{
+	if (enable)
+		smblib_notify_extcon_props(chg);
+
+	extcon_set_cable_state_(chg->extcon, EXTCON_USB, enable);
+}
+
+static void smblib_notify_usb_host(struct smb_charger *chg, bool enable)
+{
+	if (enable)
+		smblib_notify_extcon_props(chg);
+
+	extcon_set_cable_state_(chg->extcon, EXTCON_USB_HOST, enable);
+}
+
 #define HVDCP_DET_MS 2500
 static void smblib_handle_apsd_done(struct smb_charger *chg, bool rising)
 {
@@ -3616,6 +3661,8 @@ static void smblib_handle_apsd_done(struct smb_charger *chg, bool rising)
 		if (chg->micro_usb_mode)
 			extcon_set_cable_state_(chg->extcon, EXTCON_USB,
 					true);
+		if (chg->use_extcon)
+			smblib_notify_device_mode(chg, true);
 	case OCP_CHARGER_BIT:
 	case FLOAT_CHARGER_BIT:
 		/* if not DCP then no hvdcp timeout happens, Enable pd here. */
@@ -3700,6 +3747,10 @@ static void typec_sink_insertion(struct smb_charger *chg)
 	 */
 	vote(chg->pd_disallowed_votable_indirect, HVDCP_TIMEOUT_VOTER,
 			false, 0);
+	if (chg->use_extcon) {
+		smblib_notify_usb_host(chg, true);
+		chg->otg_present = true;
+	}
 }
 
 static void typec_sink_removal(struct smb_charger *chg)
@@ -3848,6 +3899,14 @@ unlock:
 
 	typec_sink_removal(chg);
 	smblib_update_usb_type(chg);
+
+	if (chg->use_extcon) {
+		if (chg->otg_present)
+			smblib_notify_usb_host(chg, false);
+		else
+			smblib_notify_device_mode(chg, false);
+	}
+	chg->otg_present = false;
 }
 
 static void smblib_handle_typec_insertion(struct smb_charger *chg)

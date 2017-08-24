@@ -139,8 +139,13 @@ struct smb_irq_info {
 static const unsigned int smblib_extcon_cable[] = {
 	EXTCON_USB,
 	EXTCON_USB_HOST,
+	EXTCON_USB_CC,
+	EXTCON_USB_SPEED,
 	EXTCON_NONE,
 };
+
+/* EXTCON_USB and EXTCON_USB_HOST are mutually exclusive */
+static const u32 smblib_extcon_exclusive[] = {0x3, 0};
 
 struct smb_regulator {
 	struct regulator_dev	*rdev;
@@ -328,6 +333,8 @@ struct smb_charger {
 	int			usb_icl_change_irq_enabled;
 	u32			jeita_status;
 	u8			float_cfg;
+	bool			use_extcon;
+	bool			otg_present;
 
 	/* workaround flag */
 	u32			wa_flags;
@@ -419,6 +426,8 @@ int smblib_get_prop_batt_current_now(struct smb_charger *chg,
 				union power_supply_propval *val);
 int smblib_get_prop_batt_temp(struct smb_charger *chg,
 				union power_supply_propval *val);
+int smblib_get_prop_batt_charge_counter(struct smb_charger *chg,
+				union power_supply_propval *val);
 int smblib_set_prop_input_suspend(struct smb_charger *chg,
 				const union power_supply_propval *val);
 int smblib_set_prop_batt_capacity(struct smb_charger *chg,
@@ -443,11 +452,9 @@ int smblib_get_prop_usb_online(struct smb_charger *chg,
 				union power_supply_propval *val);
 int smblib_get_prop_usb_suspend(struct smb_charger *chg,
 				union power_supply_propval *val);
+int smblib_get_prop_usb_voltage_max(struct smb_charger *chg,
+				union power_supply_propval *val);
 int smblib_get_prop_usb_voltage_now(struct smb_charger *chg,
-				union power_supply_propval *val);
-int smblib_get_prop_pd_current_max(struct smb_charger *chg,
-				union power_supply_propval *val);
-int smblib_get_prop_usb_current_max(struct smb_charger *chg,
 				union power_supply_propval *val);
 int smblib_get_prop_usb_current_now(struct smb_charger *chg,
 				union power_supply_propval *val);
@@ -475,11 +482,11 @@ int smblib_get_prop_charge_qnovo_enable(struct smb_charger *chg,
 			       union power_supply_propval *val);
 int smblib_set_prop_pd_current_max(struct smb_charger *chg,
 				const union power_supply_propval *val);
-int smblib_set_prop_usb_current_max(struct smb_charger *chg,
+int smblib_set_prop_sdp_current_max(struct smb_charger *chg,
 				const union power_supply_propval *val);
-int smblib_set_prop_usb_voltage_min(struct smb_charger *chg,
+int smblib_set_prop_pd_voltage_max(struct smb_charger *chg,
 				const union power_supply_propval *val);
-int smblib_set_prop_usb_voltage_max(struct smb_charger *chg,
+int smblib_set_prop_pd_voltage_min(struct smb_charger *chg,
 				const union power_supply_propval *val);
 int smblib_set_prop_boost_current(struct smb_charger *chg,
 				const union power_supply_propval *val);

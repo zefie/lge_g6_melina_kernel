@@ -489,13 +489,10 @@ static int pd_send_msg(struct usbpd *pd, u8 msg_type, const u32 *data,
 
 	hdr = PD_MSG_HDR(msg_type, pd->current_dr, pd->current_pr,
 			pd->tx_msgid, num_data, pd->spec_rev);
-	ret = pd_phy_write(hdr, (u8 *)data, num_data * sizeof(u32), sop, 15);
-	/* TODO figure out timeout. based on tReceive=1.1ms x nRetryCount? */
 
-	if (ret < 0)
+	ret = pd_phy_write(hdr, (u8 *)data, num_data * sizeof(u32), sop);
+	if (ret)
 		return ret;
-	else if (ret != num_data * sizeof(u32))
-		return -EIO;
 
 	pd->tx_msgid = (pd->tx_msgid + 1) & PD_MAX_MSG_ID;
 	return 0;
@@ -596,7 +593,7 @@ static void pd_send_hard_reset(struct usbpd *pd)
 	/* Force CC logic to source/sink to keep Rp/Rd unchanged */
 	set_power_role(pd, pd->current_pr);
 	pd->hard_reset_count++;
-	pd_phy_signal(HARD_RESET_SIG, 5); /* tHardResetComplete */
+	pd_phy_signal(HARD_RESET_SIG);
 	pd->in_pr_swap = false;
 	power_supply_set_property(pd->usb_psy, POWER_SUPPLY_PROP_PR_SWAP, &val);
 }
@@ -964,7 +961,7 @@ static void usbpd_set_state(struct usbpd *pd, enum usbpd_state next_state)
 		pd->current_voltage = pd->requested_voltage = 5000000;
 		val.intval = pd->requested_voltage; /* set max range to 5V */
 		power_supply_set_property(pd->usb_psy,
-				POWER_SUPPLY_PROP_VOLTAGE_MAX, &val);
+				POWER_SUPPLY_PROP_PD_VOLTAGE_MAX, &val);
 
 		if (!pd->vbus_present) {
 			pd->current_state = PE_SNK_DISCOVERY;
@@ -1617,7 +1614,6 @@ static void usbpd_sm(struct work_struct *w)
 		else if (pd->current_dr == DR_DFP)
 			stop_usb_host(pd);
 
-		pd->current_pr = PR_NONE;
 		pd->current_dr = DR_NONE;
 
 		reset_vdm_state(pd);
@@ -1663,7 +1659,7 @@ static void usbpd_sm(struct work_struct *w)
 		pd->requested_voltage = 5000000;
 		val.intval = pd->requested_voltage;
 		power_supply_set_property(pd->usb_psy,
-				POWER_SUPPLY_PROP_VOLTAGE_MIN, &val);
+				POWER_SUPPLY_PROP_PD_VOLTAGE_MIN, &val);
 
 		pd->in_pr_swap = false;
 		val.intval = 0;
@@ -1982,8 +1978,8 @@ static void usbpd_sm(struct work_struct *w)
 			val.intval = pd->requested_voltage;
 			power_supply_set_property(pd->usb_psy,
 				pd->requested_voltage >= pd->current_voltage ?
-					POWER_SUPPLY_PROP_VOLTAGE_MAX :
-					POWER_SUPPLY_PROP_VOLTAGE_MIN,
+					POWER_SUPPLY_PROP_PD_VOLTAGE_MAX :
+					POWER_SUPPLY_PROP_PD_VOLTAGE_MIN,
 					&val);
 
 			/*
@@ -2034,8 +2030,8 @@ static void usbpd_sm(struct work_struct *w)
 			val.intval = pd->requested_voltage;
 			power_supply_set_property(pd->usb_psy,
 				pd->requested_voltage >= pd->current_voltage ?
-					POWER_SUPPLY_PROP_VOLTAGE_MIN :
-					POWER_SUPPLY_PROP_VOLTAGE_MAX, &val);
+					POWER_SUPPLY_PROP_PD_VOLTAGE_MIN :
+					POWER_SUPPLY_PROP_PD_VOLTAGE_MAX, &val);
 			pd->current_voltage = pd->requested_voltage;
 
 			/* resume charging */
@@ -2217,7 +2213,7 @@ static void usbpd_sm(struct work_struct *w)
 
 		val.intval = pd->requested_voltage;
 		power_supply_set_property(pd->usb_psy,
-				POWER_SUPPLY_PROP_VOLTAGE_MIN, &val);
+				POWER_SUPPLY_PROP_PD_VOLTAGE_MIN, &val);
 
 		pd_send_hard_reset(pd);
 		pd->in_explicit_contract = false;
@@ -2479,6 +2475,16 @@ static int psy_changed(struct notifier_block *nb, unsigned long evt, void *ptr)
 
 		if (pd->current_pr == PR_SINK)
 			return 0;
+
+		/*
+		 * Unexpected if not in PR swap; need to force disconnect from
+		 * source so we can turn off VBUS, Vconn, PD PHY etc.
+		 */
+		if (pd->current_pr == PR_SRC) {
+			usbpd_info(&pd->dev, "Forcing disconnect from source mode\n");
+			pd->current_pr = PR_NONE;
+			break;
+		}
 
 		pd->current_pr = PR_SINK;
 		break;
