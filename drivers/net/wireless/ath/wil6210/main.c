@@ -584,6 +584,7 @@ int wil_priv_init(struct wil6210_priv *wil)
 			      WMI_WAKEUP_TRIGGER_BCAST;
 	memset(&wil->suspend_stats, 0, sizeof(wil->suspend_stats));
 	wil->suspend_stats.min_suspend_time = ULONG_MAX;
+	wil->vring_idle_trsh = 16;
 
 	return 0;
 
@@ -1038,6 +1039,12 @@ int wil_reset(struct wil6210_priv *wil, bool load_fw)
 		/* it is W1C, clear by writing back same value */
 		wil_s(wil, RGF_CAF_ICR + offsetof(struct RGF_ICR, ICR), 0);
 		wil_w(wil, RGF_CAF_ICR + offsetof(struct RGF_ICR, IMV), ~0);
+
+		if (wil->fw_calib_result > 0) {
+			__le32 val = cpu_to_le32(wil->fw_calib_result |
+						 (CALIB_RESULT_SIGNATURE << 8));
+			wil_w(wil, RGF_USER_FW_CALIB_RESULT, (u32 __force)val);
+		}
 
 		wil_release_cpu(wil);
 	}

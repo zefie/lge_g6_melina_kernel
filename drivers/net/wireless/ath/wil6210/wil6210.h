@@ -31,7 +31,6 @@ extern bool no_fw_recovery;
 extern unsigned int mtu_max;
 extern unsigned short rx_ring_overflow_thrsh;
 extern int agg_wsize;
-extern u32 vring_idle_trsh;
 extern bool rx_align_2;
 extern bool rx_large_buf;
 extern bool debug_fw;
@@ -175,6 +174,10 @@ struct RGF_ICR {
 #define RGF_USER_USER_SCRATCH_PAD	(0x8802bc)
 #define RGF_USER_BL			(0x880A3C) /* Boot Loader */
 #define RGF_USER_FW_REV_ID		(0x880a8c) /* chip revision */
+#define RGF_USER_FW_CALIB_RESULT	(0x880a90) /* b0-7:result
+						    * b8-15:signature
+						    */
+	#define CALIB_RESULT_SIGNATURE	(0x11)
 #define RGF_USER_CLKS_CTL_0		(0x880abc)
 	#define BIT_USER_CLKS_CAR_AHB_SW_SEL	BIT(1) /* ref clk/PLL */
 	#define BIT_USER_CLKS_RST_PWGD	BIT(11) /* reset on "power good" */
@@ -697,6 +700,7 @@ struct wil6210_priv {
 	u8 vring2cid_tid[WIL6210_MAX_TX_RINGS][2]; /* [0] - CID, [1] - TID */
 	struct wil_sta_info sta[WIL6210_MAX_CID];
 	int bcast_vring;
+	u32 vring_idle_trsh; /* HW fetches up to 16 descriptors at once  */
 	bool use_extended_dma_addr; /* indicates whether we are using 48 bits */
 	/* scan */
 	struct cfg80211_scan_request *scan_request;
@@ -735,6 +739,8 @@ struct wil6210_priv {
 	struct wil_ftm_priv ftm;
 	bool tt_data_set;
 	struct wmi_tt_data tt_data;
+
+	int fw_calib_result;
 
 #ifdef CONFIG_PM
 #ifdef CONFIG_PM_SLEEP
