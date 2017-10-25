@@ -1719,14 +1719,24 @@ asmlinkage int vprintk_emit(int facility, int level,
 	bool in_sched = false;
 	/* cpu currently holding logbuf_lock in this function */
 	static volatile unsigned int logbuf_cpu = UINT_MAX;
+	struct console * con;
 
 	if (level == SCHED_MESSAGE_LOGLEVEL) {
 		level = -1;
 		in_sched = true;
 	}
 
-	boot_delay_msec(level);
-	printk_delay();
+	if(console_drivers)			//why delay if no one can read it
+	{
+		for_each_console(con) {
+			if((con->flags & CON_HASSCREEN))
+			{
+				boot_delay_msec(level);
+				printk_delay();
+				break;
+			}
+		}
+	}
 
 	/* This stops the holder of console_sem just where we want him */
 	local_irq_save(flags);

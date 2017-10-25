@@ -3143,6 +3143,7 @@ static int do_bind_con_driver(const struct consw *csw, int first, int last,
 		vc->vc_sw->con_deinit(vc);
 		vc->vc_origin = (unsigned long)vc->vc_screenbuf;
 		visual_init(vc, i, 0);
+		vt_console_driver.flags |= CON_HASSCREEN;
 		set_origin(vc);
 		update_attr(vc);
 
