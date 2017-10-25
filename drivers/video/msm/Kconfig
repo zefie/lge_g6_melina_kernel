@@ -54,6 +54,13 @@ config FB_MSM_QPIC_PANEL_DETECT
 	---help---
 	  Support for Qpic panel auto detect
 
+config FB_MSM_CONSOLE
+	bool "Missing MSM_MDSS_COMMON framebuffer connsole support"
+	depends on FB_MSM_MDSS_COMMON
+	---help---
+	  fb_imageblit, etc., are missing from main MSM framebuffer
+	  driver and the console does not work as a result
+
 if FB_MSM_MDSS
 	source "drivers/video/msm/mdss/Kconfig"
 endif

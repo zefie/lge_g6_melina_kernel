@@ -2205,13 +2205,17 @@ static int fbcon_switch(struct vc_data *vc)
 	}
 	memset(&var, 0, sizeof(struct fb_var_screeninfo));
 	display_to_var(&var, p);
+#ifndef CONFIG_FB_MSM_CONSOLE
 	var.activate = FB_ACTIVATE_NOW;
+#endif //!CONFIG_FB_MSM_CONSOLE
 
 	/*
 	 * make sure we don't unnecessarily trip the memcmp()
 	 * in fb_set_var()
 	 */
+#ifndef CONFIG_FB_MSM_CONSOLE
 	info->var.activate = var.activate;
+#endif //!CONFIG_FB_MSM_CONSOLE
 	var.vmode |= info->var.vmode & ~FB_VMODE_MASK;
 	fb_set_var(info, &var);
 	ops->var = info->var;
