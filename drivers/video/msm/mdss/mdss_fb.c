@@ -1572,7 +1572,8 @@ static int mdss_fb_probe(struct platform_device *pdev)
 	int rc;
 #ifdef CONFIG_FB_MSM_CONSOLE
 	static int just_one_fb_thankyou = 0;
-	
+	/* FIXME
+	 * need to find out where the second one comes from... */
 	if(just_one_fb_thankyou)
 		return -ENODEV;
 	just_one_fb_thankyou = 1;
@@ -3386,9 +3387,13 @@ static int mdss_fb_register(struct msm_fb_data_type *mfd)
 #ifdef CONFIG_FB_MSM_CONSOLE
 	if(!fbi->screen_base)
 	{
+		/* what about using the physical memory map routines instead of the ion crap
+		 * or that other dma stuff, what's the difference FIXME */
 		if(mdss_fb_alloc_fb_ion_memory(mfd, fbi->var.xres * fbi->var.yres *
 			(fbi->var.bits_per_pixel >> 3) * 2) < 0)
 			pr_err("FrameBuffer[%d] early framebuffer memory allocation failed\n", mfd->index);
+		else
+			mfd->fb_mmap_type = MDP_FB_MMAP_ION_ALLOC;		//since we're not coming here from fb_mmap
 	}
 #endif //CONFIG_FB_MSM_CONSOLE
 
@@ -4736,7 +4741,7 @@ static int mdss_fb_set_par(struct fb_info *info)
 
 	if (mfd->panel_reconfig || (mfd->fb_imgType != old_imgType)) {
 		mdss_fb_blank_sub(FB_BLANK_POWERDOWN, info, mfd->op_enable);	
-		
+
 #ifdef CONFIG_FB_MSM_CONSOLE
 	/* What about reallocating dma when set_par changes something? FIXME */
 	//if(!info->screen_base)
