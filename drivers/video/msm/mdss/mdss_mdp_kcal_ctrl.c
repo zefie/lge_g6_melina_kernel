@@ -31,6 +31,10 @@
 #include <linux/fb.h>
 #endif
 
+#ifdef CONFIG_UCI
+#include <linux/uci/uci.h>
+#endif
+
 #include "mdss_mdp.h"
 
 #define DEF_PCC 0x100
@@ -600,10 +604,54 @@ static int fb_notifier_callback(struct notifier_block *nb,
 }
 #endif
 
+struct platform_device *g_dev = NULL;
+
+#ifdef CONFIG_UCI
+// register sys uci listener
+static void uci_user_listener(void) {
+	if (g_dev && &g_dev->dev) {
+
+	struct kcal_lut_data *lut_data = dev_get_drvdata(&g_dev->dev);
+	int sat = lut_data->sat;
+	int val = lut_data->val;
+	int cont = lut_data->cont;
+	int min = lut_data->minimum;
+	int r = lut_data->red;
+	int g = lut_data->green;
+	int b = lut_data->blue;
+	int enable = lut_data->enable;
+	sat = uci_get_user_property_int_mm("kcal_sat", sat, 128, 383);
+	if (sat<224) sat = 128;
+	val = uci_get_user_property_int_mm("kcal_val", val, 128, 383);
+	cont = uci_get_user_property_int_mm("kcal_cont", cont, 128, 383);
+	min = uci_get_user_property_int_mm("kcal_min", min, 0, 256);
+	r = uci_get_user_property_int_mm("kcal_red", r, 0, 256);
+	g = uci_get_user_property_int_mm("kcal_green", g, 0, 256);
+	b = uci_get_user_property_int_mm("kcal_blue", b, 0, 256);
+	enable = uci_get_user_property_int_mm("kcal_enable", enable, 0, 1);
+	lut_data->sat = sat;
+	lut_data->val = val;
+	lut_data->cont = cont;
+	lut_data->minimum = min;
+	lut_data->red = r;
+	lut_data->green = g;
+	lut_data->blue = b;
+	lut_data->enable = enable;
+	if (mdss_mdp_kcal_is_panel_on()) {
+		mdss_mdp_kcal_update_pcc(lut_data);
+		mdss_mdp_kcal_update_pa(lut_data);
+		mdss_mdp_kcal_update_igc(lut_data);
+	} else
+		lut_data->queue_changes = true;
+	}
+}
+#endif
+
 static int kcal_ctrl_probe(struct platform_device *pdev)
 {
-	int ret;
 	struct kcal_lut_data *lut_data;
+	int ret;
+	g_dev = pdev;
 
 	lut_data = devm_kzalloc(&pdev->dev, sizeof(*lut_data), GFP_KERNEL);
 	if (!lut_data) {
@@ -661,6 +709,9 @@ static int kcal_ctrl_probe(struct platform_device *pdev)
 		pr_err("%s: unable to create sysfs entries\n", __func__);
 		goto out_notifier;
 	}
+#ifdef CONFIG_UCI
+	uci_add_user_listener(uci_user_listener);
+#endif
 
 	return 0;
 
