@@ -8,6 +8,7 @@ cp -r .zefie/scripts/dtbTool scripts/
 # Melina Kernel Custom Config Options
 read -r -d '' CONFIG << EOM
 CONFIG_LOCALVERSION="-${KERNEL_NAME}"
+CONFIG_DRIVEDROID_CDROM=y
 CONFIG_EXFAT_FS=m
 CONFIG_EXFAT_DISCARD=y
 CONFIG_EXFAT_DELAYED_SYNC=y
