@@ -38,3 +38,9 @@ and you can also use .zefie/scripts/sideload.sh to automatically sideload the mo
  * [DX-Mi5 by pappschlumpf](https://github.com/pappschlumpf/DX-Mi5)
  * [Noire Kernel by me](https://git.zefie.net/zefie/android_kernel_samsung_msm8916)
 
+
+## Benchmarks
+
+Stock Kernel | Melina Kernel
+--- | ---
+![Image](.zefie/benchmarks/stock_lge_16a_kernel.jpg?raw=true) | (soon)
