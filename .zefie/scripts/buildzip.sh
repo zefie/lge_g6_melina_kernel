@@ -6,7 +6,9 @@ TMPDIR="${OUTDIR}/build"
 MODDIR="${TMPDIR}/modules"
 MODULES=0
 
-if [ ! -f "build/arch/arm/boot/zImage" ]; then
+KERNEL_IMAGE="build/arch/${ARCH}/boot/Image.${KERNEL_COMPRESSION_SUFFIX}-dtb"
+
+if [ ! -f "${KERNEL_IMAGE}" ]; then
 	echo "Could not find binary kernel. Did you build it?";
         echo ""
         echo "Try the following:"
@@ -16,7 +18,7 @@ if [ ! -f "build/arch/arm/boot/zImage" ]; then
 fi
 
 #KVER=$(strings build/init/version.o | grep "Linux version" | cut -d' ' -f3 |  cut -d'-' -f3-)
-KVER=$(strings build/init/version.o | grep "Linux version" | cut -d' ' -f3 | cut -d'-' -f2-)
+KVER=$(strings build/init/version.o | grep "Linux version" | cut -d' ' -f3 | cut -d'-' -f1-)
 
 if [ ${MODULES} -eq 1 ]; then
 	## If you would like to add a custom module to your ROM
@@ -97,9 +99,9 @@ if [ ${MODULES} -eq 1 ]; then
 	rm -rf "${TMPDIR}/_modtmp"
 fi
 
-cp build/arch/arm64/boot/zImage "${TMPDIR}/zImage"
-echo " * Generating QCDT..."
-build/scripts/dtbTool/dtbTool -o "${TMPDIR}/dtb" -d build/scripts/dtc/dtc build/arch/arm64/boot/dts/ 2>&1 >> "${OUTDIR}/buildzip.log"
+cp "${KERNEL_IMAGE}" "${TMPDIR}/zImage"
+#echo " * Generating QCDT..."
+#build/scripts/dtbTool/dtbTool -o "${TMPDIR}/dtb" -d build/scripts/dtc/dtc build/arch/arm64/boot/dts/ 2>&1 >> "${OUTDIR}/buildzip.log"
 
 OUTFILE="${KERNEL_NAME}_kernel_$(date --utc +%Y.%m.%d)_${KVER}_us997_${ANDROID_TARGET}_${USER}.zip"
 
