@@ -19,7 +19,7 @@ if [ ! -f "${KERNEL_IMAGE}" ]; then
 fi
 
 KVER=$(strings build/init/version.o | grep "Linux version" | cut -d' ' -f3 | cut -d'-' -f1-)
-
+TCVER=$("${TOOLCHAIN}gcc" --version | awk '/gcc /{print $0;exit 0;}')
 if [ ${MODULES} -eq 1 ]; then
 ## If you would like to add a custom module to your ROM
 ## add it's filename on its own line anywhere between the words INCLUDED.
@@ -71,6 +71,7 @@ sed -i -e 's/\%MANU\%/'"${KERNEL_MANU}"'/' "${TMPDIR}/anykernel.sh"
 sed -i -e 's/\%MODEL\%/'"${KERNEL_MODEL}"'/' "${TMPDIR}/anykernel.sh"
 sed -i -e 's/\%DEVMODEL\%/'"${KERNEL_DEVMODEL}"'/' "${TMPDIR}/anykernel.sh"
 sed -i -e 's/\%VERSION\%/'"${KVER}"'/' "${TMPDIR}/anykernel.sh"
+sed -i -e 's/\%TOOLCHAIN_VERSION\%/'"${TCVER}"'/' "${TMPDIR}/anykernel.sh"
 
 if [ ${MODULES} -eq 1 ]; then
 	rm -rf "${TMPDIR}/_modtmp"
@@ -108,7 +109,7 @@ cp "${KERNEL_IMAGE}" "${TMPDIR}/zImage"
 #echo " * Generating QCDT..."
 #build/scripts/dtbTool/dtbTool -o "${TMPDIR}/dtb" -d build/scripts/dtc/dtc build/arch/arm64/boot/dts/ 2>&1 >> "${OUTDIR}/buildzip.log"
 
-OUTFILE="${KERNEL_NAME}_kernel_$(date --utc +%Y.%m.%d)_${KVER}_us997_${ANDROID_TARGET}_${USER}.zip"
+OUTFILE="boot_kernel_$(date --utc +%Y.%m.%d)_${KVER}_us997_${ANDROID_TARGET}_${USER}.zip"
 
 if [ -f "${OUTDIR}/${OUTFILE}" ]; then
 	rm -f "${OUTDIR}/${OUTFILE}"
