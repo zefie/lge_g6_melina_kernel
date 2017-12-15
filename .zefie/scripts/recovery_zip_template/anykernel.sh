@@ -3,7 +3,7 @@
 
 ## AnyKernel setup
 # EDIFY properties
-kernel.string=zefie's %NAME% kernel for %MANU% %MODEL% (%DEVMODEL%) (%VERSION%)
+kernel.string="%NAME% kernel for %MANU% %MODEL% by zefie"
 do.devicecheck=1
 do.modules=0 # we will do it ourself.
 do.cleanup=1
@@ -23,6 +23,13 @@ force_seandroid=1;
 # import patching functions/variables - see for reference
 . /tmp/anykernel/tools/ak2-core.sh;
 
+## zefie kernel info
+
+ui_print " "
+ui_print "Kernel Name: %NAME%"
+ui_print "Kernel Device: %MANU% %MODEL% (%DEVMODEL%)"
+ui_print "Kernel Version: %VERSION%"
+ui_print " "
 
 ## AnyKernel install
 dump_boot;

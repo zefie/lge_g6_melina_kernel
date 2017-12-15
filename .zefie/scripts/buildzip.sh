@@ -56,6 +56,9 @@ fi
 mkdir -p "${OUTDIR}"
 echo "*** Starting buildzip: $(date)" >> "${OUTDIR}/buildzip.log"
 echo "*** Starting buildzip: $(date)"
+echo "*** Kernel Name: ${KERNEL_NAME}" >> "${OUTDIR}/buildzip.log"
+echo "*** Kernel Device: ${KERNEL_MANU} ${KERNEL_MODEL} (${KERNEL_DEVMODEL})" >> "${OUTDIR}/buildzip.log"
+echo "*** Kernel Version: ${KVER}" >> "${OUTDIR}/buildzip.log"
 
 rm -rf "${TMPDIR}"
 mkdir -p "${TMPDIR}"
@@ -79,6 +82,7 @@ if [ ${MODULES} -eq 1 ]; then
 		if [ ! -z $(echo ${m} | grep '=') ]; then
 			mout=$(echo "${m}" | cut -d'=' -f1)
 			min=$(echo "${m}" | cut -d'=' -f2)
+			echo " -*-  Found ${min}, placing as ${mout} ..." >> "${OUTDIR}/buildzip.log"
 		else
 			min="${m}"
 			mout="${m}"
@@ -120,5 +124,5 @@ echo "${OUTDIR}/${OUTFILE}"
 echo ""
 echo "Generated ${OUTDIR}/${OUTFILE}" >> "${OUTDIR}/buildzip.log"
 echo "*** Ending buildzip: $(date)" >> "${OUTDIR}/buildzip.log"
+echo "" >> "${OUTDIR}/buildzip.log"
 echo "*** Ending buildzip: $(date)"
-
