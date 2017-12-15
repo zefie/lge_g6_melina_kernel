@@ -1,4 +1,5 @@
 #!/bin/bash
+export PATH=${PWD}/.zefie/lz4demo:${PATH}
 export Z_USE_CCACHE=1
 export TOOLCHAIN="/home/zefie/dev/toolchains/uber/out/aarch64-linux-android-6.x/bin/aarch64-linux-android-"
 export KERNEL_BUILDDIR="build"
@@ -15,7 +16,7 @@ export ARCH=arm64
 export CROSS_COMPILE="${TOOLCHAIN}"
 export KERNEL_COMPRESSION_SUFFIX=lz4
 
-if [ $(command -v ccache >/dev/null 2>&1) -eq $(true) ] && [ ${Z_USE_CCACHE} -eq 1 ]; then
+if [ ! -z "$(command -v ccache)" ] && [ "${Z_USE_CCACHE}" -eq "1" ]; then
 	export TOOLCHAIN="ccache ${TOOLCHAIN}"
 fi
 
