@@ -3304,9 +3304,9 @@ static DEVICE_ATTR_RW(ro);
 static DEVICE_ATTR_RW(nofua);
 static DEVICE_ATTR_RW(file);
 #ifdef CONFIG_DRIVEDROID_CDROM
-DEVICE_ATTR(cdrom, 0644, fsg_show_cdrom_dd, fsg_store_cdrom_dd);
+static DEVICE_ATTR(cdrom, 0644, fsg_show_cdrom_dd, fsg_store_cdrom_dd);
 #endif
-static DEVICE_ATTR(perf, 0644, fsg_show_perf, fsg_store_perf);
+DEVICE_ATTR(perf, 0644, fsg_show_perf, fsg_store_perf);
 
 static struct device_attribute dev_attr_ro_cdrom = __ATTR_RO(ro);
 static struct device_attribute dev_attr_file_nonremovable = __ATTR_RO(file);
@@ -3618,8 +3618,9 @@ static inline int fsg_common_add_sysfs(struct fsg_common *common,
 #ifdef CONFIG_DRIVEDROID_CDROM
 	rc = device_create_file(&lun->dev, &dev_attr_cdrom);
 	if (rc)
-		dev_err(&lun->dev, "failed to create sysfs entry: %d\n", rc);
+		pr_err("failed to create sysfs entry: %d\n", rc);
 #endif
+
 #ifdef CONFIG_LGE_USB_G_AUTORUN
 	rc = device_create_file(&lun->dev, &dev_attr_cdrom_usbmode);
 	if (rc)
