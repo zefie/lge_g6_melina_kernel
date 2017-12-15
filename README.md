@@ -44,3 +44,4 @@ and you can also use .zefie/scripts/sideload.sh to automatically sideload the mo
 Stock Kernel | Melina Kernel
 --- | ---
 ![Image](.zefie/benchmarks/stock_lge_16a_kernel.jpg?raw=true) | (soon)
+[Details](http://browser.geekbench.com/v4/cpu/5472375) | (soon)
