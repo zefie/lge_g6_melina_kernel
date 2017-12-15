@@ -4,7 +4,7 @@ KERNDIR="$(pwd)"
 OUTDIR="${KERNDIR}/build/out"
 TMPDIR="${OUTDIR}/build"
 MODDIR="${TMPDIR}/modules"
-MODULES=0
+MODULES=1
 
 KERNEL_IMAGE="build/arch/${ARCH}/boot/Image.${KERNEL_COMPRESSION_SUFFIX}-dtb"
 
@@ -21,11 +21,12 @@ fi
 KVER=$(strings build/init/version.o | grep "Linux version" | cut -d' ' -f3 | cut -d'-' -f1-)
 
 if [ ${MODULES} -eq 1 ]; then
-	## If you would like to add a custom module to your ROM
-	## add it's filename on its own line anywhere between the words INCLUDED.
-	## After building, try: find build -name "*.ko"
-	## to find all built modules.
-	read -r -d '' INCLUDED_MODULES << INCLUDED
+## If you would like to add a custom module to your ROM
+## add it's filename on its own line anywhere between the words INCLUDED.
+## After building, try: find build -name "*.ko"
+## to find all built modules.
+
+read -r -d '' INCLUDED_MODULES << INCLUDED
 ansi_cprng.ko
 bluetooth-power.ko
 br_netfilter.ko
@@ -46,11 +47,6 @@ test-iosched.ko
 texfat.ko
 ufs_test.ko
 INCLUDED
-
-	#if [ ! -z "${ANDROID_MARSHMALLOW}" ]; then
-	#read -r -d '' EXTRA_MODULES << INCLUDED
-	#wlan.ko
-	#INCLUDED
 
 	if [ ! -z "${EXTRA_MODULES}" ]; then
 		INCLUDED_MODULES+="$(echo; echo "${EXTRA_MODULES}";)"
@@ -89,13 +85,6 @@ if [ ${MODULES} -eq 1 ]; then
 		fi
 	done;
 	chmod 644 "${MODDIR}/"*
-
-	# Rename wifi module for compatiblity
-	if [ -f "${MODDIR}/wlan.ko" ]; then
-		mkdir "${MODDIR}/pronto"
-		mv "${MODDIR}/wlan.ko" "${MODDIR}/pronto/pronto_wlan.ko"
-	fi
-
 	rm -rf "${TMPDIR}/_modtmp"
 fi
 
