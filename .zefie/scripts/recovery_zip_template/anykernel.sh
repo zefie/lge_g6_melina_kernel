@@ -34,11 +34,8 @@ force_seandroid=1;
 dump_boot;
 write_boot;
 
-if [ -f "/tmp/anykernel/modules/install" ]; then
 # Manual module install
 ui_print "Pushing modules...";
-rm /tmp/anykernel/modules/install
-
 mount -o rw,remount -t auto /system;
 
 rm -rf /system/lib/modules
@@ -48,5 +45,4 @@ cp -rf /tmp/anykernel/modules/* /system/lib/modules/;
 set_perm_recursive 0 0 0755 0644 /system/lib/modules;
 
 mount -o ro,remount -t auto /system;
-fi
 ## end install

@@ -11,13 +11,13 @@ KERNEL_IMAGE="build/arch/${ARCH}/boot/Image.${KERNEL_COMPRESSION_SUFFIX}-dtb"
 if [ ! -f "${KERNEL_IMAGE}" ]; then
 	echo "Could not find binary kernel. Did you build it?";
         echo ""
-        echo "Try the following:"
+        echo "Try all of the following:"
+        echo ".zefie/scripts/resetgit.sh"
         echo ".zefie/scripts/cleanbuild.sh"
         echo ".zefie/scripts/buildzip.sh"
 	exit 1;
 fi
 
-#KVER=$(strings build/init/version.o | grep "Linux version" | cut -d' ' -f3 |  cut -d'-' -f3-)
 KVER=$(strings build/init/version.o | grep "Linux version" | cut -d' ' -f3 | cut -d'-' -f1-)
 
 if [ ${MODULES} -eq 1 ]; then
@@ -44,7 +44,7 @@ spidev.ko
 tcp_htcp.ko
 tcp_westwood.ko
 test-iosched.ko
-texfat.ko
+texfat.ko=exfat.ko
 ufs_test.ko
 INCLUDED
 
@@ -70,18 +70,26 @@ if [ ${MODULES} -eq 1 ]; then
 	mkdir -p "${TMPDIR}/_modtmp"
 	.zefie/scripts/make.sh INSTALL_MOD_PATH="${TMPDIR}/_modtmp" modules_install 2>&1 >> "${OUTDIR}/buildzip.log"
 
+        # Rename exfat module for compatiblity (LG uses propritary Tuxera, we use open source)
 	for m in ${INCLUDED_MODULES}; do
+		if [ ! -z $(echo ${m} | grep '=') ]; then
+			mout=$(echo "${m}" | cut -d'=' -f1)
+			min=$(echo "${m}" | cut -d'=' -f2)
+		else
+			min="${m}"
+			mout="${m}"
+		fi
 		FOUND=0
-		FILE=$(find "${TMPDIR}/_modtmp" -name "${m}")
+		FILE=$(find "${TMPDIR}/_modtmp" -name "${min}")
 		if [ -f "${FILE}" ]; then
 			FOUND=1
 		fi
 
 		if [ "${FOUND}" -eq "1" ]; then
-			echo " * [FOUND] ${m}"
-			cp -f "${FILE}" "${MODDIR}/${m}"
+			echo " * [FOUND] ${mout}"
+			cp -f "${FILE}" "${MODDIR}/${mout}"
 		else
-			echo " * [MISSN] ${m}" > /dev/stderr
+			echo " * [MISSN] ${mout}" > /dev/stderr
 		fi
 	done;
 	chmod 644 "${MODDIR}/"*
