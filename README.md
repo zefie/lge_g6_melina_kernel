@@ -16,5 +16,14 @@ Features:
 
 # Current Status:
 
-* Compiles: Yes
-* Boots: Untested
+ * Compiles: Yes
+ * Boots: Untested
+
+
+# How to build:
+
+ * Edit .zefie/scripts/buildenv.sh, and set TOOLCHAIN for your local setup
+ * Run .zefie/scripts/fullbuild.sh
+
+If all goes well, output will be in build/out/,
+and you can also use .zefie/scripts/sideload.sh to automatically sideload the most recent zip to TWRP.
