@@ -62,7 +62,11 @@ mkdir -p "${TMPDIR}"
 echo " * Copying template to build directory"
 cp -rfv .zefie/scripts/recovery_zip_template/* "${TMPDIR}" >> "${OUTDIR}/buildzip.log"
 find "${TMPDIR}" -name "placeholder" -exec rm {} +
-echo " * Patching template version: ${KVER}"
+echo " * Patching template ..."
+sed -i -e 's/\%NAME\%/'"${KERNEL_NAME}"'/' "${TMPDIR}/anykernel.sh"
+sed -i -e 's/\%MANU\%/'"${KERNEL_MANU}"'/' "${TMPDIR}/anykernel.sh"
+sed -i -e 's/\%MODEL\%/'"${KERNEL_MODEL}"'/' "${TMPDIR}/anykernel.sh"
+sed -i -e 's/\%DEVMODEL\%/'"${KERNEL_DEVMODEL}"'/' "${TMPDIR}/anykernel.sh"
 sed -i -e 's/\%VERSION\%/'"${KVER}"'/' "${TMPDIR}/anykernel.sh"
 
 if [ ${MODULES} -eq 1 ]; then

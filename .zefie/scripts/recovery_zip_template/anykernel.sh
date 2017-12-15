@@ -3,7 +3,7 @@
 
 ## AnyKernel setup
 # EDIFY properties
-kernel.string="zefie's Melina kernel for LG G6 (US997) (non-plus) (%VERSION%)"
+kernel.string=zefie's %NAME% kernel for %MANU% %MODEL% (%DEVMODEL%) (%VERSION%)
 do.devicecheck=1
 do.modules=0 # we will do it ourself.
 do.cleanup=1
@@ -22,12 +22,6 @@ force_seandroid=1;
 ## AnyKernel methods (DO NOT CHANGE)
 # import patching functions/variables - see for reference
 . /tmp/anykernel/tools/ak2-core.sh;
-
-
-## AnyKernel permissions
-# set permissions for included ramdisk files
-#chmod -R 755 $ramdisk
-#chmod 644 $ramdisk/sbin/media_profiles.xml
 
 
 ## AnyKernel install
