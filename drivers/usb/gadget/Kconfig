@@ -461,6 +461,16 @@ config LGE_USB_G_AUTORUN
 
 	default n
 
+config DRIVEDROID_CDROM
+	boolean "DriveDroid CD-ROM Mass Storage Emulation"
+	depends on !LGE_USB_G_AUTORUN
+	depends on USB_G_ANDROID
+	help
+	  Allows you to mount CD-ROM ISO images with DriveDroid.
+	  Without this, the image will try to mount as a USB Disk (flash drive).
+
+	default y
+
 config LGE_USB_G_CDROM_MAC_SUPPORT
 	boolean "USB CDROM support patch of LGE Android on Mac OS-X"
 	depends on LGE_USB_G_AUTORUN
