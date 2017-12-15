@@ -14,4 +14,7 @@ Features:
 
  * TODO
 
-# Current Status: Does not compile
+# Current Status:
+
+* Compiles: Yes
+* Boots: Untested
