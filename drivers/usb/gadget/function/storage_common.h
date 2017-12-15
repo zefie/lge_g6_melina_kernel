@@ -224,6 +224,12 @@ ssize_t fsg_show_nofua(struct fsg_lun *curlun, char *buf);
 ssize_t fsg_show_file(struct fsg_lun *curlun, struct rw_semaphore *filesem,
 		      char *buf);
 ssize_t fsg_show_cdrom(struct fsg_lun *curlun, char *buf);
+#ifdef CONFIG_DRIVEDROID_CDROM
+ssize_t fsg_show_cdrom_dd(struct device *dev, struct device_attribute *attr,
+                           char *buf);
+ssize_t fsg_store_cdrom_dd(struct device *dev, struct device_attribute *attr,
+                           const char *buf, size_t count);
+#endif
 ssize_t fsg_show_removable(struct fsg_lun *curlun, char *buf);
 ssize_t fsg_store_ro(struct fsg_lun *curlun, struct rw_semaphore *filesem,
 		     const char *buf, size_t count);
