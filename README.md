@@ -17,8 +17,7 @@ Features:
 # Current Status:
 
  * Compiles: Yes
- * Boots: Untested
-
+ * Boots: Yes
 
 # How to build:
 
