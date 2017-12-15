@@ -1,8 +1,9 @@
 #!/bin/bash
 if [ -d ".zefie" ]; then
-	if [ "$(git status | grep "modified:" | grep -v "\.zefie/" | wc -l)" -gt "0" ]; then
+	GIT_STATUS=$(git status)
+	if [ "$(echo "${GIT_STATUS}" | grep "modified:" | grep -v "\.zefie/" | wc -l)" -gt "0" ] || [ "$(echo "${GIT_STATUS}" | grep "Untracked" | wc -l)" -gt "0" ]; then
 		# If files other than those in .zefie have been modified, we shall reset
-		if [ "$(git status | grep "\.zefie/" | wc -l)" -gt "0" ]; then
+		if [ "$(echo "${GIT_STATUS}" | grep "\.zefie/" | wc -l)" -gt "0" ]; then
 			# If we are resetting, and files in .zefie have been modified, we shall retain them
 			TMPFILE=$(tempfile -p zef- -s .zef)
 			echo "* Saving current status of zefie scripts..."
