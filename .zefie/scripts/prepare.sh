@@ -26,6 +26,7 @@ done;
 
 # Melina Kernel Custom Config Options
 read -r -d '' CONFIG << EOM
+CONFIG_LOCALVERSION=""
 EOM
 
 if [ ! -z "${EXTRA_CONFIG}" ]; then
