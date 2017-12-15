@@ -1,7 +1,6 @@
 #!/bin/bash
 export PATH=${PWD}/.zefie/lz4demo:${PATH}
-export Z_USE_CCACHE=1
-export TOOLCHAIN="/home/zefie/dev/toolchains/uber/out/aarch64-linux-android-6.x/bin/aarch64-linux-android-"
+export TOOLCHAIN="/home/zefie/dev/toolchains/uber/out/aarch64-linux-android-7.x/bin/aarch64-linux-android-"
 export KERNEL_BUILDDIR="build"
 
 export KERNEL_MANU="LG"
@@ -19,10 +18,6 @@ export ANDROID_TARGET="LGE-Stock"
 export ARCH=arm64
 export CROSS_COMPILE="${TOOLCHAIN}"
 export KERNEL_COMPRESSION_SUFFIX=lz4
-
-if [ ! -z "$(command -v ccache)" ] && [ "${Z_USE_CCACHE}" -eq "1" ]; then
-	export TOOLCHAIN="ccache ${TOOLCHAIN}"
-fi
 
 if [ "$(basename $0)" == "buildenv.sh" ]; then
 	if [ ! -z "$1" ]; then
