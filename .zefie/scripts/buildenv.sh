@@ -1,6 +1,6 @@
 #!/bin/bash
 export PATH=${PWD}/.zefie/lz4demo:${PATH}
-export TOOLCHAIN="/home/zefie/dev/toolchains/uber/out/aarch64-linux-android-7.x/bin/aarch64-linux-android-"
+export TOOLCHAIN="/home/zefie/dev/toolchains/uber/out/aarch64-linux-android-6.x/bin/aarch64-linux-android-"
 export KERNEL_BUILDDIR="build"
 
 export KERNEL_MANU="LG"
