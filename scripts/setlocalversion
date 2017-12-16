@@ -62,7 +62,6 @@ scm_version()
 				printf '%s%s' -g "`git show-ref -s --abbrev --tags $atag 2>/dev/null`"
 			fi
 		else
-
 			# If only the short version is requested, don't bother
 			# running further git commands
 			if $short; then
@@ -70,9 +69,7 @@ scm_version()
 				return
 			fi
 			# If we don't have a tag at all we print -g{commitish}.
-			else
-				printf '%s%s' -g $head
-			fi
+			printf '%s%s' -g $head
 		fi
 
 		# Is this git on svn?
