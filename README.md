@@ -48,9 +48,9 @@ and you can also use .zefie/scripts/sideload.sh to automatically sideload the mo
 
 ## Benchmarks
 
-Stock Kernel (16a) | Melina Kernel ([ga4e29e9](https://github.com/zefie/lge_g6_melina_kernel/tree/a4e29e906665a3062bd4d6a0d6fffcb912f403cd))
+Stock Kernel (US997v16a) | Melina Kernel ([rel2](https://github.com/zefie/lge_g6_melina_kernel/tree/rel2))
 --- | ---
-![Image](https://github.com/zefie/lge_g6_kernel_scripts/raw/us997-7.0/benchmarks/stock_lge_16a_kernel.jpg) | ![Image](https://github.com/zefie/lge_g6_kernel_scripts/raw/us997-7.0/benchmarks/melina_kernel_ga4e29e9.jpg)
-[Details](http://browser.geekbench.com/v4/cpu/5472375) | [Details](http://browser.geekbench.com/v4/cpu/5472792)
+![Image](https://github.com/zefie/lge_g6_kernel_scripts/raw/us997-7.0/benchmarks/stock_lge_16a_kernel.jpg) | ![Image](https://github.com/zefie/lge_g6_kernel_scripts/raw/us997-7.0/benchmarks/melina_kernel_rel2.jpg)
+[Details](http://browser.geekbench.com/v4/cpu/5472375) | [Details](http://browser.geekbench.com/v4/cpu/5490319)
 
-### [GeekBench Comparison](http://browser.geekbench.com/v4/cpu/compare/5472792?baseline=5472375) (Left is Melina, Right is Stock)
+### [GeekBench Comparison](http://browser.geekbench.com/v4/cpu/compare/5490319?baseline=5472375) (Left is Melina, Right is Stock)
