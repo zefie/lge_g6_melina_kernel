@@ -14,14 +14,4 @@ To get started you are going to need some information from your phone's STOCK RO
 2. Kernel Version
    * I'm pretty sure all of LG's releases use *-perf* but just in case, check your kernel version string to see if it ends with "-perf". If so, use the defconfig with *-perf*.
 
-If a file with your codename plus "_defconfig" exists, you can ***try*** to compile this kernel for yourself.
-
-Check out the **ORIG_DEFCONFIG** variable while you are updating your **TOOLCHAIN** variable in [.zefie/scripts/buildenv.sh](.zefie/scripts/buildenv.sh).
-
-In my example, we end up with *ORIG_DEFCONFIG=lucye_nao_us-perf_defconfig*
-
-From there, follow the [existing instructions](README.md#how-to-build).
-
-### ***Compile errors?***
-
-If you are trying to compile for a variant and run into compile errors, I cannot help you. That is the nature of trying to cross-compile similar variant kernels, and you will have to fork the git and try to fix the errors yourself.
+If you find a config matching your fingerprint, report back to me with the fingerprint and kernel version, then wait patiently for me to attempt to build.
