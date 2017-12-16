@@ -24,7 +24,8 @@ Based on LGE Opensource v10b kernel (first commit)
 
 ## How to build:
 
- * Edit .zefie/scripts/buildenv.sh, and set TOOLCHAIN for your local setup
+ * [Prepare your toolchain](ubertc-guide.md)
+ * Edit .zefie/scripts/buildenv.sh, and set TOOLCHAIN path for your local setup
  * Run .zefie/scripts/fullbuild.sh
 
 If all goes well, output will be in build/out/,
@@ -47,3 +48,7 @@ Stock Kernel (16a) | Melina Kernel ([ga4e29e9](https://git.zefie.net/zefie/lge_u
 [Details](http://browser.geekbench.com/v4/cpu/5472375) | [Details](http://browser.geekbench.com/v4/cpu/5472792)
 
 ### [GeekBench Comparison](http://browser.geekbench.com/v4/cpu/compare/5472792?baseline=5472375) (Left is Melina, Right is Stock)
+
+## Variants
+
+Developers with non-US997 variants: See my [variant guide](variant-dev.md)
