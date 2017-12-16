@@ -27,6 +27,10 @@ extern void mdss_dsi_panel_cmds_send(struct mdss_dsi_ctrl_pdata *ctrl,
 extern int lcd_watch_deside_status(struct  msm_fb_data_type *mfd, unsigned int cur_mode, unsigned int next_mode);
 #endif
 
+#if defined(CONFIG_LGE_DISPLAY_SRE_MODE)
+void lge_set_sre_cmds(struct mdss_dsi_ctrl_pdata *ctrl);
+#endif
+
 static char *aod_mode_cmd_dt[] = {
 	"lge,mode-change-cmds-u3-to-u2",
 	"lge,mode-change-cmds-u2-to-u3",
@@ -35,6 +39,10 @@ static char *aod_mode_cmd_dt[] = {
 	"lge,mode-change-cmds-u2-to-u0",
 	"lge,fps-change-to-30",
         "lge,fps-change-to-60",
+#endif
+#if defined(CONFIG_LGE_DISPLAY_AOD_WITH_MIPI)
+	"lge,mdss-dsi-display-on-command",
+	"lge,mdss-dsi-display-off-command",
 #endif
 };
 
@@ -178,6 +186,15 @@ int oem_mdss_aod_decide_status(struct msm_fb_data_type *mfd, int blank_mode)
 		}
 #endif
 #else
+#if defined(CONFIG_LGE_DISPLAY_AOD_WITH_MIPI)
+			/* U0_BLANK -> U3_UNBLANK, When font download is Fail */
+			if (blank_mode == FB_BLANK_UNBLANK && aod_node == 1 && !mfd->watch.current_font_type) {
+				cmd_status = ON_CMD;
+				next_mode = AOD_PANEL_MODE_U3_UNBLANK;
+				labibb_ctrl = true;
+				break;
+			}
+#endif
 			/* U0_BLANK -> U2_UNBLANK*/
 			if (blank_mode == FB_BLANK_UNBLANK && aod_node == 1 && aod_keep_u2 == AOD_KEEP_U2) {
 				cmd_status = ON_AND_AOD;
@@ -293,7 +310,7 @@ int oem_mdss_aod_decide_status(struct msm_fb_data_type *mfd, int blank_mode)
 		}
 #if defined(CONFIG_LGE_DISPLAY_AOD_WITH_MIPI)
 		/* AOD App didn't alive. U3_UNBLANK -> U0 */
-		else if (blank_mode == FB_BLANK_POWERDOWN && aod_node == 1 && !mfd->watch.current_font_type) {
+		else if (blank_mode == FB_BLANK_POWERDOWN && aod_node == 1 && !mfd->watch.current_font_type && !mfd->watch.set_roi) {
 			cmd_status = OFF_CMD;
 			next_mode = AOD_PANEL_MODE_U0_BLANK;
 			labibb_ctrl = true;
@@ -399,6 +416,10 @@ int oem_mdss_aod_cmd_send(struct msm_fb_data_type *mfd, int cmd)
 		ctrl->panel_data.panel_info.aod_cur_mode = AOD_PANEL_MODE_U3_UNBLANK;
 		param = AOD_PANEL_MODE_U3_UNBLANK;
 
+#if defined(CONFIG_LGE_DISPLAY_SRE_MODE)
+		lge_set_sre_cmds(ctrl);
+		mdss_dsi_panel_cmds_send(ctrl, &ctrl->reg_55h_cmds, CMD_REQ_COMMIT);
+#endif
 		/* Need to enable 5V power when U2 unblank -> U3*/
 		ret = msm_dss_enable_vreg(
 				ctrl->panel_power_data.vreg_config,
@@ -422,6 +443,18 @@ int oem_mdss_aod_cmd_send(struct msm_fb_data_type *mfd, int cmd)
 		mdss_dsi_clk_ctrl(ctrl, ctrl->dsi_clk_handle,
 					MDSS_DSI_ALL_CLKS, MDSS_DSI_CLK_OFF);
 		return AOD_RETURN_SUCCESS;
+#endif
+#if defined(CONFIG_LGE_DISPLAY_AOD_WITH_MIPI)
+	case AOD_CMD_DISPLAY_ON:
+		cmd_index = AOD_PANEL_CMD_DISPALY_ON;
+		param = AOD_PANEL_MODE_NONE;
+		mfd->display_off = false;
+		break;
+	case AOD_CMD_DISPLAY_OFF:
+		cmd_index = AOD_PANEL_CMD_DISPALY_OFF;
+		param = AOD_PANEL_MODE_NONE;
+		mfd->display_off = true;
+		break;
 #endif
 	default:
 		return AOD_RETURN_ERROR_SEND_CMD;

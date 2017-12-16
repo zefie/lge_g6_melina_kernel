@@ -12,7 +12,8 @@
 #ifndef MSM_EEPROM_UTIL_H
 #define MSM_EEPROM_UTIL_H
 
-#define EEPROM_OFFSET_MODULE_MAKER		0x700
+#define EEPROM_OFFSET_MODULE_MAKER		0xBE0//0x700
+#define EEPROM_OFFSET_MODULE_MAKER1		0x0
 
 void msm_eeprom_set_maker_id(uint8_t);
 void msm_eeprom_create_sysfs(void);

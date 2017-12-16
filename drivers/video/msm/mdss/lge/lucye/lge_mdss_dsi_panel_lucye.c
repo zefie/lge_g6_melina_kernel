@@ -37,6 +37,23 @@ extern void lcd_watch_font_crc_check_after_panel_reset(void);
 extern void mdss_dsi_panel_cmds_send(struct mdss_dsi_ctrl_pdata *ctrl,
 		struct dsi_panel_cmds *pcmds, u32 flags);
 
+/* when panel state is off, improve to ignore sre cmds */
+void lge_set_sre_cmds(struct mdss_dsi_ctrl_pdata *ctrl)
+{
+	char mask = 0x00;
+	if(ctrl->sre_status == SRE_MID) {
+		ctrl->reg_55h_cmds.cmds[0].payload[1] |= SRE_MASK_MID;
+		pr_info("%s: SRE MID\n",__func__);
+	} else if(ctrl->sre_status == SRE_HIGH) {
+		ctrl->reg_55h_cmds.cmds[0].payload[1] |= SRE_MASK_HIGH;
+		pr_info("%s: SRE HIGH\n",__func__);
+	} else {
+		mask = SRE_MASK;
+		ctrl->reg_55h_cmds.cmds[0].payload[1] &= (~mask);
+	}
+}
+EXPORT_SYMBOL(lge_set_sre_cmds);
+
 static void lge_set_image_quality_cmds(struct mdss_dsi_ctrl_pdata *ctrl)
 {
 	char mask = 0x00;
@@ -381,6 +398,8 @@ int mdss_dsi_panel_on(struct mdss_panel_data *pdata)
 			mdss_dsi_panel_cmds_send(ctrl, &ctrl->aod_cmds[AOD_PANEL_CMD_U3_TO_U2], CMD_REQ_COMMIT);
 			goto notify;
 		case AOD_CMD_DISABLE:
+			lge_set_sre_cmds(ctrl);
+			mdss_dsi_panel_cmds_send(ctrl, &ctrl->reg_55h_cmds, CMD_REQ_COMMIT);
 			mdss_dsi_panel_cmds_send(ctrl, &ctrl->aod_cmds[AOD_PANEL_CMD_U2_TO_U3], CMD_REQ_COMMIT);
 			goto notify;
 		case ON_AND_AOD:
@@ -388,6 +407,7 @@ int mdss_dsi_panel_on(struct mdss_panel_data *pdata)
 			lcd_watch_restore_reg_after_panel_reset();
 			if (ctrl->display_on_and_aod_comds.cmd_cnt)
 				mdss_dsi_panel_cmds_send(ctrl, &ctrl->display_on_and_aod_comds, CMD_REQ_COMMIT);
+			lge_set_sre_cmds(ctrl);
 			lge_set_image_quality_cmds(ctrl);
 
 			if (pinfo->compression_mode == COMPRESSION_DSC)
@@ -407,6 +427,7 @@ int mdss_dsi_panel_on(struct mdss_panel_data *pdata)
 #endif
 	if (ctrl->on_cmds.cmd_cnt)
 		mdss_dsi_panel_cmds_send(ctrl, &ctrl->on_cmds, CMD_REQ_COMMIT);
+	lge_set_sre_cmds(ctrl);
 	lge_set_image_quality_cmds(ctrl);
 
 	if (pinfo->compression_mode == COMPRESSION_DSC)

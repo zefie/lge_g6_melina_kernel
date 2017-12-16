@@ -622,6 +622,11 @@ static int stub_post_reset(struct usb_interface *interface)
 	LG_PRINT(DBG_LEVEL_MEDIUM,DATA_TRANS_MAIN,"---> %s",__func__);
 
 	busid_priv = get_busid_priv(udev_busid);
+	if(!busid_priv)
+	{
+		return 0;
+	}
+	
 	sdev = busid_priv->sdev;
 	/* 3. free used data */
 	//stub_device_cleanup_urbs(sdev);//sandeep

@@ -1,18 +1,18 @@
 /*
- * Texas Instruments TUSB422 Power Delivery
+ * TUSB422 Power Delivery
  *
  * Author: Brian Quach <brian.quach@ti.com>
  *
- * Copyright: (C) 2016 Texas Instruments, Inc.
+ * Copyright (C) 2016 Texas Instruments Incorporated - http://www.ti.com/
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation.
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation version 2.
  *
- * This program is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * General Public License for more details.
+ * This program is distributed "as is" WITHOUT ANY WARRANTY of any
+ * kind, whether express or implied; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  */
 
 #include "usb_pd_pal.h"
@@ -55,7 +55,11 @@ void usb_pd_pal_sink_vbus(unsigned int port, bool usb_pd, uint16_t mv, uint16_t 
 {
 	struct pd_dpm_vbus_state vbus_state;
 
+#ifdef CONFIG_LGE_USB_TYPE_C
+	DEBUG("%s: %u mV, %u mA %s\n", __func__, mv, ma, (usb_pd) ? "USB_PD" : "TYPE-C");
+#else
 	PRINT("%s: %u mV, %u mA %s\n", __func__, mv, ma, (usb_pd) ? "USB_PD" : "TYPE-C");
+#endif
 
 	vbus_state.vbus_type = (usb_pd) ? TCP_VBUS_CTRL_PD_DETECT : 0;
 
@@ -145,6 +149,7 @@ void usb_pd_pal_notify_connect_state(unsigned int port, tcpc_state_t state, bool
 			pd_dpm_handle_pe_event(PD_DPM_PE_EVT_TYPEC_STATE, (void*)&tc_state);
 			break;
 
+#ifdef CONFIG_LGE_USB_MOISTURE_DETECT
 		case TCPC_STATE_CC_FAULT_OV:
 		case TCPC_STATE_CC_FAULT_SWING:
 		case TCPC_STATE_CC_FAULT_TEST:
@@ -152,6 +157,7 @@ void usb_pd_pal_notify_connect_state(unsigned int port, tcpc_state_t state, bool
 			tc_state.new_state = PD_DPM_TYPEC_CC_FAULT;
 			pd_dpm_handle_pe_event(PD_DPM_PE_EVT_TYPEC_STATE, (void*)&tc_state);
 			break;
+#endif
 
 		default:
 			break;

@@ -151,6 +151,55 @@ int msm_sensor_power_down(struct msm_sensor_ctrl_t *s_ctrl)
 		sensor_i2c_client);
 }
 
+/*LGE_CHANGE_S, LG_AF, 2017, By AF Member*/
+ int msm_sensor_get_temperature(struct msm_sensor_ctrl_t *s_ctrl, struct sensorb_cfg_data32 *cdata)
+{
+	int rc = 0;
+	uint16_t sensor_temperature = 0;
+	struct msm_camera_i2c_client *sensor_i2c_client;
+	struct msm_camera_slave_info *slave_info;
+	const char *sensor_name;
+
+	if (!s_ctrl) {
+		pr_err("%s:%d failed: %p\n",
+			__func__, __LINE__, s_ctrl);
+		return -EINVAL;
+	}
+	sensor_i2c_client = s_ctrl->sensor_i2c_client;
+	slave_info = s_ctrl->sensordata->slave_info;
+	sensor_name = s_ctrl->sensordata->sensor_name;
+
+	if (!sensor_i2c_client || !slave_info || !sensor_name) {
+		pr_err("%s:%d failed: %p %p %p\n",
+			__func__, __LINE__, sensor_i2c_client, slave_info,
+			sensor_name);
+		return -EINVAL;
+	}
+
+	rc = sensor_i2c_client->i2c_func_tbl->i2c_write(
+		sensor_i2c_client, 0x0138, 0x01, MSM_CAMERA_I2C_BYTE_DATA);
+	if (rc < 0) {
+		pr_err("%s: %s: read id failed\n", __func__, sensor_name);
+		return rc;
+	}
+
+	rc = sensor_i2c_client->i2c_func_tbl->i2c_read(
+		sensor_i2c_client, 0x013A, &sensor_temperature, MSM_CAMERA_I2C_BYTE_DATA);
+	if (rc < 0) {
+		pr_err("%s: %s: get sensor temp failed\n", __func__, sensor_name);
+		return rc;
+	}
+
+	if (copy_to_user((void *)compat_ptr((cdata->cfg.setting)), &sensor_temperature,
+		sizeof(uint16_t))) {
+		pr_err("%s:%d failed\n", __func__, __LINE__);
+		rc = -EFAULT;
+	}
+
+	return rc;
+}
+/*LGE_CHANGE_E, LG_AF, 2017, By AF Member*/
+
 int msm_sensor_power_up(struct msm_sensor_ctrl_t *s_ctrl)
 {
 	int rc;
@@ -926,6 +975,12 @@ static int msm_sensor_config32(struct msm_sensor_ctrl_t *s_ctrl,
 	}
 	break;
 /* LGE_CHANGE_E, LGE Preview tunning for lowlight, dongjin.ha */
+	/*LGE_CHANGE_S, LG_AF, 2017, By AF Member*/
+	case CFG_GET_SENSER_TEMPERATURE: {
+		msm_sensor_get_temperature(s_ctrl, cdata);
+	}
+	break;
+	/*LGE_CHANGE_E, LG_AF, 2017, By AF Member*/
 
 	default:
 		rc = -EFAULT;

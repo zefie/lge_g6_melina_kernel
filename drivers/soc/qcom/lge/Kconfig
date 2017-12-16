@@ -293,6 +293,10 @@ config MACH_MSM8996_LUCYE
 	depends on ARCH_MSM8996
 	select MACH_LGE
 	select LGE_DDR_SECTION_SIZE_CHANGE
+	select LGE_MSM8996_ISB_WA
+	select LGE_MSM8996_NOP_WA
+	select LGE_MSM8996_FLUSH_WA
+	select LGE_DM_VERITY_RECOVERY
 	help
 	  Support for the Qualcomm MSM8996 LUCYE device.
 
@@ -411,6 +415,30 @@ config LGE_HANDLE_PANIC
 	help
 	  LGE Crash Handler
 
+config LGE_MSM8996_ISB_WA
+	bool "Support ISB workaround for prevent MSM8996 timing issue"
+	default n
+	depends on MACH_MSM8996_LUCYE
+	help
+		MSM8996 has timing issue sometimes.
+		This feature prevents timing issue as inserting isb().
+
+config LGE_MSM8996_NOP_WA
+	bool "Support NOP workaround for prevent MSM8996 timing issue"
+	default n
+	depends on MACH_MSM8996_LUCYE
+	help
+		MSM8996 has timing issue sometimes.
+		This feature prevents timing issue as inserting nop().
+
+config LGE_MSM8996_FLUSH_WA
+	bool "Support flush workaround for prevent MSM8996 timing issue"
+	default n
+	depends on MACH_MSM8996_LUCYE
+	help
+		MSM8996 has timing issue sometimes.
+		This feature prevents timing issue as inserting flush.
+
 config LGE_BOOT_LOCKUP_DETECT
 	bool "Support to detect lockup during powering on"
 	default n
@@ -524,13 +552,6 @@ config LGE_ACC_NT
 	help
 	  Say Y here to enable pseudo mode setting
 
-config LGE_PAY_MME
-    tristate "Support MME driver with QSEE"
-    depends on MACH_LGE
-    default n
-    help
-      Say Y here to enable Mobile Magnetic Emualtor driver for LG pay
-
 config PRE_SELF_DIAGNOSIS
 	tristate "Support LGE self diagnosis for factory"
 	default n
@@ -552,6 +573,14 @@ config LGE_QSDL_SUPPORT
 	help
 	  QSDL is a feature which notify infomation for quality statistics
 	  data logging of device.
+
+config LGE_DM_VERITY_RECOVERY
+	tristate "Support dm verity corrupt recovery"
+	default n
+	depends on MACH_LGE
+	help
+	  Sometimes, dm-bufio has invalid data. If data is corrupted,
+	  try to recover data.
 
 endmenu
 

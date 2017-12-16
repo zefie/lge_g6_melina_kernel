@@ -749,13 +749,15 @@ static ssize_t sre_set(struct device *dev,
 		pr_err("%s: Invalid input data\n", __func__);
 		return -EINVAL;
 	}
-	if (pdata_base->panel_info.panel_power_state == 0) {
-		pr_err("%s: Panel off state. Ignore sre_set cmd\n", __func__);
-		return -EINVAL;
-	}
 	ctrl =  container_of(pdata_base, struct mdss_dsi_ctrl_pdata,
 			panel_data);
 	sscanf(buf, "%d", &input);
+
+	if (pdata_base->panel_info.panel_power_state == 0) {
+		ctrl->sre_status = input;
+		pr_err("%s: Panel off state. Ignore sre_set cmd\n", __func__);
+		return -EINVAL;
+	}
 
 	if(ctrl->hdr_status > 0 || ctrl->dolby_status > 0) {
 		pr_info("%s : HDR or Dolby on, so disable SRE \n", __func__);

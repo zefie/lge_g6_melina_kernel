@@ -2838,8 +2838,10 @@ static void __ref do_core_control(long temp)
 			if (cpu_online(i)) {
 				cpu_dev = get_cpu_device(i);
 #ifdef CONFIG_LGE_PM
-				if (!cpu_dev)
+				if (!cpu_dev) {
+					unlock_device_hotplug();
 					continue;
+				}
 #endif
 				trace_thermal_pre_core_offline(i);
 				ret = device_offline(cpu_dev);
@@ -2879,8 +2881,10 @@ static void __ref do_core_control(long temp)
 			}
 			cpu_dev = get_cpu_device(i);
 #ifdef CONFIG_LGE_PM
-			if (!cpu_dev)
+			if (!cpu_dev) {
+				unlock_device_hotplug();
 				continue;
+			}
 #endif
 			trace_thermal_pre_core_online(i);
 			ret = device_online(cpu_dev);

@@ -87,6 +87,22 @@ void show_pte(struct mm_struct *mm, unsigned long addr)
 /*
  * The kernel tried to access some page that wasn't present.
  */
+void freeze_l1_dcache(void)
+{
+	u32 val;
+	asm volatile(
+	" isb\n"
+	" mrs %0, S3_2_C15_C15_0"
+	:"=r"(val));
+
+	val |= (0x3 << 11);
+
+	asm volatile(
+	" msr S3_2_C15_C15_0, %0\n"
+	" isb\n"
+	::"r"(val));
+
+}
 static void __do_kernel_fault(struct mm_struct *mm, unsigned long addr,
 			      unsigned int esr, struct pt_regs *regs)
 {
@@ -96,6 +112,7 @@ static void __do_kernel_fault(struct mm_struct *mm, unsigned long addr,
 	if (fixup_exception(regs))
 		return;
 
+	freeze_l1_dcache();
 	/*
 	 * No handler, we'll have to terminate things with extreme prejudice.
 	 */

@@ -759,7 +759,11 @@ static int set_config(struct usb_composite_dev *cdev,
 	struct usb_configuration *c = NULL;
 	int			result = -EINVAL;
 #ifdef CONFIG_LGE_USB_TYPE_C
+#ifdef CONFIG_LGE_USB_BC_12_VZW
+	unsigned		power = gadget_is_otg(gadget) ? 8 : 100;
+#else
 	unsigned		power = gadget_is_otg(gadget) ? 8 : 500;
+#endif
 #else
 	unsigned		power = gadget_is_otg(gadget) ? 8 : 100;
 #endif

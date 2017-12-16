@@ -26,7 +26,7 @@
  *
  * <<Broadcom-WL-IPTag/Open:>>
  *
- * $Id: bcmevent.h 674470 2016-12-08 21:37:19Z $
+ * $Id: bcmevent.h 682507 2017-02-02 06:22:01Z $
  *
  */
 
@@ -39,6 +39,7 @@
 #define _BCMEVENT_H_
 
 #include <typedefs.h>
+#include <bcmwifi_channels.h>
 /* #include <ethernet.h> -- TODO: req., excluded to overwhelming coupling (break up ethernet.h) */
 #include <proto/bcmeth.h>
 #if defined(HEALTH_CHECK) || defined(DNGL_EVENT_SUPPORT)
@@ -279,9 +280,13 @@ typedef union bcm_event_msg_u {
 											* tx/rxchain
 											*/
 #define WLC_E_FBT			166	/* FBT event */
-#define WLC_E_LAST			167	/* highest val + 1 for range checking */
-#if (WLC_E_LAST > 167)
-#error "WLC_E_LAST: Invalid value for last event; must be <= 166."
+#define WLC_E_PFN_SCAN_BACKOFF	167	/* PFN SCAN Backoff event */
+#define WLC_E_PFN_BSSID_SCAN_BACKOFF	168	/* PFN BSSID SCAN BAckoff event */
+#define WLC_E_AGGR_EVENT		169	/* Aggregated event */
+#define WLC_E_AP_CHAN_CHANGE		170	/* AP channel change event propage to User */
+#define WLC_E_LAST			171	/* highest val + 1 for range checking */
+#if (WLC_E_LAST > 171)
+#error "WLC_E_LAST: Invalid value for last event; must be <= 171."
 #endif /* WLC_E_LAST */
 
 /* define an API for getting the string name of an event */
@@ -768,6 +773,26 @@ typedef struct wl_event_radar_detect_data {
 	radar_detected_event_info_t radar_info[2];
 } wl_event_radar_detect_data_t;
 
+typedef enum {
+	WL_CHAN_REASON_CSA = 0,
+	WL_CHAN_REASON_DFS_AP_MOVE_START = 1,
+	WL_CHAN_REASON_DFS_AP_MOVE_RADAR_FOUND = 2,
+	WL_CHAN_REASON_DFS_AP_MOVE_ABORTED = 3,
+	WL_CHAN_REASON_DFS_AP_MOVE_SUCCESS = 4,
+	WL_CHAN_REASON_DFS_AP_MOVE_STUNT = 5
+} wl_chan_change_reason_t;
+
+typedef struct wl_event_change_chan {
+	uint16 version;
+	uint16 length;	/* excluding pad field bytes */
+	wl_chan_change_reason_t reason;	/* CSA or DFS_AP_MOVE */
+	chanspec_t target_chanspec;
+	uint16 pad;	/* 4 byte alignment */
+} wl_event_change_chan_t;
+
+
+#define WL_CHAN_CHANGE_EVENT_VER_1		1 /* channel change event version */
+#define WL_CHAN_CHANGE_EVENT_LEN_VER_1		10
 
 #define WL_EVENT_MODESW_VER_1			1
 #define WL_EVENT_MODESW_VER_CURRENT		WL_EVENT_MODESW_VER_1
@@ -838,6 +863,7 @@ typedef struct {
 #define WL_EVENT_FBT_VER_1		1
 
 #define WL_E_FBT_TYPE_FBT_OTD_AUTH	1
+#define WL_E_FBT_TYPE_FBT_OTA_AUTH	2
 
 /* event structure for WLC_E_FBT */
 typedef struct {

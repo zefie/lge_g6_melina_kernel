@@ -8,6 +8,7 @@ static enum power_supply_property chg_properties[] = {
 	POWER_SUPPLY_PROP_VOLTAGE_MAX,
 	POWER_SUPPLY_PROP_TYPE,
 	POWER_SUPPLY_PROP_CURRENT_CAPABILITY,
+	POWER_SUPPLY_PROP_INPUT_SUSPEND,
 };
 
 static const char *chg_to_string(enum power_supply_type type)
@@ -128,7 +129,12 @@ static int chg_get_property(struct power_supply *psy,
 		      dev->typec_mode);
 		val->intval = dev->typec_mode;
 		break;
-
+#if defined(CONFIG_LGE_USB_MOISTURE_DETECT) && defined(CONFIG_LGE_PM_WATERPROOF_PROTECTION)
+	case POWER_SUPPLY_PROP_INPUT_SUSPEND:
+		val->intval = (dev->mode == DUAL_ROLE_PROP_MODE_FAULT) ? 1 : 0;
+		DEBUG("%s: input_suspend(%d)\n", __func__, val->intval);
+		break;
+#endif
 	default:
 		return -EINVAL;
 	}
@@ -159,6 +165,13 @@ static int chg_set_property(struct power_supply *psy,
 		dev->is_present = val->intval;
 		DEBUG("%s: is_present(%d)\n", __func__, dev->is_present);
 
+#ifdef CONFIG_LGE_USB_MOISTURE_DETECT
+		if (dev->mode == DUAL_ROLE_PROP_MODE_FAULT) {
+			tcpm_cc_swing_timer(0, dev->is_present ? false : true);
+			break;
+		}
+#endif
+
 		if (dev->mode == DUAL_ROLE_PROP_MODE_NONE) {
 			if (val->intval) {
 				PRINT("power on by charger\n");
@@ -170,6 +183,7 @@ static int chg_set_property(struct power_supply *psy,
 				}
 			}
 		}
+
 		break;
 
 	default:

@@ -1,17 +1,39 @@
 /*
- * Texas Instruments TUSB422 Power Delivery
+ * TUSB422 Power Delivery
  *
  * Author: Brian Quach <brian.quach@ti.com>
- * Copyright: (C) 2016 Texas Instruments, Inc.
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation.
+ * Copyright (C) 2016 Texas Instruments Incorporated - http://www.ti.com/
  *
- * This program is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * General Public License for more details.
+ *
+ *  Redistribution and use in source and binary forms, with or without
+ *  modification, are permitted provided that the following conditions
+ *  are met:
+ *
+ *    Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ *
+ *    Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the
+ *    distribution.
+ *
+ *    Neither the name of Texas Instruments Incorporated nor the names of
+ *    its contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ *  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ *  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ *  A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ *  OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ *  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ *  LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ *  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ *  THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ *  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ *  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
  */
 
 #include "tcpm.h"
@@ -30,9 +52,7 @@
 #include "usb_pd_policy_engine.h"
 
 #if defined(CONFIG_LGE_USB_TYPE_C) && defined(CONFIG_DUAL_ROLE_USB_INTF)
-	#include "tusb422_linux_dual_role.h"
-	#include <linux/device.h>
-	#include <linux/usb/class-dual-role.h>
+#include "tusb422_linux_dual_role.h"
 #endif
 
 //
@@ -43,7 +63,7 @@
 #define T_CC_DEBOUNCE_MS     100
 #define T_PD_DEBOUNCE_MS     10
 #else
-#define T_CC_DEBOUNCE_MS     150    /* 100 - 200 ms */
+#define T_CC_DEBOUNCE_MS     110    /* 100 - 200 ms */
 #define T_PD_DEBOUNCE_MS     15     /*  10 - 20 ms */
 #endif
 #define T_DRP_TRY_MS         125    /*  75 - 150 ms */
@@ -61,8 +81,7 @@
 #define T_CC_OV_CHECK_MS		500
 
 #define T_CC_SWING_TIMEOUT_MS		T_CC_DEBOUNCE_MS
-#define T_CC_SWING_CHECK_MS		3000
-#define CC_SWING_THRESHOLD		(T_CC_DEBOUNCE_MS / T_PD_DEBOUNCE_MS)
+#define CC_SWING_THRESHOLD		((T_CC_DEBOUNCE_MS / T_PD_DEBOUNCE_MS) * 2)
 #endif
 
 #define TCPC_POLLING_DELAY()  tcpm_msleep(1)  /* Delay to wait for next CC and voltage polling period */
@@ -94,7 +113,7 @@ const char * const tcstate2string[TCPC_NUM_STATES] =
 	"DEBUG_ACC_SNK",
 	"AUDIO_ACC",
 	"ERROR_RECOVERY",
-#ifdef CONFIG_LGE_USB_TYPE_C
+#ifdef CONFIG_LGE_USB_MOISTURE_DETECT
 	"CC_FAULT_OV",
 	"CC_FAULT_SWING",
 	"CC_FAULT_TEST",
@@ -126,6 +145,30 @@ static void tcpm_notify_conn_state(unsigned int port, tcpc_state_t state)
 	{
 #ifdef CONFIG_TUSB422_PAL
 		usb_pd_pal_notify_connect_state(port, state, tcpc_dev[port].plug_polarity);
+#else
+		switch (state)
+		{
+			case TCPC_STATE_UNATTACHED_SRC:
+				tcpm_mux_control(port, PD_DATA_ROLE_DFP, MUX_DISABLE, tcpc_dev[port].plug_polarity);
+				break;
+
+			case TCPC_STATE_UNATTACHED_SNK:
+				tcpm_mux_control(port, PD_DATA_ROLE_UFP, MUX_DISABLE, tcpc_dev[port].plug_polarity);
+				break;
+
+			case TCPC_STATE_ATTACHED_SNK:
+				tcpm_mux_control(port, PD_DATA_ROLE_UFP, MUX_USB, tcpc_dev[port].plug_polarity);
+				break;
+
+			case TCPC_STATE_UNORIENTED_DEBUG_ACC_SRC:
+			case TCPC_STATE_ORIENTED_DEBUG_ACC_SRC:
+			case TCPC_STATE_DEBUG_ACC_SNK:
+			case TCPC_STATE_AUDIO_ACC:
+				break;
+
+			default:
+				break;
+		}
 #endif
 	}
 
@@ -179,24 +222,27 @@ void tcpm_src_vbus_disable(unsigned int port)
 {
 	DEBUG("SRC VBUS off.\n");
 	tcpc_write8(port, TCPC_REG_COMMAND, TCPC_CMD_DISABLE_SRC_VBUS);
-	tcpm_hal_vbus_disable(port, VBUS_SRC_HI_VOLT);
-	tcpm_hal_vbus_disable(port, VBUS_SRC_5V);
+	tcpm_source_vbus_disable(port);
 	return;
 }
 
-void tcpm_src_vbus_5v_enable(unsigned int port)
-{
-	DEBUG("-> SRC VBUS 5V.\n");
-	tcpc_write8(port, TCPC_REG_COMMAND, TCPC_CMD_SRC_VBUS_DEFAULT);
-	tcpm_hal_vbus_enable(port, VBUS_SRC_5V);
-	return;
-}
 
-void tcpm_src_vbus_hi_volt_enable(unsigned int port)
+void tcpm_src_vbus_enable(unsigned int port, uint16_t mv)
 {
-	DEBUG("-> SRC VBUS Hi.\n");
-	tcpc_write8(port, TCPC_REG_COMMAND, TCPC_CMD_SRC_VBUS_HI_VOLTAGE);
-	tcpm_hal_vbus_enable(port, VBUS_SRC_HI_VOLT);
+	DEBUG("-> SRC VBUS %umV.\n", mv);
+
+	if (mv == 5000)
+	{
+		tcpc_write8(port, TCPC_REG_COMMAND, TCPC_CMD_SRC_VBUS_DEFAULT);
+	}
+	else
+	{
+		// << Issue vendor-defined commands to set the target voltage level here >>
+
+		tcpc_write8(port, TCPC_REG_COMMAND, TCPC_CMD_SRC_VBUS_HI_VOLTAGE);
+	}
+
+	tcpm_source_vbus(port, mv);
 	return;
 }
 
@@ -204,7 +250,7 @@ void tcpm_snk_vbus_enable(unsigned int port)
 {
 	DEBUG("-> SNK VBUS.\n");
 	tcpc_write8(port, TCPC_REG_COMMAND, TCPC_CMD_SNK_VBUS);
-	tcpm_hal_vbus_enable(port, VBUS_SNK);
+	tcpm_sink_vbus(port, false, 5000, GET_SRC_CURRENT_MA(tcpc_dev[port].src_current_adv));
 	return;
 }
 
@@ -212,7 +258,7 @@ void tcpm_snk_vbus_disable(unsigned int port)
 {
 	DEBUG("SNK VBUS off.\n");
 	tcpc_write8(port, TCPC_REG_COMMAND, TCPC_CMD_DISABLE_SNK_VBUS);
-	tcpm_hal_vbus_disable(port, VBUS_SNK);
+	tcpm_sink_vbus_disable(port);
 	return;
 }
 
@@ -522,31 +568,88 @@ static void tcpm_set_state(tcpc_device_t *dev, tcpc_state_t new_state)
 	return;
 }
 
-#ifdef CONFIG_LGE_USB_TYPE_C
+#ifdef CONFIG_LGE_USB_MOISTURE_DETECT
+static void timeout_cc_swing(unsigned int port);
+
+static unsigned int cc_swing_get_timeout_ms(unsigned int port)
+{
+	tcpc_device_t *dev = tcpm_get_device(port);
+	unsigned int timeout_tbl[][2] = {
+		/* recheck_cnt upper, timeout_ms */
+		{1, 6 * 1000},			// 6s
+		{6, 60 * 1000},			// 60s
+		{12, 10 * 60 * 1000},		// 10m
+		{UINT_MAX, 30 * 60 * 1000},	// 30m
+	};
+	int i;
+
+	for (i = 0; i < (sizeof(timeout_tbl) / sizeof(*timeout_tbl)); i++) {
+		if (dev->cc_swing_recheck_cnt <= timeout_tbl[i][0])
+			return timeout_tbl[i][1];
+	}
+
+	return (30 * 60 * 1000);
+}
+
+static void cc_swing_timer_start(unsigned int port, unsigned int timeout_ms)
+{
+	tcpc_device_t *dev = tcpm_get_device(port);
+
+	PRINT("%s: %u ms\n", __func__, timeout_ms);
+
+	tusb422_lfo_timer_cancel(&dev->timer2);
+
+	dev->cc_swing_timeout = jiffies + msecs_to_jiffies(timeout_ms);
+	dev->cc_swing_recheck_timeout = CURRENT_TIME;
+	timespec_add_ns(&dev->cc_swing_recheck_timeout, ((u64)timeout_ms) * 1000000);
+	tusb422_lfo_timer_start(&dev->timer2,
+				timeout_ms > U16_MAX ? U16_MAX : (uint16_t)timeout_ms,
+				timeout_cc_swing);
+}
+
 static bool tcpm_is_cc_swing(unsigned int port)
 {
 	tcpc_device_t *dev = tcpm_get_device(port);
 	uint8_t cc_status;
 	unsigned int cc1, cc2;
 
+#ifdef CONFIG_LGE_USB_COMPLIANCE_TEST
+	tcpc_read8(port, TCPC_REG_CC_STATUS, &dev->cc_status);
+	return false;
+#endif
+
+	if (dev->moisture_detect_disable)
+	{
+		tcpc_read8(port, TCPC_REG_CC_STATUS, &dev->cc_status);
+		return false;
+	}
+
 	if (dev->state == TCPC_STATE_CC_FAULT_SWING && dev->cc_swing_cnt > CC_SWING_THRESHOLD)
 	{
 		DEBUG("%s: CC swing is already detected.\n", __func__);
+		cc_swing_timer_start(port, cc_swing_get_timeout_ms(port));
 		return true;
+	}
+
+	dev->last_cc_status = dev->cc_status;
+	tcpc_read8(port, TCPC_REG_CC_STATUS, &dev->cc_status);
+	DEBUG("%s CC status = 0x%x\n", __func__, dev->cc_status);
+
+	if (dev->state != TCPC_STATE_CC_FAULT_SWING &&
+	    dev->cc_status == dev->last_cc_status)
+	{
+		goto out;
 	}
 
 	if (dev->state == TCPC_STATE_ATTACHED_SNK)
 	{
-		tcpc_read8(port, TCPC_REG_CC_STATUS, &cc_status);
-		DEBUG("%s CC status = 0x%x\n", __func__, cc_status);
+		cc1 = TCPC_CC1_STATE(dev->cc_status);
+		cc2 = TCPC_CC2_STATE(dev->cc_status);
 
-		cc1 = TCPC_CC1_STATE(cc_status);
-		cc2 = TCPC_CC2_STATE(cc_status);
-
-		if ((cc_status & CC_STATUS_CONNECT_RESULT) &&
+		if ((dev->cc_status & CC_STATUS_CONNECT_RESULT) &&
 		    (cc1 != CC_SNK_STATE_OPEN || cc2 != CC_SNK_STATE_OPEN))
 		{
-			cc_status |= dev->cc_status;
+			cc_status = dev->last_cc_status | dev->cc_status;
 
 			cc1 = TCPC_CC1_STATE(cc_status);
 			cc2 = TCPC_CC2_STATE(cc_status);
@@ -555,10 +658,23 @@ static bool tcpm_is_cc_swing(unsigned int port)
 			    (cc1 != CC_SNK_STATE_OPEN && cc2 == CC_SNK_STATE_OPEN))
 			{
 				DEBUG("%s: ignore Rp advertisement.\n", __func__);
-				dev->cc_swing_cnt >>= 2;
-				dev->cc_swing_timeout = jiffies + msecs_to_jiffies(T_CC_SWING_TIMEOUT_MS);
-				return false;
+				dev->cc_swing_cnt >>= 1;
+				goto out;
 			}
+		}
+	}
+	else if ((dev->cc_status & CC_STATUS_CONNECT_RESULT) &&
+		 (dev->last_cc_status & CC_STATUS_CONNECT_RESULT))
+	{
+		cc_status = dev->last_cc_status | dev->cc_status;
+
+		cc1 = TCPC_CC1_STATE(cc_status);
+		cc2 = TCPC_CC2_STATE(cc_status);
+
+		if ((cc1 == CC_SNK_STATE_OPEN && cc2 != CC_SNK_STATE_OPEN) ||
+		    (cc1 != CC_SNK_STATE_OPEN && cc2 == CC_SNK_STATE_OPEN))
+		{
+			goto out;
 		}
 	}
 
@@ -572,26 +688,35 @@ static bool tcpm_is_cc_swing(unsigned int port)
 
 		if (dev->cc_swing_cnt > CC_SWING_THRESHOLD)
 		{
-			DEBUG("%s: CC swing is detected.\n", __func__);
-
 			// Mask cc status alert.
 			tcpc_modify16(port, TCPC_REG_ALERT_MASK, TCPC_ALERT_CC_STATUS, 0);
 
 			tcpc_write8(port, TCPC_REG_ROLE_CTRL, tcpc_reg_role_ctrl_set(false, dev->rp_val, CC_OPEN, CC_OPEN));
 
+			PRINT("%s: CC swing is detected.\n", __func__);
 			if (dev->state != TCPC_STATE_CC_FAULT_SWING)
 			{
 				tcpm_set_state(dev, TCPC_STATE_CC_FAULT_SWING);
 			}
+			else
+			{
+				cc_swing_timer_start(port, cc_swing_get_timeout_ms(port));
+			}
 			return true;
 		}
+	}
+	else if (time_after(jiffies, dev->cc_swing_timeout + msecs_to_jiffies(T_CC_SWING_TIMEOUT_MS)))
+	{
+		DEBUG("%s: reset cc_swing_cnt.\n", __func__);
+		dev->cc_swing_cnt = 0;
 	}
 	else
 	{
 		DEBUG("%s: decrease cc_swing_cnt. (%d)\n", __func__, dev->cc_swing_cnt);
-		dev->cc_swing_cnt >>= 2;
+		dev->cc_swing_cnt >>= 1;
 	}
 
+out:
 	dev->cc_swing_timeout = jiffies + msecs_to_jiffies(T_CC_SWING_TIMEOUT_MS);
 	return false;
 }
@@ -600,12 +725,27 @@ static void timeout_cc_swing(unsigned int port)
 {
 	tcpc_device_t *dev = tcpm_get_device(port);
 	unsigned int cc1, cc2;
+	struct timespec timeout_remain;
+	unsigned int timeout_remain_ms;
 
-	if (!tcpm_is_cc_swing(port))
+	timeout_remain = timespec_sub(dev->cc_swing_recheck_timeout, CURRENT_TIME);
+	DEBUG("%s: timeout_remain: tv_sec(%ld), tvnsec(%ld)\n", __func__, timeout_remain.tv_sec, timeout_remain.tv_nsec);
+	if (timespec_valid(&timeout_remain))
 	{
-		// Read CC status.
+		timeout_remain_ms = (timeout_remain.tv_sec * 1000) + (timeout_remain.tv_nsec / 1000000);
+		DEBUG("%s: timeout_remain_ms: (%u)\n", __func__, timeout_remain_ms);
+		if (timeout_remain_ms > T_CC_SWING_TIMEOUT_MS)
+		{
+			PRINT("%s: timeout remain: %u ms\n", __func__, timeout_remain_ms);
+			cc_swing_timer_start(port, timeout_remain_ms);
+			return;
+		}
+	}
+
+	if (dev->cc_swing_cnt == 0)
+	{
 		tcpc_read8(port, TCPC_REG_CC_STATUS, &dev->cc_status);
-		DEBUG("%s CC status = 0x%x\n", __func__, dev->cc_status);
+		PRINT("%s CC status = 0x%x\n", __func__, dev->cc_status);
 
 		cc1 = TCPC_CC1_STATE(dev->cc_status);
 		cc2 = TCPC_CC2_STATE(dev->cc_status);
@@ -625,7 +765,7 @@ static void timeout_cc_swing(unsigned int port)
 		}
 	}
 
-	DEBUG("%s: CC is not detached.\n", __func__);
+	PRINT("%s: CC is not detached. cc_swing_cnt(%d)\n", __func__, dev->cc_swing_cnt);
 
 	dev->cc_swing_cnt = 0;
 
@@ -647,8 +787,35 @@ static void timeout_cc_swing(unsigned int port)
 	// Look for connection.
 	tcpc_write8(port, TCPC_REG_COMMAND, TCPC_CMD_SRC_LOOK4CONNECTION);
 
-	dev->cc_swing_timeout = jiffies + msecs_to_jiffies(T_CC_SWING_CHECK_MS);
-	timer_start(&dev->timer, T_CC_SWING_CHECK_MS, timeout_cc_swing);
+	if (dev->cc_swing_recheck_cnt < UINT_MAX)
+		dev->cc_swing_recheck_cnt++;
+	PRINT("%s: CC swing recheck count: %u\n", __func__, dev->cc_swing_recheck_cnt);
+	cc_swing_timer_start(port, cc_swing_get_timeout_ms(port));
+}
+
+void tcpm_cc_swing_timer(unsigned int port, bool enable)
+{
+	tcpc_device_t *dev = tcpm_get_device(port);
+
+	if (dev->state != TCPC_STATE_CC_FAULT_SWING)
+		return;
+
+	tusb422_lfo_timer_cancel(&dev->timer2);
+
+	if (enable)
+	{
+		dev->cc_swing_cnt = CC_SWING_THRESHOLD;
+		dev->cc_swing_recheck_timeout = ((struct timespec){0, 0});
+		dev->cc_swing_recheck_cnt = 0;
+		cc_swing_timer_start(port, T_CC_SWING_TIMEOUT_MS);
+	}
+	else
+	{
+		// Mask cc status alert.
+		tcpc_modify16(port, TCPC_REG_ALERT_MASK, TCPC_ALERT_CC_STATUS, 0);
+
+		tcpc_write8(port, TCPC_REG_ROLE_CTRL, tcpc_reg_role_ctrl_set(false, dev->rp_val, CC_OPEN, CC_OPEN));
+	}
 }
 
 static void timeout_cc_ov(unsigned int port)
@@ -745,13 +912,7 @@ void tcpm_cc_fault_test(unsigned int port, bool enable)
 		}
 	}
 }
-
-bool tcpm_is_cc_fault(unsigned int port)
-{
-	tcpc_device_t *dev = &tcpc_dev[port];
-	return IS_STATE_CC_FAULT(dev->state);
-}
-#endif /* CONFIG_LGE_USB_TYPE_C */
+#endif /* CONFIG_LGE_USB_MOISTURE_DETECT */
 
 
 static void timeout_cc_debounce(unsigned int port)
@@ -759,14 +920,14 @@ static void timeout_cc_debounce(unsigned int port)
 	unsigned int cc1, cc2;
 	tcpc_device_t *dev = &tcpc_dev[port];
 
-#ifdef CONFIG_LGE_USB_TYPE_C
+#ifdef CONFIG_LGE_USB_MOISTURE_DETECT
 	tcpm_is_cc_swing(dev->port);
 	if (IS_STATE_CC_FAULT(dev->state))
 		return;
-#endif
-
+#else
 	// Read CC status.
 	tcpc_read8(port, TCPC_REG_CC_STATUS, &dev->cc_status);
+#endif
 	DEBUG("%s CC status = 0x%x\n", __func__, dev->cc_status);
 
 	cc1 = TCPC_CC1_STATE(dev->cc_status);
@@ -782,28 +943,32 @@ static void timeout_cc_debounce(unsigned int port)
 		else if ((cc1 == CC_SRC_STATE_RD) &&
 				 (cc2 == CC_SRC_STATE_RD))
 		{
+#if defined(CONFIG_LGE_USB_FACTORY) || defined(CONFIG_LGE_USB_DEBUGGER)
+			tcpm_set_state(dev, TCPC_STATE_UNATTACHED_SRC);
+#else
 			tcpm_set_state(dev, TCPC_STATE_UNORIENTED_DEBUG_ACC_SRC);
+#endif
 		}
 		else if ((cc1 == CC_SRC_STATE_RD) ||
 				 (cc2 == CC_SRC_STATE_RD))
 		{
-			if ((dev->flags & TC_FLAGS_TRY_SNK) &&
-				(dev->role == ROLE_DRP))
+			// Check if VBUS is below vSafe0V.
+			if (tcpm_get_vbus_voltage(port) < VSAFE0V_MAX)
 			{
-				tcpm_set_state(dev, TCPC_STATE_TRY_SNK);
-			}
-			else
-			{
-				// Check if VBUS is below vSafe0V.
-				if (tcpm_get_vbus_voltage(port) < VSAFE0V_MAX)
+				if ((dev->flags & TC_FLAGS_TRY_SNK) &&
+					(dev->role == ROLE_DRP))
 				{
-					tcpm_set_state(dev, TCPC_STATE_ATTACHED_SRC);
+					tcpm_set_state(dev, TCPC_STATE_TRY_SNK);
 				}
 				else
 				{
-					// Set low voltage alarm for vSafe0V to trigger transition to Attached.SRC.
-					tcpm_set_voltage_alarm_lo(port, VSAFE0V_MAX);
+					tcpm_set_state(dev, TCPC_STATE_ATTACHED_SRC);
 				}
+			}
+			else
+			{
+				// Set low voltage alarm for vSafe0V to trigger restart of CC debounce.
+				tcpm_set_voltage_alarm_lo(port, VSAFE0V_MAX);
 			}
 		}
 		else /* Invalid CC state */
@@ -860,6 +1025,14 @@ static void timeout_cc_debounce(unsigned int port)
 			if ((cc1 != CC_SNK_STATE_OPEN) &&
 				(cc2 != CC_SNK_STATE_OPEN))
 			{
+#ifdef CONFIG_LGE_USB_TYPE_C
+				if ((!dev->moisture_detect_disable) &&
+				    ((dev->cc_status != dev->last_cc_status) || (cc1 != cc2)))
+				{
+					tcpm_set_state(dev, TCPC_STATE_UNATTACHED_SNK);
+				}
+				else
+#endif
 				tcpm_set_state(dev, TCPC_STATE_DEBUG_ACC_SNK);
 			}
 			else if ((dev->flags & TC_FLAGS_TRY_SRC) &&
@@ -872,6 +1045,13 @@ static void timeout_cc_debounce(unsigned int port)
 				tcpm_set_state(dev, TCPC_STATE_ATTACHED_SNK);
 			}
 		}
+#ifdef CONFIG_LGE_USB_TYPE_C
+		else
+		{
+			tcpm_enable_voltage_monitoring(dev->port);
+			tcpm_set_voltage_alarm_hi(dev->port, VSAFE0V_MAX);
+		}
+#endif
 	}
 	else if (dev->state == TCPC_STATE_TRY_WAIT_SNK)
 	{
@@ -881,6 +1061,13 @@ static void timeout_cc_debounce(unsigned int port)
 		{
 			tcpm_set_state(dev, TCPC_STATE_ATTACHED_SNK);
 		}
+#ifdef CONFIG_LGE_USB_TYPE_C
+		else
+		{
+			tcpm_enable_voltage_monitoring(dev->port);
+			tcpm_set_voltage_alarm_hi(dev->port, VSAFE0V_MAX);
+		}
+#endif
 	}
 	else if (dev->state == TCPC_STATE_AUDIO_ACC)
 	{
@@ -975,14 +1162,14 @@ static void timeout_pd_debounce(unsigned int port)
 	unsigned int cc1, cc2;
 	tcpc_device_t *dev = &tcpc_dev[port];
 
-#ifdef CONFIG_LGE_USB_TYPE_C
+#ifdef CONFIG_LGE_USB_MOISTURE_DETECT
 	tcpm_is_cc_swing(dev->port);
 	if (IS_STATE_CC_FAULT(dev->state))
 		return;
-#endif
-
+#else
 	// Read CC status.
 	tcpc_read8(port, TCPC_REG_CC_STATUS, &dev->cc_status);
+#endif
 	DEBUG("%s CC status = 0x%x\n", __func__, dev->cc_status);
 
 	cc1 = TCPC_CC1_STATE(dev->cc_status);
@@ -1001,6 +1188,13 @@ static void timeout_pd_debounce(unsigned int port)
 			{
 				tcpm_set_state(dev, TCPC_STATE_ATTACHED_SNK);
 			}
+#ifdef CONFIG_LGE_USB_TYPE_C
+			else
+			{
+				tcpm_enable_voltage_monitoring(dev->port);
+				tcpm_set_voltage_alarm_hi(dev->port, VSAFE0V_MAX);
+			}
+#endif
 		}
 	}
 	else if (dev->state == TCPC_STATE_TRY_SRC)
@@ -1199,8 +1393,13 @@ void tcpm_set_autodischarge_disconnect(unsigned int port, bool enable)
 	{
 		tcpc_modify8(port, TCPC_REG_POWER_CTRL, TCPC_PWR_CTRL_AUTO_DISCHARGE_DISCONNECT, 0);
 
+#ifdef CONFIG_LGE_USB_TYPE_C
+		// Enable sink disconnect threshold.
+		tcpm_set_sink_disconnect_threshold(port, VDISCON_MAX);
+#else
 		// Disable sink disconnect threshold.
 		tcpm_set_sink_disconnect_threshold(port, 0);
+#endif
 
 		// Disable low voltage alarm.
 		tcpm_set_voltage_alarm_lo(port, 0);
@@ -1218,6 +1417,26 @@ void tcpm_set_sink_disconnect_threshold(unsigned int port, uint16_t threshold_25
 	DEBUG("%s: %dmV\n", __func__, threshold_25mv * 25);
 #endif
 	tcpc_write16(port, TCPC_REG_VBUS_SINK_DISCONNECT_THRESH, threshold_25mv);
+	return;
+}
+
+void tcpm_snk_swap_standby(unsigned int port)
+{
+	/*
+	 * TCPC spec section 4.4.5.4.4 Discharge by the Sink TCPC during a Connection:
+	 * While there is a valid Source-to-Sink connection, the TCPC acting as a Sink shall reduce its current to less than
+	 * iSnkSwapStdby (2.5mA) within tSnkSwapStby (15ms) when handling a Power Role Swap or Hard Reset.
+	 * The TCPM shall write POWER_CONTROL.AutoDischargeDisconnect to 0 or VBUS_SINK_DISCONNECT_THRESHOLD to 0 and
+	 * COMMAND.DisableSinkVbus to disable the Sink disconnect detection and remove the Sink connection upon reception
+	 * of or prior to transmitting a Power Role Swap or Hard Reset.
+	 */
+
+	// Disable AutoDischargeDisconnect per TCPC spec.
+	tcpm_set_autodischarge_disconnect(port, false);
+
+	// Disable sink VBUS per TCPC spec.
+	tcpm_snk_vbus_disable(port);
+
 	return;
 }
 
@@ -1246,12 +1465,13 @@ void tcpm_read_message(unsigned int port, uint8_t *buf, uint8_t len)
 
 	if (tcpc_dev[port].silicon_revision == 0)
 	{
-		/****** TUSB422 PG1.0 workaround for zero byte cnt issue (CDDS #48) ******/
+		/*** TUSB422 PG1.0 workaround for zero byte cnt issue (CDDS #48) ***/
 		if (byte_cnt == 0)
 		{
 			CRIT("\n## ERROR: tcpm_read_msg: zero byte cnt!\n\n");
 		}
 
+		// Use byte count from the packet header if there is a mismatch.
 		if (byte_cnt != (len + 3))
 		{
 			CRIT("RxByteCnt = %u invalid, using length %u from header!\n", byte_cnt, len);
@@ -1387,6 +1607,24 @@ void tcpm_execute_error_recovery(unsigned int port)
 	return;
 }
 
+#ifdef CONFIG_LGE_USB_TYPE_C
+void tcpm_execute_shutdown(unsigned int port)
+{
+	tcpc_device_t *dev = &tcpc_dev[port];
+
+	PRINT("Shutdown!\n");
+
+	dev->role = ROLE_SNK;
+	tcpm_set_state(dev, TCPC_STATE_UNATTACHED_SNK);
+	tcpm_connection_state_machine(port);
+
+	tusb422_sw_reset(port);
+
+	tcpc_write8(port, TCPC_REG_ROLE_CTRL,
+		    tcpc_reg_role_ctrl_set(false, dev->rp_val, CC_RD, CC_RD));
+	return;
+}
+#endif
 
 static void timeout_try_role_swap(unsigned int port)
 {
@@ -1578,6 +1816,11 @@ void tcpm_connection_state_machine(unsigned int port)
 			}
 			else
 			{
+#ifdef CONFIG_LGE_USB_TYPE_C
+				/* Workaround for OQC OTG fail */
+				tusb422_sw_reset(port);
+				tusb422_init(port);
+#endif
 				if (dev->silicon_revision <= 2)
 				{
 					/*** TUSB422 PG1.1/1.2 workaround for disconnect does not disable PD (CDDS #60) ***/
@@ -1608,7 +1851,6 @@ void tcpm_connection_state_machine(unsigned int port)
 #ifdef CONFIG_LGE_USB_TYPE_C
 			tusb422_set_vconn_enable(0);
 #endif
-
 
 			// Configure role control.
 			if (dev->role == ROLE_DRP)
@@ -1680,11 +1922,27 @@ void tcpm_connection_state_machine(unsigned int port)
 		case TCPC_STATE_DEBUG_ACC_SNK:
 			tcpm_handle_attached_state(port);
 
+#ifdef CONFIG_LGE_USB_TYPE_C
+			if (!(dev->cc_status & CC_STATUS_CONNECT_RESULT))
+			{
+				dev->plug_polarity = (cc1 > cc2) ? PLUG_UNFLIPPED : PLUG_FLIPPED;
+
+				dev->src_current_adv = (tcpc_cc_snk_state_t)CC_SNK_STATE_OPEN;
+
+				PRINT("Rd with VBUS. SRC current is not set.\n");
+			}
+			else
+#endif
 			if (cc1 > cc2)
 			{
 				// CC1 used for USB-PD.
 				dev->plug_polarity = PLUG_UNFLIPPED;
 
+#ifdef CONFIG_LGE_USB_TYPE_C
+				if (cc1 == CC_SNK_STATE_OPEN)
+					dev->src_current_adv = (tcpc_cc_snk_state_t)CC_SNK_STATE_DEFAULT;
+				else
+#endif
 				dev->src_current_adv = (tcpc_cc_snk_state_t)cc1;
 
 				DEBUG("SRC current: %s\n",
@@ -1697,6 +1955,11 @@ void tcpm_connection_state_machine(unsigned int port)
 				// CC2 used for USB-PD.
 				dev->plug_polarity = PLUG_FLIPPED;
 
+#ifdef CONFIG_LGE_USB_TYPE_C
+				if (cc2 == CC_SNK_STATE_OPEN)
+					dev->src_current_adv = (tcpc_cc_snk_state_t)CC_SNK_STATE_DEFAULT;
+				else
+#endif
 				dev->src_current_adv = (tcpc_cc_snk_state_t)cc2;
 
 				DEBUG("SRC current: %s\n",
@@ -1745,8 +2008,8 @@ void tcpm_connection_state_machine(unsigned int port)
 			// AutoDischargeDisconnect=1, VCONN=off, Enable VBUS voltage monitor & voltage alarms.
 			tcpc_write8(port, TCPC_REG_POWER_CTRL, TCPC_PWR_CTRL_AUTO_DISCHARGE_DISCONNECT);
 
-			// Enable VBUS source.
-			tcpm_src_vbus_5v_enable(port);
+			// Enable VBUS source vSafe5V.
+			tcpm_src_vbus_enable(port, 5000);
 
 			// Notify upper layers.
 			tcpm_notify_conn_state(port, dev->state);
@@ -1805,11 +2068,13 @@ void tcpm_connection_state_machine(unsigned int port)
 				}
 
 #ifdef CONFIG_TUSB422_PAL
-				usb_pd_pal_notify_connect_state(port, dev->state, tcpc_dev[port].plug_polarity);
+				usb_pd_pal_notify_connect_state(port, dev->state, dev->plug_polarity);
+#else
+				tcpm_mux_control(port, PD_DATA_ROLE_DFP, MUX_USB, dev->plug_polarity);
 #endif
 
-				// Enable VBUS source.
-				tcpm_src_vbus_5v_enable(port);
+				// Enable VBUS source vSafe5V.
+				tcpm_src_vbus_enable(port, 5000);
 
 				// Notify upper layers after vSafe5V is reached.
 				dev->src_attach_notify = true;
@@ -1854,7 +2119,7 @@ void tcpm_connection_state_machine(unsigned int port)
 			// Do nothing. Everything is handled in tcpm_execute_error_recovery() which is called directly.
 			break;
 
-#ifdef CONFIG_LGE_USB_TYPE_C
+#ifdef CONFIG_LGE_USB_MOISTURE_DETECT
 		case TCPC_STATE_CC_FAULT_OV:
 #ifdef CONFIG_DUAL_ROLE_USB_INTF
 			dual_role_instance_changed(tusb422_dual_role_phy);
@@ -1907,7 +2172,10 @@ void tcpm_connection_state_machine(unsigned int port)
 			tcpm_notify_conn_state(port, dev->state);
 
 			PRINT("CC_SWING: Waiting until CC is detached.\n");
-			timeout_cc_swing(dev->port);
+			dev->cc_swing_cnt = CC_SWING_THRESHOLD;
+			dev->cc_swing_recheck_timeout = ((struct timespec){0, 0});
+			dev->cc_swing_recheck_cnt = 0;
+			cc_swing_timer_start(port, T_CC_SWING_TIMEOUT_MS);
 			break;
 #endif
 
@@ -1927,18 +2195,18 @@ static void alert_cc_status_handler(tcpc_device_t *dev)
 {
 	unsigned int cc1, cc2;
 	usb_pd_port_t *pd_dev;
-#ifdef CONFIG_LGE_USB_TYPE_C
+#ifdef CONFIG_LGE_USB_MOISTURE_DETECT
 	uint8_t irq_status;
 #endif
 
-#ifdef CONFIG_LGE_USB_TYPE_C
+#ifdef CONFIG_LGE_USB_MOISTURE_DETECT
 	tcpm_is_cc_swing(dev->port);
 	if (IS_STATE_CC_FAULT(dev->state))
 		return;
-#endif
-
+#else
 	// Read CC status.
 	tcpc_read8(dev->port, TCPC_REG_CC_STATUS, &dev->cc_status);
+#endif
 
 #ifdef CONFIG_LGE_USB_TYPE_C
 	PRINT("%s CC status = 0x%02x\n", __func__, dev->cc_status);
@@ -2018,7 +2286,7 @@ static void alert_cc_status_handler(tcpc_device_t *dev)
 					}
 					break;
 
-#ifdef CONFIG_LGE_USB_TYPE_C
+#ifdef CONFIG_LGE_USB_MOISTURE_DETECT
 				case TCPC_STATE_UNATTACHED_SNK:
 				case TCPC_STATE_UNATTACHED_SRC:
 					tcpc_read8(dev->port, TUSB422_REG_INT_STATUS, &irq_status);
@@ -2112,8 +2380,13 @@ static void alert_cc_status_handler(tcpc_device_t *dev)
 					break;
 
 				case TCPC_STATE_ATTACH_WAIT_SRC:
+#ifdef CONFIG_LGE_USB_TYPE_C
+					if (!(((cc1 == CC_SRC_STATE_RD) && (cc2 != CC_SRC_STATE_RD)) ||
+						((cc1 != CC_SRC_STATE_RD) && (cc2 == CC_SRC_STATE_RD))))
+#else
 					if (((cc1 == CC_STATE_OPEN) && (cc2 == CC_SRC_STATE_RA)) ||
 						((cc1 == CC_SRC_STATE_RA) && (cc2 == CC_STATE_OPEN)))
+#endif
 					{
 						if (dev->role == ROLE_DRP)
 						{
@@ -2161,7 +2434,7 @@ static void alert_cc_status_handler(tcpc_device_t *dev)
 					}
 #ifdef CONFIG_LGE_USB_TYPE_C
 					else
-						tcpm_set_state(dev, TCPC_STATE_UNATTACHED_SNK);
+						tcpm_set_state(dev, TCPC_STATE_UNATTACHED_SRC);
 #endif
 					break;
 
@@ -2176,8 +2449,24 @@ static void alert_cc_status_handler(tcpc_device_t *dev)
 				case TCPC_STATE_ATTACHED_SNK:
 #ifdef CONFIG_LGE_USB_TYPE_C
 					tcpc_modify8(dev->port, TUSB422_REG_INT_MASK, TUSB422_INT_CC_FAULT, 0);
+					if (cc1 != CC_SNK_STATE_OPEN && cc2 != CC_SNK_STATE_OPEN)
+					{
+						tcpm_set_state(dev, TCPC_STATE_UNATTACHED_SNK);
+						break;
+					}
 #endif
 				case TCPC_STATE_DEBUG_ACC_SNK:
+#ifdef CONFIG_LGE_USB_TYPE_C
+					if (dev->state == TCPC_STATE_DEBUG_ACC_SNK)
+					{
+						if ((!dev->moisture_detect_disable) &&
+						    ((dev->cc_status != dev->last_cc_status) || (cc1 != cc2)))
+						{
+							tcpm_set_state(dev, TCPC_STATE_UNATTACHED_SNK);
+							break;
+						}
+					}
+#endif
 					// Report current change to upper layers.
 					if (dev->plug_polarity == PLUG_UNFLIPPED)
 					{
@@ -2190,6 +2479,16 @@ static void alert_cc_status_handler(tcpc_device_t *dev)
 
 					tcpm_notify_current_change(dev->port, dev->src_current_adv);
 					break;
+
+#if defined(CONFIG_LGE_USB_FACTORY) || defined(CONFIG_LGE_USB_DEBUGGER)
+				case TCPC_STATE_ATTACHED_SRC:
+					if (!(((cc1 == CC_SRC_STATE_RD) && (cc2 != CC_SRC_STATE_RD)) ||
+						((cc1 != CC_SRC_STATE_RD) && (cc2 == CC_SRC_STATE_RD))))
+					{
+						tcpm_set_state(dev, TCPC_STATE_UNATTACHED_SRC);
+					}
+					break;
+#endif
 
 				default:
 					break;
@@ -2263,6 +2562,14 @@ static void alert_power_status_handler(tcpc_device_t *dev)
 						(cc2 != CC_SNK_STATE_OPEN))
 					{
 						// Debug Accessory if SNK.Rp on both CC1 and CC2.
+#ifdef CONFIG_LGE_USB_TYPE_C
+						if ((!dev->moisture_detect_disable) &&
+						    ((dev->cc_status != dev->last_cc_status) || (cc1 != cc2)))
+						{
+							tcpm_set_state(dev, TCPC_STATE_UNATTACHED_SNK);
+						}
+						else
+#endif
 						tcpm_set_state(dev, TCPC_STATE_DEBUG_ACC_SNK);
 					}
 					else if ((dev->flags & TC_FLAGS_TRY_SRC) &&
@@ -2345,14 +2652,19 @@ static void tcpm_alert_handler(unsigned int port)
 	uint16_t clear_bits;
 	uint16_t v_threshold;
 	tcpc_device_t *dev = &tcpc_dev[port];
-#ifdef CONFIG_LGE_USB_TYPE_C
+#ifdef CONFIG_LGE_USB_MOISTURE_DETECT
 	uint16_t alert_mask;
+#ifndef CONFIG_LGE_USB_COMPLIANCE_TEST
 	uint8_t irq_status;
+#endif
+#endif
+#ifdef CONFIG_LGE_USB_TYPE_C
+	usb_pd_port_t *pd_dev;
 #endif
 
 	// Read alerts.
 	tcpc_read16(port, TCPC_REG_ALERT, &alert);
-#ifdef CONFIG_LGE_USB_TYPE_C
+#ifdef CONFIG_LGE_USB_MOISTURE_DETECT
 	// Read alerts mask
 	tcpc_read16(port, TCPC_REG_ALERT_MASK, &alert_mask);
 	alert &= alert_mask;
@@ -2371,13 +2683,13 @@ static void tcpm_alert_handler(unsigned int port)
 
 	if (alert & TUSB422_ALERT_IRQ_STATUS)
 	{
-#ifdef CONFIG_LGE_USB_TYPE_C
+#if defined(CONFIG_LGE_USB_MOISTURE_DETECT) && !defined(CONFIG_LGE_USB_COMPLIANCE_TEST)
 		tcpc_read8(port, TUSB422_REG_INT_STATUS, &irq_status);
 		if (irq_status & TUSB422_INT_CC_FAULT)
 		{
 			PRINT("CC fault (> 3.5V)!\n");
 
-			if (dev->state != TCPC_STATE_CC_FAULT_OV)
+			if (!dev->moisture_detect_disable && dev->state != TCPC_STATE_CC_FAULT_OV)
 			{
 				tcpm_set_state(dev, TCPC_STATE_CC_FAULT_OV);
 			}
@@ -2397,9 +2709,14 @@ static void tcpm_alert_handler(unsigned int port)
 		// This alert is active when VBUS SNK DISCONNECT THRESHOLD is set.
 		INFO("Alert: VBUS disconnect\n");
 #ifndef USE_VOLTAGE_ALARM_FOR_SINK_DISCONNECT
+#ifdef CONFIG_LGE_USB_TYPE_C
+		pd_dev = usb_pd_pe_get_device(port);
+		if (!pd_dev->power_role_swap_in_progress)
+#endif
 		if ((dev->state == TCPC_STATE_ATTACHED_SNK) ||
 			(dev->state == TCPC_STATE_DEBUG_ACC_SNK))
 		{
+			PRINT("Alert: VBUS disconnect\n");
 			// Go directly to Unattached.SNK.
 			tcpm_set_state(dev, TCPC_STATE_UNATTACHED_SNK);
 		}
@@ -2513,6 +2830,48 @@ static void tcpm_alert_handler(unsigned int port)
 				tcpm_notify_conn_state(port, dev->state);
 			}
 		}
+#ifdef CONFIG_LGE_USB_TYPE_C
+		else if (dev->src_detected)
+		{
+			if (dev->state == TCPC_STATE_ATTACH_WAIT_SNK)
+			{
+				unsigned int cc1, cc2;
+
+				cc1 = TCPC_CC1_STATE(dev->cc_status);
+				cc2 = TCPC_CC2_STATE(dev->cc_status);
+
+				if ((cc1 != CC_SNK_STATE_OPEN) &&
+				    (cc2 != CC_SNK_STATE_OPEN))
+				{
+					// Debug Accessory if SNK.Rp on both CC1 and CC2.
+#ifdef CONFIG_LGE_USB_TYPE_C
+					if ((!dev->moisture_detect_disable) &&
+					    ((dev->cc_status != dev->last_cc_status) || (cc1 != cc2)))
+					{
+						tcpm_set_state(dev, TCPC_STATE_UNATTACHED_SNK);
+					}
+					else
+#endif
+					tcpm_set_state(dev, TCPC_STATE_DEBUG_ACC_SNK);
+				}
+				else if ((dev->flags & TC_FLAGS_TRY_SRC) &&
+					 (dev->role == ROLE_DRP))
+				{
+					tcpm_set_state(dev, TCPC_STATE_TRY_SRC);
+				}
+				else
+				{
+					tcpm_set_state(dev, TCPC_STATE_ATTACHED_SNK);
+				}
+
+			}
+			else if ((dev->state == TCPC_STATE_TRY_SNK_LOOK4SRC) ||
+				 (dev->state == TCPC_STATE_TRY_WAIT_SNK))
+			{
+				tcpm_set_state(dev, TCPC_STATE_ATTACHED_SNK);
+			}
+		}
+#endif
 
 		// Notify upper layers.
 		tcpm_notify_voltage_alarm(port, true);
@@ -2573,6 +2932,9 @@ static int tcpm_port_init(unsigned int port, const tcpc_config_t *config)
 	dev->flags = config->flags;
 	dev->port = port;
 	dev->rp_val = config->rp_val;
+#ifdef CONFIG_LGE_USB_MOISTURE_DETECT
+	dev->moisture_detect_disable = config->moisture_detect_disable;
+#endif
 
 	dev->timer.data = port;
 	dev->timer2.data = port;

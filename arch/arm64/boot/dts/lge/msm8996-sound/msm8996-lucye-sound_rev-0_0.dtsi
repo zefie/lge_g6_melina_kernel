@@ -26,6 +26,8 @@
 			"MADINPUT", "MCLK",
 			"AMIC2", "MIC BIAS2",
 			"MIC BIAS2", "Headset Mic",
+			"AMIC3", "MCLK",
+			"AMIC4", "MCLK",
 			"DMIC0", "MIC BIAS1",
 			"MIC BIAS1", "Digital Mic0",
 			"DMIC2", "MIC BIAS3",

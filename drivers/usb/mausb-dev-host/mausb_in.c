@@ -176,13 +176,36 @@ static void mausbdev_in_submit_urb(struct stub_device *sdev,
 	{
 		if (pal->urb->setup_packet)
 		{
-
-			pal->urb->transfer_buffer = kzalloc(spacket->wLength, GFP_KERNEL);
-			pal->urb->transfer_buffer_length  = spacket->wLength;
+			
+			if(spacket)
+			{
+				pal->urb->transfer_buffer = kzalloc(spacket->wLength, GFP_KERNEL);
+				if(!pal->urb->transfer_buffer)
+				{
+					mausb_event_add(ud, SDEV_EVENT_ERROR_MALLOC);
+					return;
+				}
+				pal->urb->transfer_buffer_length  = spacket->wLength;
+			}
+			else
+			{
+				dev_err(&sdev->interface->dev, "allocate spacket\n");
+				if(pal->urb->setup_packet)
+				{
+					kfree(pal->urb->setup_packet);
+				}
+				mausb_event_add(ud, SDEV_EVENT_ERROR_MALLOC);
+				return;
+			}
 		}
 		else
 		{
 			pal->urb->transfer_buffer = kzalloc( header.u.non_iso_hdr.remsize_credit - sizeof(struct mausb_header) , GFP_KERNEL);
+			if(!pal->urb->transfer_buffer)
+			{
+				mausb_event_add(ud, SDEV_EVENT_ERROR_MALLOC);
+				return;
+			}
 			pal->urb->transfer_buffer_length  = header.u.non_iso_hdr.remsize_credit - sizeof(struct mausb_header);
 		}
 	}

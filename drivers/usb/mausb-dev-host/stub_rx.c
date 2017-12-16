@@ -435,22 +435,25 @@ static void stub_rx_pdu(struct mausb_device *ud)
 	pal->sdev = sdev;
 	pal->pdu = packet;
 	pal->length = pdu.u.non_iso_hdr.remsize_credit;
-	if (mausb_is_mgmt_pkt(&pdu)) {
+	if (mausb_is_mgmt_pkt(&pdu))
+	{
 		LG_PRINT(DBG_LEVEL_MEDIUM,DATA_TRANS_RX,"management packet\n");
 		spin_lock_irqsave(&sdev->mausb_pal_lock, flags);
 		list_add_tail(&pal->list, &sdev->mausb_pal_mgmt_init);
 		spin_unlock_irqrestore(&sdev->mausb_pal_lock, flags);
 		//wake_up(&sdev->pal_mgmt_waitq);
 		mausbdev_mgmt_process_packect(ud);
-	 	}
-	else if (mausb_is_data_pkt(&pdu)) {
+	}
+	else if (mausb_is_data_pkt(&pdu))
+	{
 		LG_PRINT(DBG_LEVEL_MEDIUM,DATA_TRANS_RX,"data packet");
 
 		pkt = (struct mausb_header *)pal->pdu;
 		LG_PRINT(DBG_LEVEL_MEDIUM,DATA_TRANS_RX,"pkt->u.non_iso_hdr.reqid_seqno: %d\n",pkt->u.non_iso_hdr.reqid_seqno);
 		pal->seqnum = pkt->u.non_iso_hdr.reqid_seqno;
 
-		if (mausb_is_in_data_pkt(&pdu)){
+		if (mausb_is_in_data_pkt(&pdu))
+		{
 			LG_PRINT(DBG_LEVEL_MEDIUM,DATA_TRANS_RX, "in data packet");
 			spin_lock_irqsave(&sdev->mausb_pal_lock, flags);
 			list_add_tail(&pal->list, &sdev->mausb_pal_in_init);
@@ -458,15 +461,32 @@ static void stub_rx_pdu(struct mausb_device *ud)
 			//wake_up(&sdev->pal_in_waitq);
 			mausbdev_in_process_packect(ud);
 		}
-		else if (mausb_is_out_data_pkt(&pdu)){
+		else if (mausb_is_out_data_pkt(&pdu))
+		{
 			//LG_PRINT(DBG_LEVEL_MEDIUM,DATA_TRANS_RX, "out data packet");
 			spin_lock_irqsave(&sdev->mausb_pal_lock, flags);
 			list_add_tail(&pal->list, &sdev->mausb_pal_out_init);
 			spin_unlock_irqrestore(&sdev->mausb_pal_lock, flags);
 			//wake_up(&sdev->pal_out_waitq);
 			mausbdev_out_process_packect(ud);
-			}
 		}
+		else
+		{
+			LG_PRINT(DBG_LEVEL_MEDIUM,DATA_TRANS_RX, "wrong data");
+			if(packet)
+				kfree(packet);
+			if(pal)
+				kfree(pal);
+		}
+	}
+	else
+	{
+		LG_PRINT(DBG_LEVEL_MEDIUM,DATA_TRANS_RX, "wrong data");
+		if(packet)
+			kfree(packet);
+		if(pal)
+			kfree(pal);
+	}
 
 	return;
 }

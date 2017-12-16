@@ -794,9 +794,9 @@ const char * const vmstat_text[] = {
 	"numa_local",
 	"numa_other",
 #endif
-	"refault_inactive_file",
-	"refault_active_file",
-	"refault_nodereclaim",
+	"workingset_refault",
+	"workingset_activate",
+	"workingset_nodereclaim",
 	"nr_anon_transparent_hugepages",
 	"nr_free_cma",
 	"nr_swapcache",

@@ -380,6 +380,8 @@ exit:
 	return fn ? fn(regs, instr) : 1;
 }
 
+extern void freeze_l1_dcache(void);
+
 asmlinkage void __exception do_undefinstr(struct pt_regs *regs)
 {
 	siginfo_t info;
@@ -391,6 +393,9 @@ asmlinkage void __exception do_undefinstr(struct pt_regs *regs)
 
 	if (call_undef_hook(regs) == 0)
 		return;
+
+	if (!user_mode(regs))
+		freeze_l1_dcache();
 
 	trace_undef_instr(regs, (void *)pc);
 

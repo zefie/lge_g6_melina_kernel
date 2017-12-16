@@ -44,6 +44,9 @@
 #include "wcd9xxx-resmgr-v2.h"
 #include "wcd_cpe_core.h"
 #include "wcdcal-hwdep.h"
+#ifdef CONFIG_MACH_LGE // add switch dev for SAR backoff
+#include <linux/switch.h>
+#endif
 
 #define TASHA_RX_PORT_START_NUMBER  16
 
@@ -813,6 +816,9 @@ struct tasha_priv {
 	bool clk_internal;
 #ifdef CONFIG_SND_USE_KNOWLES_DMIC_DELAY
 	bool dmic_delay;
+#endif
+#ifdef CONFIG_MACH_LGE // add switch dev for SAR backoff
+	struct switch_dev sar;
 #endif
 };
 
@@ -4120,7 +4126,9 @@ static int tasha_codec_enable_ear_pa(struct snd_soc_dapm_widget *w,
 {
 	struct snd_soc_codec *codec = w->codec;
 	int ret = 0;
-
+#ifdef CONFIG_MACH_LGE
+	struct tasha_priv *tasha = snd_soc_codec_get_drvdata(codec);
+#endif
 	dev_dbg(codec->dev, "%s %s %d\n", __func__, w->name, event);
 
 	switch (event) {
@@ -4128,6 +4136,10 @@ static int tasha_codec_enable_ear_pa(struct snd_soc_dapm_widget *w,
 		/* 5ms sleep is required after PA is enabled as per
 		 * HW requirement
 		 */
+#ifdef CONFIG_MACH_LGE
+		pr_info("%s : enable SAR backoff\n", __func__);
+		switch_set_state(&tasha->sar, 1);
+#endif
 		usleep_range(5000, 5500);
 		snd_soc_update_bits(codec, WCD9335_CDC_RX0_RX_PATH_CTL,
 				    0x10, 0x00);
@@ -4142,6 +4154,10 @@ static int tasha_codec_enable_ear_pa(struct snd_soc_dapm_widget *w,
 		/* 5ms sleep is required after PA is disabled as per
 		 * HW requirement
 		 */
+#ifdef CONFIG_MACH_LGE
+		pr_info("%s : disable SAR backoff\n", __func__);
+		switch_set_state(&tasha->sar, 0);
+#endif
 		usleep_range(5000, 5500);
 
 		if (!(strcmp(w->name, "ANC EAR PA"))) {
@@ -7667,6 +7683,13 @@ static int tasha_mad_input_put(struct snd_kcontrol *kcontrol,
 	char *mad_input;
 
 	tasha_mad_input = ucontrol->value.integer.value[0];
+
+	if (tasha_mad_input >= ARRAY_SIZE(tasha_conn_mad_text)) {
+		dev_err(codec->dev,
+			"%s: tasha_mad_input = %d out of bounds\n",
+			__func__, tasha_mad_input);
+		return -EINVAL;
+	}
 
 	if (!strcmp(tasha_conn_mad_text[tasha_mad_input], "NOTUSED1") ||
 	    !strcmp(tasha_conn_mad_text[tasha_mad_input], "NOTUSED2") ||
@@ -14006,6 +14029,15 @@ static int tasha_probe(struct platform_device *pdev)
 	tasha_update_reg_defaults(tasha);
 	schedule_work(&tasha->swr_add_devices_work);
 	tasha_get_codec_ver(tasha);
+
+#ifdef CONFIG_MACH_LGE
+	tasha->sar.name = "sar_backoff";
+	ret = switch_dev_register(&tasha->sar);
+	if (ret < 0) {
+		pr_err("%s : failed to register switch device for SAR backoff\n", __func__);
+		switch_dev_unregister(&tasha->sar);
+	}
+#endif
 
 	dev_info(&pdev->dev, "%s: Tasha driver probe done\n", __func__);
 	return ret;

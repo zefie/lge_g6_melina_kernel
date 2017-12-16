@@ -172,7 +172,10 @@ int vote(struct votable *votable, int client_id, bool state, int val)
 
 	lock_votable(votable);
 
-#ifdef CONFIG_LGE_PM
+#ifndef CONFIG_LGE_PM
+#ifdef CONFIG_LGE_MSM8996_ISB_WA
+	asm volatile ("isb\n");
+#endif
 	pr_err("%s: name[%s], client_id[%d], state[%d], val[%d]\n",
 		__func__, votable->name, client_id, state, val);
 #endif
@@ -220,7 +223,11 @@ int vote(struct votable *votable, int client_id, bool state, int val)
 
 	effective_result = votable->votes[effective_id].value;
 
-	if (effective_result != votable->effective_result) {
+	if (effective_result != votable->effective_result
+#ifdef CONFIG_MACH_MSM8996_LUCYE
+		|| effective_id != votable->effective_client_id
+#endif
+		){
 		votable->effective_client_id = effective_id;
 		votable->effective_result = effective_result;
 		pr_debug("%s: effective vote is now %d voted by %d\n",

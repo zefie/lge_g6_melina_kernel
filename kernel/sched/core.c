@@ -96,10 +96,6 @@
 #define CREATE_TRACE_POINTS
 #include <trace/events/sched.h>
 
-#ifdef CONFIG_DEBUG_PREEMPT
-#include <asm/cacheflush.h>
-#endif
-
 const char *task_event_names[] = {"PUT_PREV_TASK", "PICK_NEXT_TASK",
 				  "TASK_WAKE", "TASK_MIGRATE", "TASK_UPDATE",
 				"IRQ_UPDATE"};
@@ -5660,8 +5656,8 @@ prepare_task_switch(struct rq *rq, struct task_struct *prev,
 	if (use_app_setting)
 		switch_app_setting_bit(prev, next);
 
-	if (use_l2_app_setting)
-		switch_l2_app_setting_bit(prev, next);
+	if (use_32bit_app_setting || use_32bit_app_setting_pro)
+		switch_32bit_app_setting_bit(prev, next);
 #endif
 }
 
@@ -6099,16 +6095,12 @@ notrace unsigned long get_parent_ip(unsigned long addr)
 void preempt_count_add(int val)
 {
 #ifdef CONFIG_DEBUG_PREEMPT
-	int *pt = preempt_count_ptr();
 	/*
 	 * Underflow?
 	 */
 	if (preempt_count() < 0) {
-		trace_printk(KERN_ERR "%s: %d < 0\n",
+		printk(KERN_ERR "%s: %d < 0\n",
 				__func__, preempt_count());
-		__dma_flush_range((void *)&pt, (void *)&pt + (sizeof(int)));
-		trace_printk(KERN_ERR "%s: after flush %d %d \n",
-				__func__,*pt , preempt_count());
 		DEBUG_LOCKS_WARN_ON(1);
 		return;
 	}
@@ -6135,16 +6127,12 @@ NOKPROBE_SYMBOL(preempt_count_add);
 void preempt_count_sub(int val)
 {
 #ifdef CONFIG_DEBUG_PREEMPT
-	int *pt = preempt_count_ptr();
 	/*
 	 * Underflow?
 	 */
 	if (val > preempt_count()) {
-		trace_printk(KERN_ERR "%s: %d > %d\n",
+		printk(KERN_ERR "%s: %d > %d\n",
 				__func__, val, preempt_count());
-		__dma_flush_range((void *)&pt, (void *)&pt + (sizeof(int)));
-		trace_printk(KERN_ERR "%s: after flush %d %d \n",
-				__func__,*pt, preempt_count());
 		DEBUG_LOCKS_WARN_ON(1);
 		return;
 	}

@@ -24,5 +24,11 @@
         status = "ok";
       };
     };
+
+  i2c_1: i2c@7575000 {
+   rtc6213n@64 { /* Richwave FM Radio chip, slave id 0x64*/
+        status = "disabled";
+      };
+    };
 };
 

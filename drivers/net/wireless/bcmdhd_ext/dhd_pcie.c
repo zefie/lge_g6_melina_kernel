@@ -24,7 +24,7 @@
  *
  * <<Broadcom-WL-IPTag/Open:>>
  *
- * $Id: dhd_pcie.c 678582 2017-01-10 06:36:39Z $
+ * $Id: dhd_pcie.c 684103 2017-02-10 08:56:29Z $
  */
 
 
@@ -5174,7 +5174,9 @@ int dhd_bus_init(dhd_pub_t *dhdp, bool enforce_mutex)
 	/* Make sure we're talking to the core. */
 	bus->reg = si_setcore(bus->sih, PCIE2_CORE_ID, 0);
 	ASSERT(bus->reg != NULL);
-
+#ifdef CUSTOMER_HW10
+	OSL_DELAY(200 * 1000);
+#endif /* CUSTOMER_HW10 */
 	/* before opening up bus for data transfer, check if shared are is intact */
 	ret = dhdpcie_readshared(bus);
 	if (ret < 0) {

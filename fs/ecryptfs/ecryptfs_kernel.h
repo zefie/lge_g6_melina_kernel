@@ -59,7 +59,7 @@
 extern int g_locked_state;
 
 /* Debug */
-#define SDP_DEBUG		1
+#define SDP_DEBUG		0
 #define O_SDP    0x10000000
 
 #if SDP_DEBUG

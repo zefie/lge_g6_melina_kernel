@@ -36,11 +36,11 @@ struct uevent_offset {
 };
 
 static struct uevent_offset uevent_offset_info[] = {
-	{POWER_SUPPLY_PROP_VOLTAGE_NOW   ,   50000}, // batt, usb / batt, input volt(uv)
+	{POWER_SUPPLY_PROP_VOLTAGE_NOW   ,  100000}, // batt, usb / batt, input volt(uv)
 	{POWER_SUPPLY_PROP_CAPACITY      ,       1}, // batt      / SOC(%)
-	{POWER_SUPPLY_PROP_CURRENT_NOW   ,  200000}, // batt, bms / current(ua)
+	{POWER_SUPPLY_PROP_CURRENT_NOW   ,  500000}, // batt, bms / current(ua)
 	{POWER_SUPPLY_PROP_TEMP          ,      10}, // batt      / temp(.x)
-	{POWER_SUPPLY_PROP_VOLTAGE_OCV   ,   50000}, // bms       / OCV(uv)
+	{POWER_SUPPLY_PROP_VOLTAGE_OCV   ,  100000}, // bms       / OCV(uv)
 	{POWER_SUPPLY_PROP_RESISTANCE_NOW,      11}, // bms       / RESISTANCE(mohm)
 };
 

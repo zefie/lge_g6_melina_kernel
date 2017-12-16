@@ -560,8 +560,10 @@ struct sw49408_data {
 	u8 te_write_log;
 	u8 tc_status_rst_cnt;
 	u8 tc_status_fwup_cnt;
+	u8 abnormal_recovery;
 };
 
+#define NEED_RESET				9
 #define TCI_MAX_NUM				2
 #define SWIPE_MAX_NUM				4
 #define TCI_DEBUG_MAX_NUM			16

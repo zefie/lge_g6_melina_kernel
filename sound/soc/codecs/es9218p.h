@@ -5,7 +5,7 @@
  *  The ES9218P is a high-performance 32-bit, 2-channel audio SABRE HiFi D/A converter
  *  with headphone amplifier, analog volume control and output switch designed for
  *  audiophile-grade portable application such as mobile phones and digital music player,
- *  consumer applications such as USB DACs and A/V receivers, as well as professional 
+ *  consumer applications such as USB DACs and A/V receivers, as well as professional
  *  such as mixer consoles and digital audio workstations.
  *
  *  Copyright (C) 2016, ESS Technology International Ltd.
@@ -216,6 +216,7 @@ struct es9218_priv {
     struct  snd_soc_codec   *codec;
     struct  i2c_client      *i2c_client;
     struct  es9218_data     *es9218_data;
+    struct  delayed_work    hifi_in_standby_work;
     struct  delayed_work    sleep_work;
     struct  mutex           power_lock;
     struct  wake_lock       sleep_lock;

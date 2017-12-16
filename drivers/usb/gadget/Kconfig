@@ -606,4 +606,8 @@ config LGE_USB_TYPE_C
 config LGE_USB_MAXIM_EVP
        boolean "EVP charger support"
 
+config LGE_USB_COMPLIANCE_TEST
+	bool "USB Compliance test"
+	select LGE_USB_BC_12_VZW
+
 endif # USB_GADGET

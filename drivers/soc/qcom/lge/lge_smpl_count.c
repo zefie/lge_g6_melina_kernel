@@ -66,7 +66,7 @@ static int read_smpl_count(char *buffer, const struct kernel_param *kp)
 		pr_err("lge_smpl_count_data is NULL\n");
 		return -1;
 	}
-	if ((boot_cause &= PWR_ON_EVENT_SMPL) && (warm_reset == 0)) {
+	if (((boot_cause == (PWR_ON_EVENT_KEYPAD|PWR_ON_EVENT_PON1|PWR_ON_EVENT_HARD_RESET)) || (boot_cause &= PWR_ON_EVENT_SMPL)) && (warm_reset == 0)) {
 		pr_info("[SMPL_CNT] ===> is smpl boot\n");
 		data->smpl_boot = 1;
 	} else {

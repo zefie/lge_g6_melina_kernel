@@ -150,4 +150,27 @@
 			interrupt-names = "silabs_fm_int", "silabs_fm_status_int";
 		};
 	};
+
+	i2c_1: i2c@7575000 {
+		rtc6213n@64 { /* Richwave FM Radio chip, slave id 0x64*/
+			status = "disabled";
+			compatible = "rtc6213n";
+			#address-cells = <0>;
+			reg = <0x64>;
+			vdd-supply = <&pm8994_l17>;
+			vdd-supply-voltage = <2800000 3300000>;
+			pinctrl-names = "default","pmx_fm_active","pmx_fm_suspend";
+			pinctrl-0 = <&fm_int_default>;
+			pinctrl-1 = <&fm_int_active>;
+			pinctrl-2 = <&fm_int_suspend>;
+			fmint-gpio = <&tlmm 62 0>;
+			interrupts = <0 1>;
+			#interrupt-cells = <1>;
+			interrupt-map-mask = <0xffffffff>;
+			interrupt-map = <
+				  0 &tlmm 62 2
+				>;
+			interrupt-names = "silabs_fm_int";
+		};
+	};
 };

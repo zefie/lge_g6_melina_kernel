@@ -316,6 +316,12 @@ qpnp_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *alarm)
 		return -EINVAL;
 	}
 
+#ifdef CONFIG_LGE_PM
+	dev_err(dev, "h:m:s == %d:%d:%d, d/m/y = %d/%d/%d\n",
+			rtc_tm.tm_hour, rtc_tm.tm_min, rtc_tm.tm_sec,
+			rtc_tm.tm_mday, rtc_tm.tm_mon, rtc_tm.tm_year);
+#endif
+
 	rtc_tm_to_time(&rtc_tm, &secs_rtc);
 	if (secs < secs_rtc) {
 		dev_err(dev, "Trying to set alarm in the past\n");
@@ -354,10 +360,15 @@ qpnp_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *alarm)
 
 	rtc_dd->alarm_ctrl_reg1 = ctrl_reg;
 
+#ifdef CONFIG_LGE_PM
+	dev_err(dev, "Alarm Set for h:r:s=%d:%d:%d, d/m/y=%d/%d/%d\n",
+#else
 	dev_dbg(dev, "Alarm Set for h:r:s=%d:%d:%d, d/m/y=%d/%d/%d\n",
+#endif
 			alarm->time.tm_hour, alarm->time.tm_min,
 			alarm->time.tm_sec, alarm->time.tm_mday,
 			alarm->time.tm_mon, alarm->time.tm_year);
+
 rtc_rw_fail:
 	spin_unlock_irqrestore(&rtc_dd->alarm_ctrl_lock, irq_flags);
 	return rc;

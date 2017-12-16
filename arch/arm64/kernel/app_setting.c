@@ -35,9 +35,13 @@ bool use_app_setting = true;
 module_param(use_app_setting, bool, 0644);
 MODULE_PARM_DESC(use_app_setting, "control use of app specific settings");
 
-bool use_l2_app_setting = true;
-module_param(use_l2_app_setting, bool, 0644);
-MODULE_PARM_DESC(use_l2_app_setting, "control use of 32 bit app specific settings");
+bool use_32bit_app_setting = false;
+module_param(use_32bit_app_setting, bool, 0644);
+MODULE_PARM_DESC(use_32bit_app_setting, "control use of 32 bit app specific settings");
+
+bool use_32bit_app_setting_pro = false;
+module_param(use_32bit_app_setting_pro, bool, 0644);
+MODULE_PARM_DESC(use_32bit_app_setting_pro, "control use of 32 bit app specific settings");
 
 static int set_name(const char *str, struct kernel_param *kp)
 {
@@ -91,15 +95,16 @@ void switch_app_setting_bit(struct task_struct *prev, struct task_struct *next)
 }
 EXPORT_SYMBOL(switch_app_setting_bit);
 
-void switch_l2_app_setting_bit(struct task_struct *prev, struct task_struct *next)
+void switch_32bit_app_setting_bit(struct task_struct *prev,
+					struct task_struct *next)
 {
 	if (prev->mm && unlikely(is_compat_thread(task_thread_info(prev))))
-		clear_app_setting_bit_for_l2(DAL2R_BIT);
+		clear_app_setting_bit_for_32bit_apps();
 
 	if (next->mm && unlikely(is_compat_thread(task_thread_info(next))))
-		set_app_setting_bit_for_l2(DAL2R_BIT);
+		set_app_setting_bit_for_32bit_apps();
 }
-EXPORT_SYMBOL(switch_l2_app_setting_bit);
+EXPORT_SYMBOL(switch_32bit_app_setting_bit);
 
 void apply_app_setting_bit(struct file *file)
 {

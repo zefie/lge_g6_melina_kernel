@@ -643,6 +643,9 @@ struct bcm_cfg80211 {
 	struct mutex scan_complete;	/* serialize scan_complete call */
 	struct wl_scan_results *bss_list;
 	struct wl_scan_results *scan_results;
+#if defined(PRIVATE_SCANSUPPRESS)
+	u32 scansuppress_mode;
+#endif
 
 	/* scan request object for internal purpose */
 	struct wl_scan_req *scan_req_int;
@@ -1441,6 +1444,10 @@ extern void wl_terminate_event_handler(void);
 extern s32 wl_cfg80211_get_bss_info(struct net_device *dev, char* cmd, int total_len);
 extern s32 wl_cfg80211_get_connect_failed_status(struct net_device *dev, char* cmd, int total_len);
 #endif /* DHD_ENABLE_BIGDATA_LOGGING */
+#if defined(PRIVATE_SCANSUPPRESS)
+extern void wl_cfg80211_set_scan_suppress(struct net_device *dev, char *command);
+extern int wl_cfg80211_get_scan_suppress(struct net_device *dev, char *command);
+#endif
 
 #define SCAN_BUF_CNT	2
 #define SCAN_BUF_NEXT	1

@@ -801,6 +801,11 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 				goto end_lmk;
 			} else {
 				mutex_unlock(&reclaim_mutex);
+
+				if (min_score_adj > OOM_SCORE_CACHED_APP_MIN_ADJ) {
+					rcu_read_unlock();
+					goto end_lmk;
+				}
 			}
 		}
 		selected_tasksize += selected_swapsize;

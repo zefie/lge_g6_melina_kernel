@@ -13,41 +13,11 @@
 #include <linux/of_gpio.h>
 #include <linux/gpio/consumer.h>
 
+#include <linux/usb/class-dual-role.h>
+
 #ifdef CONFIG_LGE_USB_DEBUGGER
 #include <soc/qcom/lge/power/lge_power_class.h>
 #include <soc/qcom/lge/power/lge_cable_detect.h>
-#endif
-
-#ifdef CONFIG_DUAL_ROLE_USB_INTF
-#include <linux/usb/class-dual-role.h>
-#else
-enum {
-	DUAL_ROLE_PROP_MODE_UFP = 0,
-	DUAL_ROLE_PROP_MODE_DFP,
-	DUAL_ROLE_PROP_MODE_FAULT,
-	DUAL_ROLE_PROP_MODE_NONE,
-	/*The following should be the last element*/
-	DUAL_ROLE_PROP_MODE_TOTAL,
-};
-
-enum {
-	DUAL_ROLE_PROP_PR_SRC = 0,
-	DUAL_ROLE_PROP_PR_SNK,
-	DUAL_ROLE_PROP_PR_FAULT,
-	DUAL_ROLE_PROP_PR_NONE,
-	/*The following should be the last element*/
-	DUAL_ROLE_PROP_PR_TOTAL,
-
-};
-
-enum {
-	DUAL_ROLE_PROP_DR_HOST = 0,
-	DUAL_ROLE_PROP_DR_DEVICE,
-	DUAL_ROLE_PROP_DR_FAULT,
-	DUAL_ROLE_PROP_DR_NONE,
-	/*The following should be the last element*/
-	DUAL_ROLE_PROP_DR_TOTAL,
-};
 #endif
 
 struct hw_pd_dev {
@@ -61,6 +31,7 @@ struct hw_pd_dev {
 	int dr;
 
 	struct gpio_desc *redriver_sel_gpio;
+	struct gpio_desc *usb_ss_en_gpio;
 
 	/* charger */
 	struct regulator *vbus_reg;
@@ -74,6 +45,7 @@ struct hw_pd_dev {
 	int curr_max;
 	int volt_max;
 	enum power_supply_type typec_mode;
+	int rp;
 
 #if defined(CONFIG_LGE_USB_FACTORY) || defined(CONFIG_LGE_USB_DEBUGGER)
 	bool is_debug_accessory;
@@ -82,6 +54,7 @@ struct hw_pd_dev {
 	struct work_struct usb_debugger_work;
 	struct lge_power *lge_power_cd;
 	struct gpio_desc *sbu_sel_gpio;
+	struct gpio_desc *sbu_en_gpio;
 #endif
 };
 
@@ -118,7 +91,9 @@ enum pd_dpm_typec {
 	PD_DPM_TYPEC_UNATTACHED,
 	PD_DPM_TYPEC_ATTACHED_SRC,
 	PD_DPM_TYPEC_ATTACHED_SNK,
+#ifdef CONFIG_LGE_USB_MOISTURE_DETECT
 	PD_DPM_TYPEC_CC_FAULT,
+#endif
 };
 
 struct pd_dpm_typec_state {

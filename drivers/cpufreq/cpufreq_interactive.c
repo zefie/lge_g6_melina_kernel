@@ -128,7 +128,7 @@ u32 cancun_compact_disable = 0;
 /* Cancun DBoT variable */
 #define MAX_DIFF_TEMP           900
 u32 cancun_dbot_opt_freq = 1036800;
-long vts_temp_heat_threshold = 380; /* 38 degree*/
+long vts_temp_heat_threshold = 370; /* 37 degree*/
 long vts_cpu_diff_threshold = 8;
 u32 heating_status = 0;
 int cancun_dbot_boundary = 0;
@@ -558,7 +558,7 @@ void check_cancun_status(int cpu,u64 now)
 	}
 
 	/* 1. Cancun DBoT - CPU heat status */
-	if(cancun_is_dbot && cancun_is_game){
+	if(cancun_is_dbot && cancun_is_game && per_cpu_info){
 		diff_temp = per_cpu_info[2].temp - (long)cancun_dbot_vts_temp / 10;
 
 		vts_diff_temp = (long)(cancun_dbot_vts_temp - vts_temp_heat_threshold) / 10 * 2;
@@ -1917,6 +1917,9 @@ static ssize_t show_cancun_dbot_temp(
 	extern unsigned int cancun_dbot_xo_temp;
 	extern unsigned int cancun_dbot_bd2_temp;
 	struct cpu_pwr_stats *per_cpu_info = get_cpu_pwr_stats();
+
+	if (!per_cpu_info)
+		return sprintf(buf, "[cancun] cannot read per_cpu temp\n");
 
 	return sprintf(buf,"cpu0:%ld cpu2:%ld vts:%ld xo:%d bd2:%d heat:%d\n",
 		per_cpu_info[0].temp, per_cpu_info[2].temp,

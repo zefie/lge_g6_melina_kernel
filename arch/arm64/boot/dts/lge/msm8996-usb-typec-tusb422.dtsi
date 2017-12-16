@@ -27,6 +27,7 @@
 		ti,redriver-sel-gpio = <&tlmm 96 0>;	/* REDRIVER_SEL from TUSB542 */
 		ti,vconn-en-gpio = <&pm8994_gpios 1 0>;
 		ti,sbu-sel-gpio = <&pm8994_gpios 3 0>;
+		ti,sbu-en-gpio = <&tlmm 90 0>;			/* SBU_EN */
 
 		pinctrl-names = "default", "sleep";
 		pinctrl-0 = <&redriver_sel_active &alert_gpio_active>;

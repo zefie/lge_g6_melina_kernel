@@ -67,7 +67,7 @@ long set_media_ext(const char *media_ext_list)
 	}
 
 	/* check overflow */
-	if (len > MAX_MEDIA_EXT_LENGTH) {
+	if (len >= MAX_MEDIA_EXT_LENGTH) {
 		pr_err("%s: media_ext_list is too large.\n", __func__);
 		pr_err(" [CCAudit] %s: media_ext_list is too large.\n", __func__);
 		rc = -EOVERFLOW;
@@ -75,7 +75,7 @@ long set_media_ext(const char *media_ext_list)
 	}
 
 	memset(saved_file_ext_list, 0, sizeof(saved_file_ext_list));
-	strncpy(saved_file_ext_list, media_ext_list, len);
+	strlcpy(saved_file_ext_list, media_ext_list, len);
 
 	is_saved_file_ext_list_set = true;
 	/* set return value 0 for success */

@@ -422,11 +422,14 @@ arch_initcall(lge_add_qfprom_devices);
 
 #ifdef CONFIG_LGE_USB_G_LAF
 static enum lge_laf_mode_type lge_laf_mode = LGE_LAF_MODE_NORMAL;
+static enum lge_laf_mode_type lge_laf_mid = LGE_LAF_MODE_NORMAL;
 
 int __init lge_laf_mode_init(char *s)
 {
 	if (strcmp(s, "") && strcmp(s, "MID"))
 		lge_laf_mode = LGE_LAF_MODE_LAF;
+	if (!strcmp(s, "MID"))
+		lge_laf_mid = LGE_LAF_MODE_MID;
 
 	return 1;
 }
@@ -435,6 +438,11 @@ __setup("androidboot.laf=", lge_laf_mode_init);
 enum lge_laf_mode_type lge_get_laf_mode(void)
 {
 	return lge_laf_mode;
+}
+
+enum lge_laf_mode_type lge_get_laf_mid(void)
+{
+	return lge_laf_mid;
 }
 #endif
 
@@ -585,6 +593,13 @@ int __init lge_android_fota(char *s)
 }
 __setup("androidboot.fota=", lge_android_fota);
 
+static int boot_recovery = 0;
+
+int lge_get_boot_partition_recovery(void)
+{
+	return boot_recovery;
+}
+
 static char lge_boot_partition_str[16] = "none";
 
 char* lge_get_boot_partition(void)
@@ -595,6 +610,12 @@ char* lge_get_boot_partition(void)
 int __init lge_boot_partition(char *s)
 {
 	strncpy(lge_boot_partition_str, s, 16);
+
+	if(!strncmp(lge_boot_partition_str, "recovery", strlen("recovery")))
+		boot_recovery = 1; /* recovery boot mode */
+	else
+		boot_recovery = 0; /* other    boot mode */
+
 	return 1;
 }
 __setup("lge.boot.partition=", lge_boot_partition);

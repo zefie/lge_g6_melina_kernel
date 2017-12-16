@@ -77,9 +77,11 @@ enum hw_rev_type lge_get_board_revno(void);
 enum lge_laf_mode_type {
 	LGE_LAF_MODE_NORMAL = 0,
 	LGE_LAF_MODE_LAF,
+	LGE_LAF_MODE_MID,
 };
 
 enum lge_laf_mode_type lge_get_laf_mode(void);
+enum lge_laf_mode_type lge_get_laf_mid(void);
 #endif
 
 #if defined(CONFIG_PRE_SELF_DIAGNOSIS)
@@ -120,6 +122,7 @@ extern int lge_get_bootreason_with_lcd_dimming(void);
 #endif
 
 extern int lge_get_fota_mode(void);
+extern int lge_get_boot_partition_recovery(void);
 extern char* lge_get_boot_partition(void);
 
 #if defined(CONFIG_LGE_EARJACK_DEBUGGER) || defined(CONFIG_LGE_USB_DEBUGGER)

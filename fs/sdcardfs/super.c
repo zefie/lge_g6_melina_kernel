@@ -192,6 +192,11 @@ long sdcardfs_propagate_unlink(struct inode *parent, char* pathname) {
 	sbi = SDCARDFS_SB(parent->i_sb);
 	OVERRIDE_ROOT_CRED(saved_cred);
 	propagate_path = kmalloc(PATH_MAX, GFP_KERNEL);
+	if (!propagate_path) {
+		printk(KERN_ERR "sdcardfs: unlink propagate_path kmalloc fail\n");
+		REVERT_CRED(saved_cred);
+		return -ENOMEM;
+	}
 	old_fs = get_fs();
 	set_fs(KERNEL_DS);
 	if (sbi->options.type != TYPE_NONE && sbi->options.type != TYPE_DEFAULT) {
@@ -235,7 +240,18 @@ long sdcardfs_propagate_rename(struct inode *parent, char * oldname, char * newn
 	sbi = SDCARDFS_SB(parent->i_sb);
 	OVERRIDE_ROOT_CRED(saved_cred);
 	propagate_old_path = kmalloc(PATH_MAX, GFP_KERNEL);
+	if (!propagate_old_path) {
+		printk(KERN_ERR "sdcardfs: unlink propagate_old_path kmalloc fail\n");
+		REVERT_CRED(saved_cred);
+		return -ENOMEM;
+	}
 	propagete_new_path = kmalloc(PATH_MAX, GFP_KERNEL);
+	if (!propagete_new_path) {
+		printk(KERN_ERR "sdcardfs: unlink propagate_new_path kmalloc fail\n");
+		REVERT_CRED(saved_cred);
+		kfree(propagate_old_path);
+		return -ENOMEM;
+	}
 	old_fs = get_fs();
 	set_fs(KERNEL_DS);
 	if (sbi->options.type != TYPE_NONE && sbi->options.type != TYPE_DEFAULT) {

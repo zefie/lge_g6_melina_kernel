@@ -20,9 +20,10 @@
 #include <linux/power_supply.h>
 #include <linux/platform_device.h>
 
-#include "inc-battery-veneer.h"
 #include "inc-limit-voter.h"
 #include "inc-unified-sysfs.h"
+#include "inc-charging-time.h"
+#include "inc-battery-veneer.h"
 
 #define	EXTERNAL_CHANGED_PRESENT_USB		BIT(1)
 #define	EXTERNAL_CHANGED_PRESENT_WIRELESS	BIT(2)
@@ -34,6 +35,9 @@
 
 #define BATTERY_VENEER_WAKELOCK 	BATTERY_VENEER_NAME": charging"
 #define BATTERY_VENEER_NOTREADY		INT_MAX
+
+static enum charger_type detect_charger_type(bool presence_usb, bool presence_dc);
+static int detect_charger_power(enum charger_type type);
 
 struct battery_veneer {
 /* module descripters */
@@ -55,6 +59,10 @@ struct battery_veneer {
 	int limited_iusb;
 	int limited_ibat;
 	int limited_idc;
+
+/* for charging time */
+	enum charger_type chgtime_charger; // { NIL, SDP, CDP, DCP, QC2, QC3, PD2, PD3, EVP, WLC }
+	struct delayed_work chgtime_dwork;
 };
 
 static int limit_input_current(const union power_supply_propval *propval) {
@@ -67,6 +75,52 @@ static int limit_input_current(const union power_supply_propval *propval) {
 	} else {
 		pr_veneer("psy battery is not ready\n");
 		return -ENXIO;
+	}
+}
+
+static void chgtime_dwork_schedule(struct battery_veneer* veneer_me) {
+	int delay = (veneer_me->chgtime_charger == NIL || veneer_me->chgtime_charger == QC3)
+			? 0 : 3500;
+
+	if (delayed_work_pending(&veneer_me->chgtime_dwork))
+		cancel_delayed_work(&veneer_me->chgtime_dwork);
+	schedule_delayed_work(&veneer_me->chgtime_dwork, msecs_to_jiffies(delay));
+}
+
+static void chgtime_dwork_main(struct work_struct *work) {
+	struct power_supply* psy_batt = power_supply_get_by_name("battery");
+	struct battery_veneer* veneer_me = container_of(to_delayed_work(work),
+		struct battery_veneer, chgtime_dwork);
+
+	enum charger_type	charger = veneer_me->chgtime_charger;
+	int 			power = detect_charger_power(charger);
+
+	static int 		sample = INT_MAX;
+	static int 		counter = 0;
+
+	if (charger == DCP) {
+		pr_veneer("getting power (%d) : %d\n", counter, power);
+		if (sample != power) {
+			++counter;
+			sample = power;
+			chgtime_dwork_schedule(veneer_me);
+			return;
+		}
+	}
+
+	sample = INT_MAX;
+	counter = 0;
+
+	if (charger && power) {
+		charging_time_initiate(charger, power);
+	}
+	else {
+		charging_time_clear();
+	}
+
+	if (psy_batt) {
+		pr_veneer("Update uevent!\n");
+		power_supply_changed(psy_batt);
 	}
 }
 
@@ -108,6 +162,127 @@ static void charging_wakelock_control(struct battery_veneer* veneer_me,
 		charging_wakelock_release(veneer_me);
 }
 
+static enum charger_type detect_charger_type(bool presence_usb,
+	bool presence_dc) {
+	enum charger_type type = NIL;
+
+	/* This function is designed to detect detailed charger type from common psy interface.
+	 * But there are two usb psys to support code-compatibility of the wired chargers,
+	 * so I have to search the type in 'usb_pd' one more at this time.
+	 * Please fix the such irrational dependency on your turn.
+	 */
+	if (presence_usb) {
+		union power_supply_propval psp;
+		struct power_supply* psy_usb = power_supply_get_by_name("usb");
+
+		if (psy_usb && psy_usb->get_property &&
+			!psy_usb->get_property(psy_usb, POWER_SUPPLY_PROP_TYPE, &psp)) {
+
+			switch (psp.intval) {
+			case POWER_SUPPLY_TYPE_USB :
+				type = SDP;
+				break;
+			case POWER_SUPPLY_TYPE_USB_CDP :
+				type = CDP;
+				break;
+			case POWER_SUPPLY_TYPE_USB_DCP :
+				type = DCP;
+				break;
+			case POWER_SUPPLY_TYPE_USB_HVDCP :
+			case POWER_SUPPLY_TYPE_USB_HVDCP_3 :
+				type = QC3;
+				break;
+			default : /* impossible */
+				type = NIL;
+				break;
+			}
+
+			/* For PD, do detect one more time */
+			psp.intval = 0;
+			psy_usb = power_supply_get_by_name("usb_pd");
+			if (psy_usb
+				&& psy_usb->get_property
+				&& !psy_usb->get_property(psy_usb, POWER_SUPPLY_PROP_TYPE, &psp)
+				&& psp.intval == POWER_SUPPLY_TYPE_CTYPE_PD) {
+				type = PD3;
+			}
+			else {
+				; /* Do nothing : Entering here would be normal for other models. */
+			}
+		}
+		else {
+			pr_veneer("Error on retriving psy_usb property\n");
+		}
+	}
+	else if (presence_dc) {
+		type = WLC;
+	}
+	else {
+		; /* Do nothing */
+	}
+
+	return type;
+}
+
+static int detect_charger_voltage(enum charger_type type) {
+	switch (type) {
+		case QC2 :
+		case QC3 :
+		case PD2 :
+		case PD3 :
+		case EVP :
+			return 9;
+		case DCP :
+		case SDP :
+		case CDP :
+		case WLC :
+			return 5;
+		case NIL :
+		default :
+			return 0;
+	}
+}
+
+static int detect_charger_power(enum charger_type type) {
+	struct power_supply* psy_parallel = power_supply_get_by_name("usb-parallel");
+	struct power_supply* psy_batt = power_supply_get_by_name("battery");
+	int max_volatge = detect_charger_voltage(type);
+	int max_current = 0;
+
+	if (type == WLC) {
+		max_current = 900;
+	}
+	else if (type != NIL) {
+		/* get AICL value*/
+
+		union power_supply_propval psp = { .intval = 0 };
+
+		// getting parallel ICL
+		if (psy_parallel && psy_parallel->get_property
+			&& !psy_parallel->get_property(psy_parallel, POWER_SUPPLY_PROP_STATUS, &psp)) {
+			if (psp.intval == POWER_SUPPLY_STATUS_CHARGING) {
+				if (!psy_parallel->get_property(psy_parallel, POWER_SUPPLY_PROP_CURRENT_MAX, &psp)) {
+					pr_veneer("ICL for parallel is %d\n", psp.intval);
+					max_current = psp.intval;
+				}
+			}
+		}
+		// getting main ICL
+		if (psy_batt && psy_batt->get_property
+			&& !psy_batt->get_property(psy_batt, POWER_SUPPLY_PROP_INPUT_CURRENT_MAX, &psp)) {
+			max_current += psp.intval;
+		}
+
+		// round(max_current) to 100mA scale
+		max_current = (max_current/1000 + 50) / 100 * 100;
+	}
+	else {
+		max_current = 0;
+	}
+
+	return max_current * max_volatge;
+}
+
 static char* psy_external_suppliers [] = { "battery", "bms", "ac", "usb",
 		"usb-parallel", "usb-pd", "usb_pd", "dc", "dc-wireless", };
 static void psy_external_changed(struct power_supply *external_supplier);
@@ -120,8 +295,8 @@ static int psy_property_writeable(struct power_supply *psy,
 		enum power_supply_property prop);
 static enum power_supply_property psy_property_list [] = {
 	POWER_SUPPLY_PROP_INPUT_CURRENT_LIMIT,
+	POWER_SUPPLY_PROP_TIME_TO_FULL_NOW,
 	POWER_SUPPLY_PROP_VOLTAGE_NOW,
-	POWER_SUPPLY_PROP_HEALTH,
 	POWER_SUPPLY_PROP_TEMP,
 };
 
@@ -129,10 +304,10 @@ static const char* psy_property_name(enum power_supply_property prop) {
 	switch (prop) {
 	case POWER_SUPPLY_PROP_INPUT_CURRENT_LIMIT:
 		return "POWER_SUPPLY_PROP_INPUT_CURRENT_LIMIT";
+	case POWER_SUPPLY_PROP_TIME_TO_FULL_NOW:
+		return "POWER_SUPPLY_PROP_TIME_TO_FULL_NOW";
 	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
 		return "POWER_SUPPLY_PROP_VOLTAGE_NOW";
-	case POWER_SUPPLY_PROP_HEALTH :
-		return "POWER_SUPPLY_PROP_HEALTH";
 	case POWER_SUPPLY_PROP_TEMP:
 		return "POWER_SUPPLY_PROP_TEMP";
 	default:
@@ -170,23 +345,6 @@ static int psy_property_set(struct power_supply *psy_me,
 				rc = -EINVAL;
 			}
 		}
-	}
-	break;
-
-	case POWER_SUPPLY_PROP_HEALTH : {
-		enum battery_health_psy battery_health = battery_health_parse(val->intval);
-
-		if (battery_health!=BATTERY_HEALTH_UNKNOWN &&
-			battery_health!=veneer_me->battery_health) {
-
-			struct power_supply* psy_batt = power_supply_get_by_name("battery");
-			if (psy_batt && psy_batt->set_property)
-				psy_batt->set_property(psy_batt, POWER_SUPPLY_PROP_HEALTH, val);
-
-			veneer_me->battery_health = battery_health;
-		}
-		else
-			rc = -EINVAL;
 	}
 	break;
 
@@ -234,16 +392,25 @@ static int psy_property_get(struct power_supply *psy,
 		}
 		break;
 
+	case POWER_SUPPLY_PROP_TIME_TO_FULL_NOW : {
+		bool ready = false;
+		struct power_supply* psy_fg = power_supply_get_by_name("bms");
+
+		/* Is SoC ready? */
+		if (psy_fg && psy_fg->get_property &&
+			!psy_fg->get_property(psy_fg, POWER_SUPPLY_PROP_SOC_REPORTING_READY, val))
+			ready = val->intval;
+
+		/* get time to full only on charging */
+		val->intval = (ready && (veneer_me->presence_usb || veneer_me->presence_dc)) ?
+			charging_time_remains(veneer_me->battery_soc) :
+			-1;
+
+	}	break;
+
 	case POWER_SUPPLY_PROP_VOLTAGE_NOW :
 		if (BATTERY_VENEER_NOTREADY != veneer_me->battery_uvoltage)
 			val->intval = veneer_me->battery_uvoltage;
-		else
-			rc = -EAGAIN;
-		break;
-
-	case POWER_SUPPLY_PROP_HEALTH :
-		if (BATTERY_VENEER_NOTREADY != veneer_me->battery_health)
-			val->intval = veneer_me->battery_health;
 		else
 			rc = -EAGAIN;
 		break;
@@ -268,7 +435,6 @@ static int psy_property_writeable(struct power_supply *psy,
 
 	switch (prop) {
 	case POWER_SUPPLY_PROP_INPUT_CURRENT_LIMIT:
-	case POWER_SUPPLY_PROP_HEALTH:
 		rc = 1;
 		break;
 
@@ -313,6 +479,8 @@ static void psy_external_changed(struct power_supply *psy_me) {
 
 	/* Update from battery */
 	if (psy_batt && psy_batt->get_property) {
+		enum charger_type current_type = detect_charger_type(veneer_me->presence_usb, veneer_me->presence_dc);
+
 		/* Update Temperature/Voltage/SoC */
 		if (!psy_batt->get_property(psy_batt, POWER_SUPPLY_PROP_TEMP, &buffer)) {
 			veneer_me->battery_temperature = buffer.intval;
@@ -330,6 +498,12 @@ static void psy_external_changed(struct power_supply *psy_me) {
 			bool charge_done = !!buffer.intval;
 			charging_wakelock_control(veneer_me,
 				input_present, charge_done, veneer_me->battery_soc);
+		}
+
+		/* Initiate charging time */
+		if (veneer_me->chgtime_charger != current_type) {
+			veneer_me->chgtime_charger = current_type;
+			chgtime_dwork_schedule(veneer_me);
 		}
 	}
 	else {
@@ -414,6 +588,9 @@ static int battery_veneer_probe(struct platform_device *pdev) {
 
 	wake_lock_init(&veneer_me->veneer_wakelock,
 			WAKE_LOCK_SUSPEND, BATTERY_VENEER_WAKELOCK);
+
+	INIT_DELAYED_WORK(&veneer_me->chgtime_dwork,
+			chgtime_dwork_main);
 
 	platform_set_drvdata(pdev, veneer_me);
 

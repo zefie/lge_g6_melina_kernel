@@ -299,11 +299,11 @@ static int ecryptfs_open(struct inode *inode, struct file *file)
 		file, ecryptfs_inode_to_private(inode)->lower_file);
 	if (S_ISDIR(ecryptfs_dentry->d_inode->i_mode)) {
 #ifdef CONFIG_SDP
-//		mutex_lock(&crypt_stat->cs_mutex);    // hoon.shin
+//		mutex_lock(&crypt_stat->cs_mutex);
 		if (mount_crypt_stat->flags & ECRYPTFS_SDP_MOUNT) {
 			crypt_stat->flags |= ECRYPTFS_SDP_ENABLED;
 		}
-//		mutex_unlock(&crypt_stat->cs_mutex);    // hoon.shin
+//		mutex_unlock(&crypt_stat->cs_mutex);
 #endif
 		ecryptfs_printk(KERN_DEBUG, "This is a directory\n");
 		mutex_lock(&crypt_stat->cs_mutex);
@@ -344,7 +344,7 @@ static int ecryptfs_flush(struct file *file, fl_owner_t td)
 {
 	struct file *lower_file = ecryptfs_file_to_lower(file);
 
-	if (lower_file->f_op && lower_file->f_op->flush) {    // hoon.shin
+	if (lower_file->f_op && lower_file->f_op->flush) {
 		filemap_write_and_wait(file->f_mapping);
 		return lower_file->f_op->flush(lower_file, td);
 	}

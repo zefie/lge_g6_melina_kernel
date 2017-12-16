@@ -1776,9 +1776,13 @@ void msm_isp_process_overflow_irq(
 			*irq_status1 &= ~overflow_mask;
 			return;
 		}
-
-		ISP_DBG("%s: VFE%d Bus overflow detected: start recovery!\n",
+		/*LGE_CHANGE S, print irq_status on detecting vfe overflow, 2017-02-01, Camera-Stability@lge.com*/
+		pr_err("%s: VFE%d Bus overflow detected: start recovery!\n",
 			__func__, vfe_dev->pdev->id);
+		
+		pr_err("%s: vfe_id %d status0: 0x%x status1: 0x%x\n",
+    			__func__, vfe_dev->pdev->id, *irq_status0, *irq_status1);
+		/*LGE_CHANGE E, print irq_status on detecting vfe overflow, 2017-02-01, Camera-Stability@lge.com*/
 
 		/* maks off irq for current vfe */
 		atomic_cmpxchg(&vfe_dev->error_info.overflow_state,

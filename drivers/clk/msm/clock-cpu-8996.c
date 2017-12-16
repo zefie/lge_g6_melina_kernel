@@ -1365,7 +1365,9 @@ static int cpu_clock_8996_driver_probe(struct platform_device *pdev)
 		pr_err("soc_id = %d\n", _socinfo->v0_1.id);
 
 		if (_socinfo->v0_1.id == 305 &&
-				(lge_get_factory_boot() || lge_get_laf_mode())) {
+				(lge_get_factory_boot()
+				 || lge_get_laf_mode()
+				 || lge_get_boot_partition_recovery())) {
 			snprintf(perfclspeedbinstr, ARRAY_SIZE(perfclspeedbinstr),
 					"qcom,perfcl-speedbin%d-v%d-%s", perfclspeedbin, pvs_ver, "f");
 		}
@@ -1388,7 +1390,9 @@ static int cpu_clock_8996_driver_probe(struct platform_device *pdev)
 #ifdef CONFIG_LGE_PM
 	if (_socinfo != NULL) {
 		if (_socinfo->v0_1.id == 305 &&
-				(lge_get_factory_boot() || lge_get_laf_mode())) {
+				(lge_get_factory_boot()
+				 || lge_get_laf_mode()
+				 || lge_get_boot_partition_recovery())) {
 			snprintf(pwrclspeedbinstr, ARRAY_SIZE(pwrclspeedbinstr),
 					"qcom,pwrcl-speedbin%d-v%d-%s", perfclspeedbin, pvs_ver, "f");
 		}

@@ -2,7 +2,7 @@
  * Core MDSS framebuffer driver.
  *
  * Copyright (C) 2007 Google Incorporated
- * Copyright (c) 2008-2016, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2008-2017, The Linux Foundation. All rights reserved.
  *
  * This software is licensed under the terms of the GNU General Public
  * License version 2, as published by the Free Software Foundation, and
@@ -287,6 +287,17 @@ static int bl_get_led_temp(void *data) {
 	struct msm_fb_data_type *mfd = (struct msm_fb_data_type *)data;
 	return mfd->bl_level;
 }
+
+static int bl_get_led_c_temp(void *data) {
+	struct msm_fb_data_type *mfd = (struct msm_fb_data_type *)data;
+	if (lge_charger_present()) {
+		if (mfd->br_level_val > 0)
+			return 1;
+		else
+			return 0;
+	} else
+		return 0;
+}
 #endif
 
 #if 0
@@ -345,6 +356,8 @@ static void mdss_fb_set_bl_brightness(struct led_classdev *led_cdev,
 {
 	struct msm_fb_data_type *mfd = dev_get_drvdata(led_cdev->dev->parent);
 	int bl_lvl;
+
+	mfd->br_level_val = value;
 
 	if (mfd->boot_notification_led) {
 		led_trigger_event(mfd->boot_notification_led, 0);
@@ -1735,48 +1748,76 @@ static int mdss_fb_probe(struct platform_device *pdev)
 		mfd->watch.font_download_state = FONT_STATE_NONE;
 		mfd->unset_aod_bl = U32_MAX;
 		mfd->block_aod_bl = true;
+		mfd->watch.set_roi = 0;
 	}
 #endif
 
 
 #if defined(CONFIG_LGE_PM_THERMAL_VTS)
 	if (!rc && mfd->index == 0) {
-		mfd->vs = kzalloc(sizeof(struct value_sensor), GFP_KERNEL);
-		if (IS_ERR_OR_NULL(mfd->vs)) {
-			pr_err("Fail to alloc mfd->vs. err=%d\n", IS_ERR(mfd->vs));
+		/* led */
+		mfd->vs_led = kzalloc(sizeof(struct value_sensor), GFP_KERNEL);
+		if (IS_ERR_OR_NULL(mfd->vs_led)) {
+			pr_err("Fail to alloc mfd->vs_led. err=%d\n", IS_ERR(mfd->vs_led));
 			rc = -EFAULT;
-			goto err_vs;
+			goto err_vs_led;
 		}
-		mfd->vs->name = "led";
-		mfd->vs->vts_index = 101;
-		mfd->vs->devdata = mfd;
-		mfd->vs->weight = 0;
-		mfd->vs->get_temp = bl_get_led_temp;
-		rc = vts_register_value_sensor(mfd->vs);
+
+		mfd->vs_led->name = "led";
+		mfd->vs_led->vts_index = 101;
+		mfd->vs_led->devdata = mfd;
+		mfd->vs_led->weight = 0;
+		mfd->vs_led->get_temp = bl_get_led_temp;
+		rc = vts_register_value_sensor(mfd->vs_led);
 		if (rc) {
-			kfree(mfd->vs);
+			kfree(mfd->vs_led);
 			pr_err("Fail to register value sensor.\n");
 			rc = -EFAULT;
-			goto err_vs;
+			goto err_vs_led;
 		}
-		mfd->vs_clone = kzalloc(sizeof(struct value_sensor), GFP_KERNEL);
-		if (IS_ERR_OR_NULL(mfd->vs_clone)) {
-			pr_err("Fail to alloc mfd->vs_clone. err=%d\n.", IS_ERR(mfd->vs_clone));
+
+		/* led_sensor */
+		mfd->vs_led_s = kzalloc(sizeof(struct value_sensor), GFP_KERNEL);
+		if (IS_ERR_OR_NULL(mfd->vs_led_s)) {
+			pr_err("Fail to alloc mfd->vs_leds. err=%d\n.", IS_ERR(mfd->vs_led_s));
 			rc = -ENOMEM;
-			goto err_vs_clone;
+			goto err_vs_led_s;
 		}
-		mfd->vs_clone->name = "led_sensor";
-		mfd->vs_clone->vts_index = 102;
-		mfd->vs_clone->devdata = mfd;
-		mfd->vs_clone->weight = 1000;
-		mfd->vs_clone->get_temp = bl_get_led_temp;
-		rc = vts_register_value_sensor(mfd->vs_clone);
+
+		mfd->vs_led_s->name = "led_sensor";
+		mfd->vs_led_s->vts_index = 102;
+		mfd->vs_led_s->devdata = mfd;
+		mfd->vs_led_s->weight = 1000;
+		mfd->vs_led_s->get_temp = bl_get_led_temp;
+		rc = vts_register_value_sensor(mfd->vs_led_s);
 		if (rc) {
-			kfree(mfd->vs_clone);
+			kfree(mfd->vs_led_s);
 			pr_err("Fail to register value sensor.\n");
 			rc = -EFAULT;
-			goto err_vs_clone;
+			goto err_vs_led_s;
 		}
+
+		/* led_c_sensor */
+		mfd->vs_led_cs = kzalloc(sizeof(struct value_sensor), GFP_KERNEL);
+		if (IS_ERR_OR_NULL(mfd->vs_led_cs)) {
+			pr_err("Fail to alloc mfd->vs_led_cs. err=%d\n.", IS_ERR(mfd->vs_led_cs));
+			rc = -ENOMEM;
+			goto err_vs_led_cs;
+		}
+
+		mfd->vs_led_cs->name = "led_c_sensor";
+		mfd->vs_led_cs->vts_index = 103;
+		mfd->vs_led_cs->devdata = mfd;
+		mfd->vs_led_cs->weight = 1000;
+		mfd->vs_led_cs->get_temp = bl_get_led_c_temp;
+		rc = vts_register_value_sensor(mfd->vs_led_cs);
+		if (rc) {
+			kfree(mfd->vs_led_cs);
+			pr_err("Fail to register value sensor.\n");
+			rc = -EFAULT;
+			goto err_vs_led_cs;
+		}
+
 
 		pr_info("\"led\" virtual value sensor is registered.\n");
 	}
@@ -1784,9 +1825,11 @@ static int mdss_fb_probe(struct platform_device *pdev)
 	return rc;
 
 #if defined(CONFIG_LGE_PM_THERMAL_VTS)
-err_vs_clone:
-	kfree(mfd->vs);
-err_vs:
+err_vs_led_cs:
+	kfree(mfd->vs_led_s);
+err_vs_led_s:
+	kfree(mfd->vs_led);
+err_vs_led:
 	pr_err("fail to set lcd vts by %d\n", rc);
 	return rc;
 #endif
@@ -1852,8 +1895,15 @@ static int mdss_fb_remove(struct platform_device *pdev)
 #endif
 #if defined(CONFIG_LGE_PM_THERMAL_VTS)
 	if (mfd->index == 0) {
-		vts_unregister_value_sensor(mfd->vs);
-		kfree(mfd->vs);
+		vts_unregister_value_sensor(mfd->vs_led);
+		kfree(mfd->vs_led);
+
+		vts_unregister_value_sensor(mfd->vs_led_s);
+		kfree(mfd->vs_led_s);
+
+		vts_unregister_value_sensor(mfd->vs_led_cs);
+		kfree(mfd->vs_led_cs);
+
 	}
 #endif
 	return 0;
@@ -2157,6 +2207,16 @@ void mdss_fb_set_backlight(struct msm_fb_data_type *mfd, u32 bkl_lvl)
 				bl_notify_needed = true;
 			pr_debug("backlight sent to panel :%d\n", temp);
 			DISP_DEBUG(BL, "backlight sent to panel :%d\n", temp);
+#if defined(CONFIG_LGE_DISPLAY_AOD_WITH_MIPI)
+			if (mfd->panel_info->aod_node_from_user == 1 && mfd->panel_info->aod_cur_mode == AOD_PANEL_MODE_U3_UNBLANK && !temp) {
+				oem_mdss_aod_cmd_send(mfd, AOD_CMD_DISPLAY_OFF);
+				pr_info("[AOD] Send display off command when BL0 in U3 unblank!!!\n");
+			}
+			else if (mfd->display_off) {
+				oem_mdss_aod_cmd_send(mfd, AOD_CMD_DISPLAY_ON);
+				pr_info("[AOD] Send display on command when turn on BL\n");
+			}
+#endif
 			pdata->set_backlight(pdata, temp);
 			mfd->bl_level = bkl_lvl;
 			mfd->bl_level_scaled = temp;
@@ -2792,6 +2852,10 @@ err_put:
 	dma_buf_put(mfd->fbmem_buf);
 fb_mmap_failed:
 	ion_free(mfd->fb_ion_client, mfd->fb_ion_handle);
+	mfd->fb_attachment = NULL;
+	mfd->fb_table = NULL;
+	mfd->fb_ion_handle = NULL;
+	mfd->fbmem_buf = NULL;
 	return rc;
 }
 
@@ -4873,8 +4937,6 @@ static int mdss_fb_handle_buf_sync_ioctl(struct msm_sync_pt_data *sync_pt_data,
 		goto buf_sync_err_2;
 	}
 
-	sync_fence_install(rel_fence, rel_fen_fd);
-
 	ret = copy_to_user(buf_sync->rel_fen_fd, &rel_fen_fd, sizeof(int));
 	if (ret) {
 		pr_err("%s: copy_to_user failed\n", sync_pt_data->fence_name);
@@ -4911,8 +4973,6 @@ static int mdss_fb_handle_buf_sync_ioctl(struct msm_sync_pt_data *sync_pt_data,
 		goto buf_sync_err_3;
 	}
 
-	sync_fence_install(retire_fence, retire_fen_fd);
-
 	ret = copy_to_user(buf_sync->retire_fen_fd, &retire_fen_fd,
 			sizeof(int));
 	if (ret) {
@@ -4923,7 +4983,10 @@ static int mdss_fb_handle_buf_sync_ioctl(struct msm_sync_pt_data *sync_pt_data,
 		goto buf_sync_err_3;
 	}
 
+	sync_fence_install(retire_fence, retire_fen_fd);
+
 skip_retire_fence:
+	sync_fence_install(rel_fence, rel_fen_fd);
 	mutex_unlock(&sync_pt_data->sync_mutex);
 
 	if (buf_sync->flags & MDP_BUF_SYNC_FLAG_WAIT)
@@ -5710,7 +5773,10 @@ void mdss_fb_report_panel_dead(struct msm_fb_data_type *mfd)
 
 #if defined(CONFIG_LGE_DISPLAY_AOD_SUPPORTED)
 	lge_mdss_fb_aod_recovery(mfd, envp);
+#if defined(CONFIG_LGE_DISPLAY_AOD_WITH_MIPI)
 	mfd->watch.current_font_type = 0;
+	mfd->watch.font_download_state = FONT_STATE_NONE;
+#endif
 #endif
 	kobject_uevent_env(&mfd->fbi->dev->kobj,
 		KOBJ_CHANGE, envp);

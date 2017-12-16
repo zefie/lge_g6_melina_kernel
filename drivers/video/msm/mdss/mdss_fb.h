@@ -328,6 +328,7 @@ struct msm_fb_data_type {
 	u32 unset_bl_level;
 	bool allow_bl_update;
 	u32 bl_level_scaled;
+	u32 br_level_val;
 #if IS_ENABLED(CONFIG_LGE_DISPLAY_BL_EXTENDED)
 	u32 br_lvl_ex;
 	u32 bl_level_ex;
@@ -411,14 +412,16 @@ struct msm_fb_data_type {
 	struct mutex mode_switch_lock;
 #endif
 #if defined(CONFIG_LGE_PM_THERMAL_VTS)
-	struct value_sensor *vs;
-	struct value_sensor *vs_clone;
+	struct value_sensor *vs_led;
+	struct value_sensor *vs_led_s;
+	struct value_sensor *vs_led_cs;
 #endif
 #if defined(CONFIG_LGE_DISPLAY_AOD_WITH_MIPI)
 	bool need_to_init_watch;
 	bool block_aod_bl;
 	u32 unset_aod_bl;
 	bool ready_to_u2;
+	bool display_off;
 	struct mutex watch_lock;
 	struct watch_data watch;
 #endif

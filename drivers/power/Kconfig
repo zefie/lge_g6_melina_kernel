@@ -820,11 +820,18 @@ config LGE_PM_EMBEDDED_BATT_ID_ADC
 	  For distinguish battery id by adc value
 
 config LGE_PM_WATERPROOF_PROTECTION
-        bool "LGE_PM_WATERPROOF_PROTECTION"
-        default n
-        depends on LGE_PM
-        help
-          Support charging suspending when water is detected
+	bool "LGE_PM_WATERPROOF_PROTECTION"
+	default n
+	depends on LGE_PM
+	help
+	  Support charging suspending when water is detected
+
+config LGE_PM_MIRACAST_MITIGATION
+	bool "LGE_PM_MIRACAST_MITIGATION"
+	default n
+	depends on LGE_PM
+	help
+	  Support charging mitigation for miracast
 
 source "drivers/power/reset/Kconfig"
 

@@ -77,7 +77,7 @@
 #ifdef CONFIG_LGE_QPNP_HAPTIC_OV_RB
 #define QPNP_HAP_VMAX_MAX_MV		2088
 #else /* QCT original */
-#define QPNP_HAP_VMAX_MAX_MV		3248
+#define QPNP_HAP_VMAX_MAX_MV		3596
 #endif
 
 #define QPNP_HAP_ILIM_MASK		0xFE

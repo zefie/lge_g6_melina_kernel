@@ -52,4 +52,5 @@ void mdss_fb_update_backlight_ex(struct msm_fb_data_type *mfd);
 #if defined(CONFIG_LGE_PANEL_RECOVERY)
 bool lge_panel_recovery_mode(void);
 #endif
+int lge_charger_present(void);
 #endif /* LGE_MDSS_FB_H */

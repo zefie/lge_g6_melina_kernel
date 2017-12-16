@@ -1,3 +1,9 @@
+config LGE_USB_MOISTURE_DETECT
+	bool "enable usb moisture detect"
+	default n
+	help
+	  usb moisture detect
+
 config LGE_USB_HOST_SUPPORT_LIST_HID
 	bool "enable usb host compatible hid devices list"
 	default n

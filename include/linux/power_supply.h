@@ -292,6 +292,7 @@ enum power_supply_property {
 #ifdef CONFIG_LGE_PM_CYCLE_BASED_CHG_VOLTAGE
 	POWER_SUPPLY_PROP_BATTERY_CYCLE,
 #endif
+	POWER_SUPPLY_PROP_CAPACITY_QCT, /* in percents! */
 	/* Local extensions of type int64_t */
 	POWER_SUPPLY_PROP_CHARGE_COUNTER_EXT,
 	/* Properties of type `const char *' */

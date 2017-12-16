@@ -1,4 +1,4 @@
-/* Copyright (c) 2016 LG Electronics, Inc.
+/* Copyright (c) 2015, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -9,9 +9,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  */
-#ifndef __MACH_LGE_MME_DRV_H
-#define __MACH_LGE_MME_DRV_H
 
-#define LGE_MME_DEV_NAME "lge_mme_drv"
-
-#endif
+&i2c_6 {
+	tusb422@20 {
+		ti,usb-ss-en-gpio = <&tlmm 84 0>;
+	};
+};

@@ -492,7 +492,7 @@ static int lge_boot_lockup_check_xo_therm_too_hot(void)
 
 	if(!lge_adc_lpc) {
 		pr_emerg("lge_adc is not connected\n");
-        return -1;
+        return -256;
 	}
 
 	rc = lge_adc_lpc->get_property(lge_adc_lpc,
@@ -500,35 +500,62 @@ static int lge_boot_lockup_check_xo_therm_too_hot(void)
 
 	if(rc < 0) {
 		pr_emerg("lge_adc XO_THERM is not valid\n");
-        return -1;
+        return -256;
 	}
 
 	xo_therm = lge_val.intval;
 
 	pr_emerg("boot_lockup_detect XO_THERM[%d]\n",xo_therm);
 
-	if(xo_therm >= 70) // too hot
-		return 1;
+	return xo_therm;
+}
 
-    return 0;
+int lge_boot_lockup_num_online_cpus(void)
+{
+	int cpus = num_online_cpus();
+	pr_emerg("boot_lockup_detect num of cpu online[%d]\n",cpus);
+	return cpus;
 }
 #endif
 static void lge_boot_lockup_detect_func(struct work_struct *work)
 {
+	static int retry = 0;
 #ifdef CONFIG_LGE_PM_LGE_POWER_CLASS_ADC_QCT
-	if(lge_boot_lockup_check_xo_therm_too_hot() == 1) { // too hot
+	int xo_therm = lge_boot_lockup_check_xo_therm_too_hot();
+	int num_cpus = lge_boot_lockup_num_online_cpus();
+#endif
+
+	if( boot_lockup_detect_working != LOCKUP_WQ_STARTED) {
+		pr_emerg("WARNING: detecting lockup during boot! but, status is not LOCKUP_WQ_STARTED [%d]",
+				boot_lockup_detect_working);
+		return;
+	}
+
+#ifdef CONFIG_LGE_PM_LGE_POWER_CLASS_ADC_QCT
+	if(retry == 0 && (xo_therm >= 60 || num_cpus <= 2)) { // too hot & too few cpus
+		boot_lockup_detect_working = LOCKUP_WQ_STARTED;
 		pr_emerg("==================================================================\n");
-		pr_emerg("WARNING: detecting lockup during boot! skip panic by too hot\n");
+		pr_emerg("WARNING: detecting lockup during boot! too hot! one more chance %lds \n", boot_deadline/1000);
 		pr_emerg("==================================================================\n");
-	} else
+		retry = 1;
+		queue_delayed_work(system_highpri_wq, &lge_boot_lockup_detect_work, msecs_to_jiffies(boot_deadline));
+	} else if(retry == 1 && xo_therm >= 70) {
+		boot_lockup_detect_working = LOCKUP_WQ_CANCELED;
+		pr_emerg("================================================================\n");
+		pr_emerg("WARNING: detecting lockup during boot! abandon for terrible hot \n");
+		pr_emerg("================================================================\n");
+	}
+	else
 #endif
 	{
+		boot_lockup_detect_working = LOCKUP_WQ_CANCELED;
 		pr_emerg("==========================================================\n");
 		pr_emerg("WARNING: detecting lockup during boot! forced panic......\n");
 		pr_emerg("==========================================================\n");
 
 		//panic("detecting lockup during boot!\n");
-		gen_wdt_bite(NULL,NULL);
+		//gen_wdt_bite(NULL,NULL);
+		machine_restart(NULL);
 	}
 }
 
@@ -536,9 +563,9 @@ static void lge_init_boot_lockup_detect(void)
 {
 
 	if( !strcmp(CONFIG_LOCALVERSION,"-perf") )
-		boot_deadline = 120 * 1000;
+		boot_deadline = 180 * 1000;
 	else
-		boot_deadline = 240 * 1000;
+		boot_deadline = 360 * 1000;
 
 	pr_info("%s boot_partition:%s boot_mode:%d fota:%d\n", __func__,
 			lge_get_boot_partition(), lge_get_boot_mode(), lge_get_fota_mode());

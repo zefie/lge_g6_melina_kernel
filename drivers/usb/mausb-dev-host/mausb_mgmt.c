@@ -101,6 +101,12 @@ void mausb_enqueue_ret_unlink(struct stub_device *sdev,
 	unlink->r.cancel_resp.cancel_status = -status;
 
 	unlink_pal = kzalloc(sizeof(struct stub_mausb_pal), GFP_ATOMIC);
+	if(!unlink_pal)
+	{
+		mausb_event_add(&sdev->ud, VDEV_EVENT_ERROR_MALLOC);
+		return;
+	}
+		
 	unlink_pal->pdu = unlink;
 	unlink_pal->sdev = sdev;
 	unlink_pal->length = sizeof(struct mausb_req_resp);

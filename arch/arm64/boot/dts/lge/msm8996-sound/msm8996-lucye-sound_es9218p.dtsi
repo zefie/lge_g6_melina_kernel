@@ -101,6 +101,7 @@
 &soc {
 	sound-9335 {
 		lge,es9218p-codec;
+		lge,moist-det-en;
 	};
 	i2c_6: i2c@757a000 {
 		es9218-codec@48 {

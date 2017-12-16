@@ -182,6 +182,31 @@ bool lge_battery_present(void){
 }
 #endif
 
+int lge_charger_present(void){
+	struct lge_power *lge_cd_lpc;
+	union lge_power_propval	lge_val = {0,};
+	int chg_present = 0;
+	int rc = 0;
+
+	lge_cd_lpc = lge_power_get_by_name("lge_cable_detect");
+
+	if (lge_cd_lpc) {
+		rc = lge_cd_lpc->get_property(lge_cd_lpc, LGE_POWER_PROP_CHG_PRESENT, &lge_val);
+		chg_present = lge_val.intval;
+	} else {
+		lge_cd_lpc = lge_power_get_by_name("lge_cable_detect");
+		if (lge_cd_lpc) {
+			rc = lge_cd_lpc->get_property(lge_cd_lpc, LGE_POWER_PROP_CHG_PRESENT, &lge_val);
+			chg_present = lge_val.intval;
+		} else {
+			pr_err("cannot get lge_cable_detect lpc\n");
+			/* best effort, guessing not connect */
+			chg_present = 0;
+		}
+	}
+	return chg_present;
+}
+
 /*---------------------------------------------------------------------------*/
 /* Brightness - Backlight mapping (main)                                     */
 /*---------------------------------------------------------------------------*/
@@ -1126,13 +1151,6 @@ static ssize_t mdss_fb_set_keep_aod(struct device *dev,
 		mfd->keep_aod_pending = true;
 		pr_info("keep_aod_pending set to true\n");
 #endif
-#if !defined(CONFIG_LGE_DISPLAY_DYN_DSI_MODE_SWITCH)
-		rc = oem_mdss_aod_cmd_send(mfd, AOD_CMD_DISABLE);
-		if (rc)
-			pr_err("[AOD] Fail to send U2->U3 command\n");
-#endif
-		oem_mdss_aod_set_backlight_mode(mfd);
-		pdata->panel_info.aod_keep_u2 = AOD_NO_DECISION;
 #if defined(CONFIG_LGE_DISPLAY_AOD_WITH_MIPI)
 		/* When Move to U3 mode from U2 unblank */
 		/* 1. Turn off backlight	*/
@@ -1142,6 +1160,13 @@ static ssize_t mdss_fb_set_keep_aod(struct device *dev,
 		mutex_unlock(&mfd->bl_lock);
 		mfd->block_aod_bl = true;
 #endif
+#if !defined(CONFIG_LGE_DISPLAY_DYN_DSI_MODE_SWITCH)
+		rc = oem_mdss_aod_cmd_send(mfd, AOD_CMD_DISABLE);
+		if (rc)
+			pr_err("[AOD] Fail to send U2->U3 command\n");
+#endif
+		oem_mdss_aod_set_backlight_mode(mfd);
+		pdata->panel_info.aod_keep_u2 = AOD_NO_DECISION;
 #if IS_ENABLED(CONFIG_LGE_DISPLAY_BL_EXTENDED)
 		mutex_lock(&mfd->bl_lock);
 		mdss_fb_set_bl_brightness_aod_sub(mfd, mfd->br_lvl_ex);

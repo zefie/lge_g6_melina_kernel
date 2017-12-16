@@ -1,10 +1,3 @@
-/*
- * mm.h
- *
- *  Created on: Feb 17, 2016
- *      Author: mudzizi
- */
-
 #ifndef ECRYPTFS_MM_H_
 #define ECRYPTFS_MM_H_
 

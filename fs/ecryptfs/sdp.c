@@ -366,27 +366,27 @@ int sdp_write_enc_packet(char **packet, struct ecryptfs_crypt_stat *crypt_stat,
 	 *	  | File Encryption Key Size 	| 1 byte		|
 	 *	  | File Encryption Key	   	| arbitrary	|
 	 */
-	ecryptfs_printk(KERN_ERR, ":%d\n", __LINE__);
+	ecryptfs_printk(KERN_DEBUG, ":%d\n", __LINE__);
 	data_len = (1 + 4 + 1 + 1 + crypt_stat->key_size);
 	*packet = kmalloc(data_len, GFP_KERNEL);
-	ecryptfs_printk(KERN_ERR, ":%d\n", __LINE__);
+	ecryptfs_printk(KERN_DEBUG, ":%d\n", __LINE__);
 	message = *packet;
 	if (!message) {
 		ecryptfs_printk(KERN_ERR, "Unable to allocate memory\n");
 		rc = -ENOMEM;
 		goto out;
 	}
-	ecryptfs_printk(KERN_ERR, ":%d\n", __LINE__);
+	ecryptfs_printk(KERN_DEBUG, ":%d\n", __LINE__);
 	message[i++] = SDP_CMD_ENC_FEK;
-	ecryptfs_printk(KERN_ERR, ":%d\n", __LINE__);
+	ecryptfs_printk(KERN_DEBUG, ":%d\n", __LINE__);
 
 	put_unaligned_be32(crypt_stat->storage_id, &message[i]);
-	ecryptfs_printk(KERN_ERR, ":%d:storage_id=%d\n", __LINE__, crypt_stat->storage_id);
+	ecryptfs_printk(KERN_DEBUG, ":%d:storage_id=%d\n", __LINE__, crypt_stat->storage_id);
 	i += 4;
 	message[i++] = SDP_KEY_TYPE_ECDH;
 	message[i++] = crypt_stat->key_size;
 	memcpy(&message[i], crypt_stat->key, crypt_stat->key_size);
-	ecryptfs_printk(KERN_ERR, ":%d\n", __LINE__);
+	ecryptfs_printk(KERN_DEBUG, ":%d\n", __LINE__);
 	ecryptfs_dump_hex(crypt_stat->key, crypt_stat->key_size);
 	//schedule_timeout_interruptible(1 * HZ);
 	i += crypt_stat->key_size;
@@ -477,7 +477,7 @@ sdp_parse_enc_fek_packet(struct ecryptfs_key_record *key_rec,
 	 */
 	message_len = msg->data_len;
 	data = msg->data;
-	ecryptfs_printk(KERN_ERR, ":%d\n", __LINE__);
+	ecryptfs_printk(KERN_DEBUG, ":%d\n", __LINE__);
 	/* verify that everything through the encrypted FEK size is present */
 	if (message_len < 6) {
 		rc = -EIO;
@@ -485,14 +485,14 @@ sdp_parse_enc_fek_packet(struct ecryptfs_key_record *key_rec,
 		       "message length is [%d]\n", __func__, message_len, 8);
 		goto out;
 	}
-	ecryptfs_printk(KERN_ERR, ":%d\n", __LINE__);
+	ecryptfs_printk(KERN_DEBUG, ":%d\n", __LINE__);
 	if (data[i++] != SDP_CMD_RES_EFEK) {
 		rc = -EIO;
 		printk(KERN_ERR "%s: Type should be SDP_CMD_RES_EFEK\n",
 		       __func__);
 		goto out;
 	}
-	ecryptfs_printk(KERN_ERR, ":%d\n", __LINE__);
+	ecryptfs_printk(KERN_DEBUG, ":%d\n", __LINE__);
 	if (data[i++]) {
 		rc = -EIO;
 		printk(KERN_ERR "%s: Status indicator has non zero "
@@ -500,18 +500,18 @@ sdp_parse_enc_fek_packet(struct ecryptfs_key_record *key_rec,
 
 		goto out;
 	}
-	ecryptfs_printk(KERN_ERR, ":%d\n", __LINE__);
+	ecryptfs_printk(KERN_DEBUG, ":%d\n", __LINE__);
 
 	memcpy(&sid_nbo, &data[i], 4);
-	ecryptfs_printk(KERN_ERR, ":%d\n", __LINE__);
+	ecryptfs_printk(KERN_DEBUG, ":%d\n", __LINE__);
 	storage_id = be32_to_cpu(sid_nbo);
-	ecryptfs_printk(KERN_ERR, ":%d:user_id = %d\n", __LINE__, storage_id);
+	ecryptfs_printk(KERN_DEBUG, ":%d:user_id = %d\n", __LINE__, storage_id);
 	i += 4;
 	if (crypt_stat->storage_id != storage_id) {
 		SDP_LOGE("user id does not match\n%d!=%d", crypt_stat->storage_id, storage_id);
 		goto out;
 	}
-	ecryptfs_printk(KERN_ERR, ":%d\n", __LINE__);
+	ecryptfs_printk(KERN_DEBUG, ":%d\n", __LINE__);
 	key_rec->enc_key_size = data[i++];
 	if (message_len < (i + key_rec->enc_key_size)) {
 		rc = -EIO;
@@ -519,14 +519,14 @@ sdp_parse_enc_fek_packet(struct ecryptfs_key_record *key_rec,
 		       __func__, message_len, (i + key_rec->enc_key_size));
 		goto out;
 	}
-	ecryptfs_printk(KERN_ERR, ":%d\n", __LINE__);
+	ecryptfs_printk(KERN_DEBUG, ":%d\n", __LINE__);
 
 	memcpy(key_rec->enc_key, &data[i], key_rec->enc_key_size);
-	ecryptfs_printk(KERN_ERR, ":%d\n", __LINE__);
+	ecryptfs_printk(KERN_DEBUG, ":%d\n", __LINE__);
 	i += key_rec->enc_key_size;
 
 	rc = ecryptfs_parse_packet_length(&data[i], &crypt_stat->pubkey_len, &data_len);
-	ecryptfs_printk(KERN_ERR, ":%d\n", __LINE__);
+	ecryptfs_printk(KERN_DEBUG, ":%d\n", __LINE__);
 	if (rc) {
 		ecryptfs_printk(KERN_WARNING, "Error parsing pubkey packet length; "
 				"rc = [%d]\n", rc);
@@ -540,7 +540,7 @@ sdp_parse_enc_fek_packet(struct ecryptfs_key_record *key_rec,
 		       ECRYPTFS_MAX_ENCRYPTED_KEY_BYTES);
 		goto out;
 	}
-	ecryptfs_printk(KERN_ERR, ":%d\n", __LINE__);
+	ecryptfs_printk(KERN_DEBUG, ":%d\n", __LINE__);
 	i += data_len;
 
 	if (message_len < (i + crypt_stat->pubkey_len)) {
@@ -549,7 +549,7 @@ sdp_parse_enc_fek_packet(struct ecryptfs_key_record *key_rec,
 		       __func__, message_len, (i + key_rec->enc_key_size));
 		goto out;
 	}
-	ecryptfs_printk(KERN_ERR, ":%d\n", __LINE__);
+	ecryptfs_printk(KERN_DEBUG, ":%d\n", __LINE__);
 	if (crypt_stat->pubkey_len > ECRYPTFS_SDP_PUBKEY_LEN_MAX) {
 		rc = -EIO;
 		printk(KERN_ERR "%s: Encrypted key_size [%zd] larger than "
@@ -558,9 +558,9 @@ sdp_parse_enc_fek_packet(struct ecryptfs_key_record *key_rec,
 		       ECRYPTFS_SDP_PUBKEY_LEN_MAX);
 		goto out;
 	}
-	ecryptfs_printk(KERN_ERR, ":%d\n", __LINE__);
+	ecryptfs_printk(KERN_DEBUG, ":%d\n", __LINE__);
 	memcpy(crypt_stat->pubkey, &data[i], crypt_stat->pubkey_len);
-	ecryptfs_printk(KERN_ERR, ":%d\n", __LINE__);
+	ecryptfs_printk(KERN_DEBUG, ":%d\n", __LINE__);
 	i += crypt_stat->pubkey_len;
 out:
 	return rc;
@@ -660,7 +660,7 @@ sdp_encrypt_session_key(struct ecryptfs_crypt_stat *crypt_stat,
 	struct sdp_storage *tmp_storage;
 	struct sdp_key *sym_key;
 	int rc = 0;
-	ecryptfs_printk(KERN_ERR, ":%d:storageid:%d\n", __LINE__, crypt_stat->storage_id);
+	ecryptfs_printk(KERN_DEBUG, ":%d:storageid:%d\n", __LINE__, crypt_stat->storage_id);
 	cur_user = sdp_get_current_user();
 	rc = sdp_is_storage_locked(cur_user, crypt_stat->storage_id);
 	if (rc < 0) {
@@ -680,20 +680,20 @@ sdp_encrypt_session_key(struct ecryptfs_crypt_stat *crypt_stat,
 	}
 	rc = sdp_write_enc_packet(&payload, crypt_stat,
 		&payload_len);
-	ecryptfs_printk(KERN_ERR, ":%d\n", __LINE__);
+	ecryptfs_printk(KERN_DEBUG, ":%d\n", __LINE__);
 
 	if (rc) {
 		ecryptfs_printk(KERN_ERR, "Error generating ENC_FEK packet\n");
 		goto out;
 	}
-	ecryptfs_printk(KERN_ERR, ":%d\n", __LINE__);
+	ecryptfs_printk(KERN_DEBUG, ":%d\n", __LINE__);
 	rc = ecryptfs_send_message(payload, payload_len, &msg_ctx);
 	if (rc) {
 		ecryptfs_printk(KERN_ERR, "Error sending message to "
 				"ecryptfsd: %d\n", rc);
 		goto out;
 	}
-	ecryptfs_printk(KERN_ERR, ":%d\n", __LINE__);
+	ecryptfs_printk(KERN_DEBUG, ":%d\n", __LINE__);
 	rc = ecryptfs_wait_for_response(msg_ctx, &msg);
 	if (rc) {
 		ecryptfs_printk(KERN_ERR, "Failed to receive Encrypted FEK Packet "
@@ -701,11 +701,11 @@ sdp_encrypt_session_key(struct ecryptfs_crypt_stat *crypt_stat,
 		rc = -EIO;
 		goto out;
 	}
-	ecryptfs_printk(KERN_ERR, ":%d\n", __LINE__);
+	ecryptfs_printk(KERN_DEBUG, ":%d\n", __LINE__);
 	rc = sdp_parse_enc_fek_packet(key_rec, crypt_stat, msg);
 	if (rc)
 		ecryptfs_printk(KERN_ERR, "Error parsing Encrypted FEK packet\n");
-	ecryptfs_printk(KERN_ERR, ":%d\n", __LINE__);
+	ecryptfs_printk(KERN_DEBUG, ":%d\n", __LINE__);
 
 out:
 	if (msg) kfree(msg);
@@ -726,7 +726,7 @@ sdp_decrypt_session_key(struct ecryptfs_auth_tok *auth_tok,
 	struct sdp_storage *tmp_storage;
 	struct sdp_key sym_key;
 	int rc;
-	ecryptfs_printk(KERN_ERR, ":%d\n", __LINE__);
+	ecryptfs_printk(KERN_DEBUG, ":%d\n", __LINE__);
 	if (!(crypt_stat->flags & ECRYPTFS_SDP_SENSITIVE)) {
 		//TODO :Decrypt session key by using Protected Key
 		if (crypt_stat->storage_id >= 0) {
@@ -772,7 +772,7 @@ sdp_decrypt_session_key(struct ecryptfs_auth_tok *auth_tok,
 		rc = sdp_aes_crypto(&sym_key, auth_tok->session_key.encrypted_key,
 							auth_tok->session_key.decrypted_key,
 							auth_tok->session_key.decrypted_key_size, SDP_AES_DEC);
-		ecryptfs_printk(KERN_ERR, "Decrypted session key:\n");
+		ecryptfs_printk(KERN_DEBUG, "Decrypted session key:\n");
 		ecryptfs_dump_hex(crypt_stat->key,
 				  crypt_stat->key_size);
 		zero_out(sym_key.data, sym_key.len);
@@ -794,8 +794,8 @@ sdp_decrypt_session_key(struct ecryptfs_auth_tok *auth_tok,
 		ecryptfs_printk(KERN_ERR, "Failed to write sdp dec fek packet\n");
 		goto out;
 	}
-#if 1//mudzizi.kim debug payload
-	ecryptfs_printk(KERN_ERR, "sdp dec fek payload(len=%zu)\n", payload_len);
+#if SDP_DEBUG
+	ecryptfs_printk(KERN_DEBUG, "sdp dec fek payload(len=%zu)\n", payload_len);
 
 	ecryptfs_dump_hex(payload, payload_len);
 #endif
@@ -823,7 +823,10 @@ session_key_decrypted:
 	memcpy(crypt_stat->key, auth_tok->session_key.decrypted_key,
 	       auth_tok->session_key.decrypted_key_size);
 	crypt_stat->key_size = auth_tok->session_key.decrypted_key_size;
-/*	rc = ecryptfs_cipher_code_to_string(crypt_stat->cipher, cipher_code);
+
+	memset(auth_tok->session_key.decrypted_key, 0, auth_tok->session_key.decrypted_key_size);
+	/*
+	rc = ecryptfs_cipher_code_to_string(crypt_stat->cipher, cipher_code);
 	if (rc) {
 		ecryptfs_printk(KERN_ERR, "Cipher code [%d] is invalid\n",
 				cipher_code)
@@ -836,7 +839,7 @@ session_key_decrypted:
 		ecryptfs_dump_hex(crypt_stat->key,
 				  crypt_stat->key_size);
 	}
-	ecryptfs_printk(KERN_ERR, "%s::%d\n", __func__, __LINE__);
+	ecryptfs_printk(KERN_DEBUG, "%s::%d\n", __func__, __LINE__);
 out:
 	if (msg) kfree(msg);
 	if (payload) kfree(payload);
@@ -855,19 +858,19 @@ int sdp_write_sdp_header(char *dest, size_t *remaining_bytes,
 	size_t max_packet_size;
 	int rc = 0;
 
-	ecryptfs_printk(KERN_ERR, ":%d\n",  __LINE__);
+	ecryptfs_printk(KERN_DEBUG, ":%d\n",  __LINE__);
 	(*packet_size) = 0;
 	ecryptfs_from_hex(key_rec->sig, auth_tok->token.private_key.signature,
 			  ECRYPTFS_SIG_SIZE);
 	encrypted_session_key_valid = 0;
-	ecryptfs_printk(KERN_ERR, ":%d:crypt_stat key size=%zu\n",  __LINE__, crypt_stat->key_size);
+	ecryptfs_printk(KERN_DEBUG, ":%d:crypt_stat key size=%zu\n",  __LINE__, crypt_stat->key_size);
 	for (i = 0; i < crypt_stat->key_size; i++)
 		encrypted_session_key_valid |=
 			auth_tok->session_key.encrypted_key[i];
-	ecryptfs_printk(KERN_ERR, ":%d:key_valid=%zu\n", __LINE__, encrypted_session_key_valid);
-	ecryptfs_printk(KERN_ERR, ":%d:key_size=%zu\n",	__LINE__, crypt_stat->key_size);
+	ecryptfs_printk(KERN_DEBUG, ":%d:key_valid=%zu\n", __LINE__, encrypted_session_key_valid);
+	ecryptfs_printk(KERN_DEBUG, ":%d:key_size=%zu\n",	__LINE__, crypt_stat->key_size);
 	if (encrypted_session_key_valid) {
-		ecryptfs_printk(KERN_ERR, ":%d:session key valid\n", __LINE__);
+		ecryptfs_printk(KERN_DEBUG, ":%d:session key valid\n", __LINE__);
 		memcpy(key_rec->enc_key,
 		       auth_tok->session_key.encrypted_key,
 		       auth_tok->session_key.encrypted_key_size);
@@ -875,14 +878,14 @@ int sdp_write_sdp_header(char *dest, size_t *remaining_bytes,
 		key_put(auth_tok_key);
 		goto encrypted_session_key_set;
 	}
-	ecryptfs_printk(KERN_ERR, ":%d\n",  __LINE__);
-	ecryptfs_printk(KERN_ERR, ":%d,token.private_key.key_size = %d\n", __LINE__, auth_tok->token.private_key.key_size);
+	ecryptfs_printk(KERN_DEBUG, ":%d\n",  __LINE__);
+	ecryptfs_printk(KERN_DEBUG, ":%d,token.private_key.key_size = %d\n", __LINE__, auth_tok->token.private_key.key_size);
 	if (auth_tok->session_key.encrypted_key_size == 0)
 		auth_tok->session_key.encrypted_key_size =
 			auth_tok->token.private_key.key_size;
 
-	ecryptfs_printk(KERN_ERR, ":%d::encrypted session key size=%d\n",  __LINE__, auth_tok->session_key.encrypted_key_size);
-	ecryptfs_printk(KERN_ERR, ":%d::Encrypt session key start(SDP)\n",  __LINE__);
+	ecryptfs_printk(KERN_DEBUG, ":%d::encrypted session key size=%d\n",  __LINE__, auth_tok->session_key.encrypted_key_size);
+	ecryptfs_printk(KERN_DEBUG, ":%d::Encrypt session key start(SDP)\n",  __LINE__);
 	if (crypt_stat->flags & ECRYPTFS_SDP_SENSITIVE) {
 		rc = sdp_encrypt_session_key(crypt_stat, key_rec);
 	} else {
@@ -903,7 +906,7 @@ int sdp_write_sdp_header(char *dest, size_t *remaining_bytes,
 	}
 	up_write(&(auth_tok_key->sem));
 	key_put(auth_tok_key);
-	ecryptfs_printk(KERN_ERR, ":%d::Encrypt session key end(SDP)\n",  __LINE__);
+	ecryptfs_printk(KERN_DEBUG, ":%d::Encrypt session key end(SDP)\n",  __LINE__);
 	//schedule_timeout_interruptible(1 * HZ);
 	if (rc) {
 		printk(KERN_ERR "Failed to encrypt session key via a key "
@@ -980,7 +983,7 @@ encrypted_session_key_set:
 	       key_rec->enc_key_size);
 	(*packet_size) += key_rec->enc_key_size;
 	SDP_LOGD("%s:%d:Encrypted session key len:%zu\n", __func__, __LINE__, key_rec->enc_key_size);
-	ecryptfs_printk(KERN_ERR, ":%d", __LINE__);
+	ecryptfs_printk(KERN_DEBUG, ":%d", __LINE__);
 	ecryptfs_dump_hex(&dest[0],*packet_size);
 
 out:
@@ -1001,7 +1004,7 @@ sdp_parse_sdp_header(struct ecryptfs_crypt_stat *crypt_stat,
 	struct ecryptfs_auth_tok_list_item *auth_tok_list_item;
 	size_t length_size;
 	int rc = 0;
-	ecryptfs_printk(KERN_ERR, "%d", __LINE__);
+	ecryptfs_printk(KERN_DEBUG, "%d", __LINE__);
 	(*packet_size) = 0;
 	(*new_auth_tok) = NULL;
 	/**
@@ -1071,9 +1074,9 @@ sdp_parse_sdp_header(struct ecryptfs_crypt_stat *crypt_stat,
 	/* This byte is skipped because the kernel does not need to
 	 * know which public key encryption algorithm was used */
 	(*packet_size)++;
-	ecryptfs_printk(KERN_ERR, "%d\n", __LINE__);
+	ecryptfs_printk(KERN_DEBUG, "%d\n", __LINE__);
 	crypt_stat->storage_id = get_unaligned_be32(data + *packet_size);
-	ecryptfs_printk(KERN_ERR, "%d: storage_id=%d\n", __LINE__, crypt_stat->storage_id);
+	ecryptfs_printk(KERN_DEBUG, "%d: storage_id=%d\n", __LINE__, crypt_stat->storage_id);
 	(*packet_size) += 4;
 	rc = ecryptfs_parse_packet_length(&data[(*packet_size)], &crypt_stat->pubkey_len,
 					  &length_size);
@@ -1540,7 +1543,7 @@ static long sdp_do_ioctl_ctl(unsigned int minor, unsigned int cmd,
 	case SDP_ON_DEVICE_UNLOCKED: {
 		struct sdp_key *key = kzalloc(sizeof(struct sdp_key), GFP_KERNEL);
 		sdp_unlock_params *params = kzalloc(sizeof(sdp_unlock_params), GFP_KERNEL);
-		ecryptfs_printk(KERN_ERR, ":%d\n", __LINE__);
+		ecryptfs_printk(KERN_DEBUG, ":%d\n", __LINE__);
 
 		if (params == NULL) {
 			ret = -ENOMEM;
@@ -1555,13 +1558,13 @@ static long sdp_do_ioctl_ctl(unsigned int minor, unsigned int cmd,
 			ret = -EFAULT;
 			goto err;
 		}
-		ecryptfs_printk(KERN_ERR, ":%d:received key data length %d\n", __LINE__, params->key.len);
+		ecryptfs_printk(KERN_DEBUG, ":%d:received key data length %d\n", __LINE__, params->key.len);
 		key->len = params->key.len;
 		key->type = params->key.type;
 		memcpy(key->data, params->key.data, key->len);
 		ecryptfs_dump_hex(key->data, key->len);
 		ret = sdp_storage_unlock(current_sdp_user, params->storage_id, key);
-		ecryptfs_printk(KERN_ERR, ":%d\n", __LINE__);
+		ecryptfs_printk(KERN_DEBUG, ":%d\n", __LINE__);
 		g_locked_state = 0;
 		break;
 	}
@@ -1572,7 +1575,7 @@ static long sdp_do_ioctl_ctl(unsigned int minor, unsigned int cmd,
 	 */
 	case SDP_ON_DEVICE_LOCKED: {
 		sdp_lock_params *params = kzalloc(sizeof(sdp_lock_params), GFP_KERNEL);
-		ecryptfs_printk(KERN_ERR, ":%d\n", __LINE__);
+		ecryptfs_printk(KERN_DEBUG, ":%d\n", __LINE__);
 
 		if (params == NULL) {
 			ret = -ENOMEM;
@@ -1587,9 +1590,9 @@ static long sdp_do_ioctl_ctl(unsigned int minor, unsigned int cmd,
 			ret = -EFAULT;
 			goto err;
 		}
-		ecryptfs_printk(KERN_ERR, ":%d\n", __LINE__);
+		ecryptfs_printk(KERN_DEBUG, ":%d\n", __LINE__);
 		sdp_storage_lock(current_sdp_user, params->storage_id);
-		ecryptfs_printk(KERN_ERR, ":%d\n", __LINE__);
+		ecryptfs_printk(KERN_DEBUG, ":%d\n", __LINE__);
 		g_locked_state = 1;
 		ecryptfs_mm_drop_cache(params->storage_id);
 		break;
@@ -1602,7 +1605,7 @@ static long sdp_do_ioctl_ctl(unsigned int minor, unsigned int cmd,
 			goto err;
 		}
 		SDP_LOGD("SDP_ON_ADD_USER\n");
-		ecryptfs_printk(KERN_ERR, ":%d\n", __LINE__);
+		ecryptfs_printk(KERN_DEBUG, ":%d\n", __LINE__);
 		cleanup = params;
 		size = sizeof(sdp_user_ctl_params);
 		if(copy_from_user(params, ubuf, size)) {
@@ -1610,9 +1613,9 @@ static long sdp_do_ioctl_ctl(unsigned int minor, unsigned int cmd,
 			ret = -EFAULT;
 			goto err;
 		}
-		ecryptfs_printk(KERN_ERR, ":%d\n", __LINE__);
+		ecryptfs_printk(KERN_DEBUG, ":%d\n", __LINE__);
 		ret = sdp_user_add(params->user_id);
-		ecryptfs_printk(KERN_ERR, ":%d\n", __LINE__);
+		ecryptfs_printk(KERN_DEBUG, ":%d\n", __LINE__);
 		if (ret < 0) {
 			SDP_LOGE("Failed to add user in kernel\n");
 		} else {
@@ -1623,7 +1626,7 @@ static long sdp_do_ioctl_ctl(unsigned int minor, unsigned int cmd,
 
 	case SDP_ON_DEL_USER: {
 		sdp_user_ctl_params *params = kzalloc(sizeof(sdp_user_ctl_params), GFP_KERNEL);
-		ecryptfs_printk(KERN_ERR, ":%d\n", __LINE__);
+		ecryptfs_printk(KERN_DEBUG, ":%d\n", __LINE__);
 		if (params == NULL) {
 			ret = -ENOMEM;
 			goto err;
@@ -1636,9 +1639,9 @@ static long sdp_do_ioctl_ctl(unsigned int minor, unsigned int cmd,
 			ret = -EFAULT;
 			goto err;
 		}
-		ecryptfs_printk(KERN_ERR, ":%d\n", __LINE__);
+		ecryptfs_printk(KERN_DEBUG, ":%d\n", __LINE__);
 		ret = sdp_user_del(params->user_id);
-		ecryptfs_printk(KERN_ERR, ":%d\n", __LINE__);
+		ecryptfs_printk(KERN_DEBUG, ":%d\n", __LINE__);
 		if (ret < 0) {
 			SDP_LOGE("Failed to add user in kernel\n");
 		} else {
@@ -1662,9 +1665,9 @@ static long sdp_do_ioctl_ctl(unsigned int minor, unsigned int cmd,
 			ret = -EFAULT;
 			goto err;
 		}
-		ecryptfs_printk(KERN_ERR, ":%d\n", __LINE__);
+		ecryptfs_printk(KERN_DEBUG, ":%d\n", __LINE__);
 		ret = sdp_set_curret_user(params->user_id);
-		ecryptfs_printk(KERN_ERR, ":%d\n", __LINE__);
+		ecryptfs_printk(KERN_DEBUG, ":%d\n", __LINE__);
 		if (ret < 0) {
 			SDP_LOGE("Failed to add user in kernel\n");
 		} else {
@@ -1676,7 +1679,7 @@ static long sdp_do_ioctl_ctl(unsigned int minor, unsigned int cmd,
 	case SDP_ON_ADD_STORAGE: {
 		struct sdp_key *key = kzalloc(sizeof(struct sdp_key), GFP_KERNEL);
 		sdp_storage_ctl_params *params = kzalloc(sizeof(sdp_storage_ctl_params), GFP_KERNEL);
-		ecryptfs_printk(KERN_ERR, ":%d\n", __LINE__);
+		ecryptfs_printk(KERN_DEBUG, ":%d\n", __LINE__);
 		if (params == NULL) {
 			ret = -ENOMEM;
 			goto err;
@@ -1690,14 +1693,14 @@ static long sdp_do_ioctl_ctl(unsigned int minor, unsigned int cmd,
 			goto err;
 		}
 		ecryptfs_dump_hex((char *)params, size);
-		ecryptfs_printk(KERN_ERR, ":%d\n", __LINE__);
+		ecryptfs_printk(KERN_DEBUG, ":%d\n", __LINE__);
 		key->len = params->key.len;
 		key->type = params->key.type;
 		SDP_LOGD("Protected key len : %d\n", params->key.len);
 		SDP_LOGD("Protected key type : %d\n", key->type = params->key.type);
 		memcpy(key->data, params->key.data, key->len);
 		ret = sdp_storage_add(params->user_id, params->storage_id, key);
-		ecryptfs_printk(KERN_ERR, ":%d\n", __LINE__);
+		ecryptfs_printk(KERN_DEBUG, ":%d\n", __LINE__);
 		if (ret < 0) {
 			SDP_LOGE("Failed to add storage in kernel\n");
 		} else {
@@ -1709,7 +1712,7 @@ static long sdp_do_ioctl_ctl(unsigned int minor, unsigned int cmd,
 
 	case SDP_ON_DEL_STORAGE: {
 		sdp_storage_ctl_params *params = kzalloc(sizeof(sdp_storage_ctl_params), GFP_KERNEL);
-		ecryptfs_printk(KERN_ERR, ":%d\n", __LINE__);
+		ecryptfs_printk(KERN_DEBUG, ":%d\n", __LINE__);
 		if (params == NULL) {
 			ret = -ENOMEM;
 			goto err;
@@ -1734,7 +1737,7 @@ static long sdp_do_ioctl_ctl(unsigned int minor, unsigned int cmd,
 	case SDP_ON_GET_STORAGE_INFO: {
 		sdp_storage_info_params *params = kzalloc(sizeof(sdp_storage_info_params), GFP_KERNEL);
 		struct sdp_storage* storage;
-		ecryptfs_printk(KERN_ERR, ":%d\n", __LINE__);
+		ecryptfs_printk(KERN_DEBUG, ":%d\n", __LINE__);
 		SDP_LOGD("SDP_ON_GET_STORAGE_INFO\n");
 		cleanup = params;
 		size = sizeof(sdp_storage_info_params);
@@ -1743,9 +1746,9 @@ static long sdp_do_ioctl_ctl(unsigned int minor, unsigned int cmd,
 			ret = -EFAULT;
 			goto err;
 		}
-		ecryptfs_printk(KERN_ERR, ":%d\n", __LINE__);
+		ecryptfs_printk(KERN_DEBUG, ":%d\n", __LINE__);
 		storage = sdp_get_storage(params->storage_id);
-		ecryptfs_printk(KERN_ERR, ":%d\n", __LINE__);
+		ecryptfs_printk(KERN_DEBUG, ":%d\n", __LINE__);
 		if (!storage) {
 			SDP_LOGE("Failed to get storage info\n");
 			goto err;
@@ -1759,9 +1762,9 @@ static long sdp_do_ioctl_ctl(unsigned int minor, unsigned int cmd,
 			ret = -EFAULT;
 			goto err;
 		}
-		ecryptfs_printk(KERN_ERR, ":%d\n", __LINE__);
+		ecryptfs_printk(KERN_DEBUG, ":%d\n", __LINE__);
 		sdp_print_structure();
-		ecryptfs_printk(KERN_ERR, ":%d\n", __LINE__);
+		ecryptfs_printk(KERN_DEBUG, ":%d\n", __LINE__);
 		break;
 
 	}

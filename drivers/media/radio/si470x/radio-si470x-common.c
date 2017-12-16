@@ -117,7 +117,7 @@
 #include <linux/kfifo.h>
 /* kernel includes */
 #include "radio-si470x.h"
-
+#include <soc/qcom/lge/board_lge.h>
 
 
 /**************************************************************************
@@ -145,9 +145,9 @@ module_param(tune_timeout, uint, 0644);
 MODULE_PARM_DESC(tune_timeout, "Tune timeout: *3000*");
 
 /* Seek timeout */
-static unsigned int seek_timeout = 3000;
+static unsigned int seek_timeout = 13000;
 module_param(seek_timeout, uint, 0644);
-MODULE_PARM_DESC(seek_timeout, "Seek timeout: *5000*");
+MODULE_PARM_DESC(seek_timeout, "Seek timeout: *13000*");
 
 static const struct v4l2_frequency_band bands[] = {
 	{
@@ -328,6 +328,7 @@ static int si470x_set_seek(struct si470x_device *radio, int direction, int wrap)
 {
 	int retval = 0;
 	bool timed_out = false;
+	int i;
 
 	pr_info("%s enter, dir %d , wrap %d\n",__func__, direction, wrap);
 
@@ -348,11 +349,26 @@ static int si470x_set_seek(struct si470x_device *radio, int direction, int wrap)
 	}
 	/* wait till tune operation has completed */
 	reinit_completion(&radio->completion);
-	retval = wait_for_completion_timeout(&radio->completion,
-			msecs_to_jiffies(seek_timeout));
+
+	if((lge_get_boot_mode() == LGE_BOOT_MODE_QEM_56K)
+		|| (lge_get_boot_mode() == LGE_BOOT_MODE_QEM_910K)){
+		pr_info("%s fm radio AAT TEST MODE\n", __func__);
+		retval = wait_for_completion_timeout(&radio->completion,
+					msecs_to_jiffies(5000));
+	} else {
+		retval = wait_for_completion_timeout(&radio->completion,
+					msecs_to_jiffies(seek_timeout));
+	}
+
 	if (!retval){
 		timed_out = true;
 		pr_err("%s timeout\n",__func__);
+
+		for(i = 0; i < 16; i++ ){
+			si470x_get_register(radio,i);
+			pr_info("%s radio->registers[%d] : %x\n",
+					__func__, i, radio->registers[i]);
+		}
 	}
 
 	if ((radio->registers[STATUSRSSI] & STATUSRSSI_STC) == 0)
@@ -492,6 +508,7 @@ static int si470x_vidioc_dqbuf(struct file *file, void *priv,
 		pr_err("%s radio/buffer is NULL\n",__func__);
 		return -ENXIO;
 	}
+
 	buf_type = buffer->index;
 	buf = (u8 *)buffer->m.userptr;
 	len = buffer->length;
@@ -500,8 +517,10 @@ static int si470x_vidioc_dqbuf(struct file *file, void *priv,
 	if ((buf_type < SILABS_FM_BUF_MAX) && (buf_type >= 0)) {
 		data_fifo = &radio->data_buf[buf_type];
 		if (buf_type == SILABS_FM_BUF_EVENTS) {
+			pr_info("%s before wait_event_interruptible \n", __func__);
 			if (wait_event_interruptible(radio->event_queue,
 						kfifo_len(data_fifo)) < 0) {
+				pr_err("%s err \n", __func__);
 				return -EINTR;
 			}
 		}
@@ -521,7 +540,7 @@ static int si470x_vidioc_dqbuf(struct file *file, void *priv,
 		pr_err("%s Failed to copy %d bytes of data\n", __func__, retval);
 		return -EAGAIN;
 	}
-
+	pr_info("%s: requesting buffer exit %d\n", __func__, buf_type);
 	return retval;
 }
 
@@ -1237,6 +1256,7 @@ void si470x_rds_handler(struct work_struct *worker)
 	struct si470x_device *radio;
 	u8 rt_blks[NO_OF_RDS_BLKS];
 	u8 grp_type, addr, ab_flg;
+	int i = 0;
 
 	radio = container_of(worker, struct si470x_device, rds_worker);
 
@@ -1257,6 +1277,12 @@ void si470x_rds_handler(struct work_struct *worker)
 		pr_info("%s grp_type = %d\n", __func__, grp_type);
 	} else {
 		pr_err("%s invalid data\n",__func__);
+
+		for(i = 0; i < 16; i++ ){
+			si470x_get_register(radio,i);
+			pr_info("%s radio->registers[%d] : %x\n",
+					__func__, i, radio->registers[i]);
+		}
 		return;
 	}
 	if (grp_type & 0x01)
@@ -1473,8 +1499,8 @@ static int si470x_enable(struct si470x_device *radio)
 		si470x_q_event(radio, SILABS_EVT_RADIO_READY);
 		radio->mode = FM_RECV;
 	}
-	mutex_unlock(&radio->lock);
 done:
+	mutex_unlock(&radio->lock);
 	return retval;
 
 }
@@ -1612,6 +1638,7 @@ static int si470x_s_ctrl(struct file *file, void *priv, struct v4l2_control *ctr
 			break;
 		case V4L2_CID_PRIVATE_SILABS_SINR_THRESHOLD:
 			snr = ctrl->value;
+			radio->registers[SYSCONFIG3] &= ~SYSCONFIG3_SKSNR;
 			if(snr >= 0 && snr < 16)
 				radio->registers[SYSCONFIG3] |= snr << 4;
 			else
@@ -1619,6 +1646,8 @@ static int si470x_s_ctrl(struct file *file, void *priv, struct v4l2_control *ctr
 			retval = si470x_set_register(radio, SYSCONFIG3);
 			if(retval < 0)
 				pr_err("%s fail to write snr\n",__func__);
+			si470x_get_register(radio, SYSCONFIG3);
+			pr_info("%s SYSCONFIG3:%x\n", __func__, radio->registers[SYSCONFIG3]);
 			break;
 		case V4L2_CID_PRIVATE_SILABS_LP_MODE:
 		case V4L2_CID_PRIVATE_SILABS_ANTENNA:
@@ -1716,11 +1745,11 @@ static int si470x_vidioc_g_tuner(struct file *file, void *priv,
 	/* min is worst, max is best; signal:0..0xffff; rssi: 0..0xff */
 	/* measured in units of dbµV in 1 db increments (max at ~75 dbµV) */
 	tuner->signal = (radio->registers[STATUSRSSI] & STATUSRSSI_RSSI);
-	/* the ideal factor is 0xffff/75 = 873,8 */
-	tuner->signal = (tuner->signal * 873) + (8 * tuner->signal / 10);
-	if (tuner->signal > 0xffff)
-		tuner->signal = 0xffff;
 
+	if (tuner->signal > 0x4B)
+		tuner->signal = 0x4B;
+
+	pr_info("%s tuner->signal:%x\n", __func__, tuner->signal);
 	/* automatic frequency control: -1: freq to low, 1 freq to high */
 	/* AFCRL does only indicate that freq. differs, not if too low/high */
 	tuner->afc = (radio->registers[STATUSRSSI] & STATUSRSSI_AFCRL) ? 1 : 0;
@@ -1864,6 +1893,10 @@ static int si470x_vidioc_s_hw_freq_seek(struct file *file, void *priv,
 			pr_info("%s starting scan\n",__func__);
 		}
 		si470x_search(radio, 1);
+	} else if ((radio->g_search_mode == SEEK_STOP) ){
+		pr_info("%s seek stop\n", __func__);
+		radio->registers[POWERCFG] &= ~POWERCFG_SEEK;
+		retval = si470x_set_register(radio, POWERCFG);
 	} else {
 		retval = -EINVAL;
 		pr_err("In %s, invalid search mode %d\n",

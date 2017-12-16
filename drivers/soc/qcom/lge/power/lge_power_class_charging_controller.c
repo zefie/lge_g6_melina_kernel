@@ -163,6 +163,7 @@ enum lgcc_vote_reason {
 	LGCC_REASON_CALL,
 	LGCC_REASON_THERMAL,
 	LGCC_REASON_THERMAL_HVDCP,
+	LGCC_REASON_THERMAL_SCHG,
 #ifdef CONFIG_LGE_PM_LGE_POWER_CLASS_TDMB_MODE
 	LGCC_REASON_TDMB,
 #endif
@@ -178,6 +179,7 @@ enum lgcc_vote_reason {
 
 static int lgcc_vote_fcc_table[LGCC_REASON_MAX] = {
 	CHG_CURRENT_MAX,	/* max ibat current */
+	-EINVAL,
 	-EINVAL,
 	-EINVAL,
 	-EINVAL,
@@ -441,6 +443,41 @@ static int set_quick_charging_state(const char *val,
 module_param_call(quick_charging_state, set_quick_charging_state,
 		param_get_int, &quick_charging_state, 0644);
 #endif
+
+static int lgcc_schg_thermal_mitigation;
+static int lgcc_set_schg_thermal_chg_current(const char *val,
+		struct kernel_param *kp) {
+
+	int ret;
+
+	ret = param_set_int(val, kp);
+	if (ret) {
+		pr_err("error setting value %d\n", ret);
+		return ret;
+	}
+
+	if (!the_cc) {
+		pr_err("lgcc is not ready\n");
+		return 0;
+	}
+
+	if ((lgcc_schg_thermal_mitigation > 0) &&
+		(lgcc_schg_thermal_mitigation <= RESTRICTED_LCD_STATE)) {
+		lgcc_vote_fcc(LGCC_REASON_THERMAL_SCHG,
+				lgcc_schg_thermal_mitigation);
+	} else {
+		pr_info("Release schg thermal mitigation\n");
+		lgcc_vote_fcc(LGCC_REASON_THERMAL_SCHG, -EINVAL);
+	}
+	pr_err("schg_thermal_mitigation = %d, chg_current_te = %d\n",
+			lgcc_schg_thermal_mitigation,
+			the_cc->chg_current_te);
+	return 0;
+}
+module_param_call(lgcc_schg_thermal_mitigation,
+		lgcc_set_schg_thermal_chg_current,
+		param_get_int, &lgcc_schg_thermal_mitigation, 0644);
+
 
 #ifdef CONFIG_LGE_PM_LGE_POWER_CLASS_CHARGER_SLEEP
 static void lgcc_btm_set_polling_alarm(struct lge_charging_controller *cc, u64 delay)
@@ -1428,7 +1465,9 @@ static void lge_cc_external_lge_power_changed(struct lge_power *lpc) {
 				schedule_delayed_work(&cc->hvdcp_set_cur_work, 0);
 				for (i = 1; i < LGCC_REASON_MAX; i++) {
 					/* Do not clear voting values from thermal_engine */
-					if (i != LGCC_REASON_THERMAL && i != LGCC_REASON_THERMAL_HVDCP)
+					if (i != LGCC_REASON_THERMAL &&
+						i != LGCC_REASON_THERMAL_HVDCP &&
+						i != LGCC_REASON_THERMAL_SCHG)
 						lgcc_vote_fcc(i, -EINVAL);
 				}
 			} else {

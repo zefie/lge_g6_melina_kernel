@@ -156,7 +156,7 @@
 #define SCAN_PENDING 3
 
 #define SI470X_MIN_SRCH_MODE 0x00
-#define SI470X_MAX_SRCH_MODE 0x02
+#define SI470X_MAX_SRCH_MODE 0x03
 
 #define MIN_DWELL_TIME 0x00
 #define MAX_DWELL_TIME 0x0F
@@ -494,6 +494,7 @@ enum search_t {
 	SEEK,
 	SCAN,
 	SCAN_FOR_STRONG,
+	SEEK_STOP,
 };
 
 /**************************************************************************

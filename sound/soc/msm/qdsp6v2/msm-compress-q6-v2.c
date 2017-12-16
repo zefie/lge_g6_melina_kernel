@@ -1047,7 +1047,11 @@ static int msm_compr_configure_dsp(struct snd_compr_stream *cstream)
 		pr_debug("%s: stream_id %d bits_per_sample %d\n",
 				__func__, ac->stream_id, bits_per_sample);
 		ret = q6asm_stream_open_write_v3(ac,
+#ifdef CONFIG_MACH_LGE // 24bit ASM patch
+				prtd->codec, 24,
+#else
 				prtd->codec, bits_per_sample,
+#endif
 				ac->stream_id,
 				prtd->gapless_state.use_dsp_gapless_mode);
 		if (ret < 0) {
@@ -2030,7 +2034,11 @@ static int msm_compr_trigger(struct snd_compr_stream *cstream, int cmd)
 		pr_debug("%s: open_write stream_id %d bits_per_sample %d",
 				__func__, stream_id, bits_per_sample);
 		rc = q6asm_stream_open_write_v3(prtd->audio_client,
+#ifdef CONFIG_MACH_LGE // 24bit ASM patch
+				prtd->codec, 24,
+#else
 				prtd->codec, bits_per_sample,
+#endif
 				stream_id,
 				prtd->gapless_state.use_dsp_gapless_mode);
 		if (rc < 0) {

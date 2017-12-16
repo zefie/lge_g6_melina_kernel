@@ -192,7 +192,7 @@ bool zone_reclaimable(struct zone *zone)
 		zone_reclaimable_pages(zone) * 6;
 }
 
-unsigned long get_lru_size(struct lruvec *lruvec, enum lru_list lru)
+static unsigned long get_lru_size(struct lruvec *lruvec, enum lru_list lru)
 {
 	if (!mem_cgroup_disabled())
 		return mem_cgroup_get_lru_size(lruvec, lru);
@@ -723,7 +723,7 @@ redo:
 		 * We know how to handle that.
 		 */
 		is_unevictable = false;
-		lru_cache_putback(page);
+		lru_cache_add(page);
 	} else {
 		/*
 		 * Put unevictable pages directly on zone's unevictable
@@ -1192,7 +1192,6 @@ activate_locked:
 		if (PageSwapCache(page) && vm_swap_full(page_swap_info(page)))
 			try_to_free_swap(page);
 		VM_BUG_ON_PAGE(PageActive(page), page);
-		SetPageWorkingset(page);
 		SetPageActive(page);
 		pgactivate++;
 keep_locked:
@@ -1534,6 +1533,7 @@ static int too_many_isolated(struct zone *zone, int file,
 static noinline_for_stack void
 putback_inactive_pages(struct lruvec *lruvec, struct list_head *page_list)
 {
+	struct zone_reclaim_stat *reclaim_stat = &lruvec->reclaim_stat;
 	struct zone *zone = lruvec_zone(lruvec);
 	LIST_HEAD(pages_to_free);
 
@@ -1566,13 +1566,8 @@ putback_inactive_pages(struct lruvec *lruvec, struct list_head *page_list)
 				SetPageWasActive(page);
 		if (is_active_lru(lru)) {
 			int numpages = hpage_nr_pages(page);
-			/*
-			 * Rotating pages costs CPU without actually
-			 * progressing toward the reclaim goal.
-			 */
-			lru_note_cost(lruvec, COST_CPU, file, numpages);
+			reclaim_stat->recent_rotated[file] += numpages;
 		}
-
 		if (put_page_testzero(page)) {
 			__ClearPageLRU(page);
 			__ClearPageActive(page);
@@ -1628,6 +1623,7 @@ shrink_inactive_list(unsigned long nr_to_scan, struct lruvec *lruvec,
 	int file = is_file_lru(lru);
 	int safe = 0;
 	struct zone *zone = lruvec_zone(lruvec);
+	struct zone_reclaim_stat *reclaim_stat = &lruvec->reclaim_stat;
 
 	while (unlikely(too_many_isolated(zone, file, sc, safe))) {
 		congestion_wait(BLK_RW_ASYNC, HZ/10);
@@ -1672,6 +1668,8 @@ shrink_inactive_list(unsigned long nr_to_scan, struct lruvec *lruvec,
 				false);
 
 	spin_lock_irq(&zone->lru_lock);
+
+	reclaim_stat->recent_scanned[file] += nr_taken;
 
 	if (global_reclaim(sc)) {
 		if (current_is_kswapd())
@@ -1827,6 +1825,7 @@ static void shrink_active_list(unsigned long nr_to_scan,
 	LIST_HEAD(l_active);
 	LIST_HEAD(l_inactive);
 	struct page *page;
+	struct zone_reclaim_stat *reclaim_stat = &lruvec->reclaim_stat;
 	unsigned long nr_rotated = 0;
 	isolate_mode_t isolate_mode = 0;
 	int file = is_file_lru(lru);
@@ -1845,6 +1844,8 @@ static void shrink_active_list(unsigned long nr_to_scan,
 				     &nr_scanned, sc, isolate_mode, lru);
 	if (global_reclaim(sc))
 		__mod_zone_page_state(zone, NR_PAGES_SCANNED, nr_scanned);
+
+	reclaim_stat->recent_scanned[file] += nr_taken;
 
 	__count_zone_vm_events(PGREFILL, zone, nr_scanned);
 	__mod_zone_page_state(zone, NR_LRU_BASE + lru, -nr_taken);
@@ -1871,6 +1872,7 @@ static void shrink_active_list(unsigned long nr_to_scan,
 
 		if (page_referenced(page, 0, sc->target_mem_cgroup,
 				    &vm_flags)) {
+			nr_rotated += hpage_nr_pages(page);
 			/*
 			 * Identify referenced, file-backed active pages and
 			 * give them one more trip around the active list. So
@@ -1881,7 +1883,6 @@ static void shrink_active_list(unsigned long nr_to_scan,
 			 * so we ignore them here.
 			 */
 			if ((vm_flags & VM_EXEC) && page_is_file_cache(page)) {
-				nr_rotated += hpage_nr_pages(page);
 				list_add(&page->lru, &l_active);
 				continue;
 			}
@@ -1902,10 +1903,12 @@ static void shrink_active_list(unsigned long nr_to_scan,
 	 */
 	spin_lock_irq(&zone->lru_lock);
 	/*
-	 * Rotating pages costs CPU without actually
-	 * progressing toward the reclaim goal.
+	 * Count referenced pages from currently used mappings as rotated,
+	 * even though only some of them are actually re-activated.  This
+	 * helps balance scan pressure between file and anonymous pages in
+	 * get_scan_count.
 	 */
-	lru_note_cost(lruvec, COST_CPU, file, nr_rotated);
+	reclaim_stat->recent_rotated[file] += nr_rotated;
 
 	move_active_pages_to_lru(lruvec, &l_active, &l_hold, lru);
 	move_active_pages_to_lru(lruvec, &l_inactive, &l_hold, lru - LRU_ACTIVE);
@@ -2022,6 +2025,7 @@ enum scan_balance {
 static void get_scan_count(struct lruvec *lruvec, int swappiness,
 			   struct scan_control *sc, unsigned long *nr)
 {
+	struct zone_reclaim_stat *reclaim_stat = &lruvec->reclaim_stat;
 	u64 fraction[2];
 	u64 denominator = 0;	/* gcc */
 	struct zone *zone = lruvec_zone(lruvec);
@@ -2114,10 +2118,14 @@ static void get_scan_count(struct lruvec *lruvec, int swappiness,
 		get_lru_size(lruvec, LRU_INACTIVE_FILE);
 
 	spin_lock_irq(&zone->lru_lock);
-	if (unlikely(lruvec->balance.denom > (anon + file) / 8)) {
-		lruvec->balance.numer[0] /= 2;
-		lruvec->balance.numer[1] /= 2;
-		lruvec->balance.denom /= 2;
+	if (unlikely(reclaim_stat->recent_scanned[0] > anon / 4)) {
+		reclaim_stat->recent_scanned[0] /= 2;
+		reclaim_stat->recent_rotated[0] /= 2;
+	}
+
+	if (unlikely(reclaim_stat->recent_scanned[1] > file / 4)) {
+		reclaim_stat->recent_scanned[1] /= 2;
+		reclaim_stat->recent_rotated[1] /= 2;
 	}
 
 	/*
@@ -2125,11 +2133,11 @@ static void get_scan_count(struct lruvec *lruvec, int swappiness,
 	 * proportional to the fraction of recently scanned pages on
 	 * each list that were recently referenced and in active use.
 	 */
-	ap = anon_prio * (lruvec->balance.denom + 1);
-	ap /= lruvec->balance.numer[0] + 1;
+	ap = anon_prio * (reclaim_stat->recent_scanned[0] + 1);
+	ap /= reclaim_stat->recent_rotated[0] + 1;
 
-	fp = file_prio * (lruvec->balance.denom + 1);
-	fp /= lruvec->balance.numer[1] + 1;
+	fp = file_prio * (reclaim_stat->recent_scanned[1] + 1);
+	fp /= reclaim_stat->recent_rotated[1] + 1;
 	spin_unlock_irq(&zone->lru_lock);
 
 	fraction[0] = ap;

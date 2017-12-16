@@ -19,6 +19,9 @@
 #include <linux/types.h>
 #include <linux/batterydata-lib.h>
 #include <linux/power_supply.h>
+#ifdef CONFIG_LGE_PM_EMBEDDED_BATT_ID_ADC
+#include <soc/qcom/lge/power/lge_board_revision.h>
+#endif
 
 static int of_batterydata_read_lut(const struct device_node *np,
 			int max_cols, int max_rows, int *ncols, int *nrows,
@@ -355,6 +358,7 @@ struct device_node *of_batterydata_get_best_profile(
 	struct device_node *node, *best_node = NULL;
 #ifdef CONFIG_LGE_PM_EMBEDDED_BATT_ID_ADC
 	struct device_node *last_node;
+	enum hw_rev_no revid = lge_get_board_rev_no();
 #endif
 	struct power_supply *psy;
 	const char *battery_type = NULL;
@@ -406,7 +410,11 @@ struct device_node *of_batterydata_get_best_profile(
 			rc = of_batterydata_read_batt_id_kohm(node,
 							"qcom,batt-id-kohm",
 							&batt_ids);
-			if (rc)
+			if (rc
+#ifdef CONFIG_LGE_PM_EMBEDDED_BATT_ID_ADC
+				|| (revid >= HW_REV_1_0 && batt_ids.kohm[0] == 0)
+#endif
+			)
 				continue;
 			for (i = 0; i < batt_ids.num; i++) {
 				delta = abs(batt_ids.kohm[i] - batt_id_kohm);

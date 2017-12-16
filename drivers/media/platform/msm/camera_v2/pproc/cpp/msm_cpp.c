@@ -115,6 +115,9 @@ static  int msm_cpp_update_gdscr_status(struct cpp_device *cpp_dev,
 	bool status);
 static int msm_cpp_buffer_private_ops(struct cpp_device *cpp_dev,
 	uint32_t buff_mgr_ops, uint32_t id, void *arg);
+/*LGE_CHANGE S, cpp firmware fail recovery, 2017-02-09 */
+static int32_t msm_cpp_reset_vbif_and_load_fw(struct cpp_device *cpp_dev);
+/*LGE_CHANGE E, cpp firmware fail recovery, 2017-02-09 */
 
 #if CONFIG_MSM_CPP_DBG
 #define CPP_DBG(fmt, args...) pr_err(fmt, ##args)
@@ -887,11 +890,25 @@ static int cpp_init_hardware(struct cpp_device *cpp_dev)
 	if (cpp_dev->fw_name_bin) {
 		msm_camera_enable_irq(cpp_dev->irq, false);
 		rc = cpp_load_fw(cpp_dev, cpp_dev->fw_name_bin);
-		msm_camera_enable_irq(cpp_dev->irq, true);
+/*LGE_CHANGE S, cpp firmware fail recovery, 2017-02-09 */
+//		msm_camera_enable_irq(cpp_dev->irq, true);
+/*LGE_CHANGE E, cpp firmware fail recovery, 2017-02-09 */
 		if (rc < 0) {
-			pr_err("%s: load firmware failure %d\n", __func__, rc);
-			goto pwr_collapse_reset;
+/*LGE_CHANGE S, cpp firmware fail recovery, 2017-02-09 */
+//			pr_err("%s: load firmware failure %d\n", __func__, rc);
+//			goto pwr_collapse_reset;
+			pr_err("%s: load firmware failure %d-retry\n",
+				__func__, rc);
+			rc = msm_cpp_reset_vbif_and_load_fw(cpp_dev);
+			if (rc < 0) {
+				msm_camera_enable_irq(cpp_dev->irq, true);
+				goto pwr_collapse_reset;
+			}
+/*LGE_CHANGE E, cpp firmware fail recovery, 2017-02-09 */
 		}
+/*LGE_CHANGE S, cpp firmware fail recovery, 2017-02-09 */
+		msm_camera_enable_irq(cpp_dev->irq, true);
+/*LGE_CHANGE E, cpp firmware fail recovery, 2017-02-09 */
 		msm_camera_io_w_mb(0x7C8, cpp_dev->base +
 			MSM_CPP_MICRO_IRQGEN_MASK);
 		msm_camera_io_w_mb(0xFFFF, cpp_dev->base +
@@ -903,6 +920,9 @@ static int cpp_init_hardware(struct cpp_device *cpp_dev)
 
 pwr_collapse_reset:
 	msm_cpp_update_gdscr_status(cpp_dev, false);
+/*LGE_CHANGE S, cpp firmware fail recovery, 2017-02-09 */
+	msm_camera_unregister_irq(cpp_dev->pdev, cpp_dev->irq, cpp_dev);
+/*LGE_CHANGE E, cpp firmware fail recovery, 2017-02-09 */
 req_irq_fail:
 	msm_camera_clk_enable(&cpp_dev->pdev->dev, cpp_dev->clk_info,
 		cpp_dev->cpp_clk, cpp_dev->num_clks, false);
@@ -1067,6 +1087,36 @@ end:
 	return rc;
 }
 
+/*LGE_CHANGE S, cpp firmware fail recovery, 2017-02-09 */
+int32_t msm_cpp_reset_vbif_clients(struct cpp_device *cpp_dev)
+{
+	uint32_t i;
+
+	pr_warn("%s: handle vbif hang...\n", __func__);
+	for (i = 0; i < VBIF_CLIENT_MAX; i++) {
+		if (cpp_dev->vbif_data->err_handler[i] == NULL)
+			continue;
+
+		cpp_dev->vbif_data->err_handler[i](
+			cpp_dev->vbif_data->dev[i], CPP_VBIF_ERROR_HANG);
+	}
+	return 0;
+}
+
+int32_t msm_cpp_reset_vbif_and_load_fw(struct cpp_device *cpp_dev)
+{
+	int32_t rc = 0;
+
+	msm_cpp_reset_vbif_clients(cpp_dev);
+
+	rc = cpp_load_fw(cpp_dev, cpp_dev->fw_name_bin);
+	if (rc < 0)
+		pr_err("Reset and load fw failed %d\n", rc);
+
+	return rc;
+}
+/*LGE_CHANGE E, cpp firmware fail recovery, 2017-02-09 */
+
 int cpp_vbif_error_handler(void *dev, uint32_t vbif_error)
 {
 	struct cpp_device *cpp_dev = NULL;
@@ -1132,6 +1182,12 @@ static int cpp_open_node(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh)
 
 	CPP_DBG("open %d %pK\n", i, &fh->vfh);
 	cpp_dev->cpp_open_cnt++;
+
+/*LGE_CHANGE S, cpp firmware fail recovery, 2017-02-09 */
+	msm_cpp_vbif_register_error_handler(cpp_dev,
+		VBIF_CLIENT_CPP, cpp_vbif_error_handler);
+/*LGE_CHANGE E, cpp firmware fail recovery, 2017-02-09 */
+
 	if (cpp_dev->cpp_open_cnt == 1) {
 		rc = cpp_init_hardware(cpp_dev);
 		if (rc < 0) {
@@ -1154,8 +1210,10 @@ static int cpp_open_node(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh)
 		cpp_dev->state = CPP_STATE_IDLE;
 	}
 
-	msm_cpp_vbif_register_error_handler(cpp_dev,
-		VBIF_CLIENT_CPP, cpp_vbif_error_handler);
+/*LGE_CHANGE S, cpp firmware fail recovery, 2017-02-09 */
+//	msm_cpp_vbif_register_error_handler(cpp_dev,
+//		VBIF_CLIENT_CPP, cpp_vbif_error_handler);
+/*LGE_CHANGE E, cpp firmware fail recovery, 2017-02-09 */
 
 	mutex_unlock(&cpp_dev->mutex);
 	return 0;
@@ -1505,6 +1563,8 @@ static void msm_cpp_do_timeout_work(struct work_struct *work)
 		goto end;
 	}
 
+/*LGE_CHANGE S, cpp firmware fail recovery, 2017-02-09 */
+/*
 	pr_err("%s: handle vbif hang...\n", __func__);
 	for (i = 0; i < VBIF_CLIENT_MAX; i++) {
 		if (cpp_dev->vbif_data->err_handler[i] == NULL)
@@ -1513,13 +1573,23 @@ static void msm_cpp_do_timeout_work(struct work_struct *work)
 		cpp_dev->vbif_data->err_handler[i](
 			cpp_dev->vbif_data->dev[i], CPP_VBIF_ERROR_HANG);
 	}
+*/
+/*LGE_CHANGE E, cpp firmware fail recovery, 2017-02-09 */
 
 	pr_debug("Reloading firmware %d\n", queue_len);
 	rc = cpp_load_fw(cpp_timer.data.cpp_dev,
 		cpp_timer.data.cpp_dev->fw_name_bin);
 	if (rc) {
-		pr_warn("Firmware loading failed\n");
-		goto error;
+/*LGE_CHANGE S, cpp firmware fail recovery, 2017-02-09 */
+//		pr_warn("Firmware loading failed\n");
+//		goto error;
+		pr_warn("Firmware loading failed-retry\n");
+		rc = msm_cpp_reset_vbif_and_load_fw(cpp_dev);
+		if (rc < 0) {
+			pr_err("Firmware loading failed\n");
+			goto error;
+		}
+/*LGE_CHANGE E, cpp firmware fail recovery, 2017-02-09 */
 	} else {
 		pr_debug("Firmware loading done\n");
 	}
@@ -1540,6 +1610,19 @@ static void msm_cpp_do_timeout_work(struct work_struct *work)
 		goto end;
 	}
 
+/*LGE_CHANGE S, cpp firmware fail recovery, 2017-02-09 */
+	for (i = 0; i < queue_len; i++) {
+		processed_frame[i] = cpp_timer.data.processed_frame[i];
+		if (!processed_frame[i]) {
+			pr_warn("process frame null , queue len %d", queue_len);
+			msm_cpp_flush_queue_and_release_buffer(cpp_dev,
+				queue_len);
+			msm_cpp_set_micro_irq_mask(cpp_dev, 1, 0x8);
+			goto end;
+		}
+	}
+/*LGE_CHANGE E, cpp firmware fail recovery, 2017-02-09 */
+
 	atomic_set(&cpp_timer.used, 1);
 	pr_warn("Starting timer to fire in %d ms. (jiffies=%lu)\n",
 		CPP_CMD_TIMEOUT_MS, jiffies);
@@ -1548,8 +1631,10 @@ static void msm_cpp_do_timeout_work(struct work_struct *work)
 
 	msm_cpp_set_micro_irq_mask(cpp_dev, 1, 0x8);
 
-	for (i = 0; i < MAX_CPP_PROCESSING_FRAME; i++)
-		processed_frame[i] = cpp_timer.data.processed_frame[i];
+/*LGE_CHANGE S, cpp firmware fail recovery, 2017-02-09 */
+//	for (i = 0; i < MAX_CPP_PROCESSING_FRAME; i++)
+//		processed_frame[i] = cpp_timer.data.processed_frame[i];
+/*LGE_CHANGE E, cpp firmware fail recovery, 2017-02-09 */
 
 	for (i = 0; i < queue_len; i++) {
 		/*LGE_CHANGE S, fix NULL pointer panic while msm_cpp_do_timeout_work, 2016-08-02, Camera-Stability@lge.com*/
@@ -1889,6 +1974,8 @@ static int msm_cpp_check_buf_type(struct msm_buf_mngr_info *buff_mgr_info,
 			/* More or equal bufs as Input buffer */
 			num_output_bufs = new_frame->batch_info.batch_size;
 		}
+		if (num_output_bufs > MSM_OUTPUT_BUF_CNT)
+			return 0;
 		for (i = 0; i < num_output_bufs; i++) {
 			new_frame->output_buffer_info[i].index =
 				buff_mgr_info->user_buf.buf_idx[i];
@@ -2269,7 +2356,7 @@ static int msm_cpp_cfg_frame(struct cpp_device *cpp_dev,
 	struct msm_buf_mngr_info buff_mgr_info, dup_buff_mgr_info;
 	int32_t in_fd;
 	int32_t num_output_bufs = 1;
-	int32_t stripe_base = 0;
+	uint32_t stripe_base = 0;
 	uint32_t stripe_size;
 	uint8_t tnr_enabled;
 	enum msm_camera_buf_mngr_buf_type buf_type =
@@ -2301,6 +2388,13 @@ static int msm_cpp_cfg_frame(struct cpp_device *cpp_dev,
 	if (cpp_frame_msg[new_frame->msg_len - 1] !=
 		MSM_CPP_MSG_ID_TRAILER) {
 		pr_err("Invalid frame message\n");
+		return -EINVAL;
+	}
+
+	if (stripe_base == UINT_MAX || new_frame->num_strips >
+		(UINT_MAX - 1 - stripe_base) / stripe_size) {
+		pr_err("Invalid frame message,num_strips %d is large\n",
+			new_frame->num_strips);
 		return -EINVAL;
 	}
 
@@ -2818,11 +2912,21 @@ long msm_cpp_subdev_ioctl(struct v4l2_subdev *sd,
 			msm_camera_enable_irq(cpp_dev->irq, false);
 			rc = cpp_load_fw(cpp_dev, cpp_dev->fw_name_bin);
 			if (rc < 0) {
-				pr_err("%s: load firmware failure %d\n",
+/*LGE_CHANGE S, cpp firmware fail recovery, 2017-02-09 */
+//				pr_err("%s: load firmware failure %d\n",
+//					__func__, rc);
+//				enable_irq(cpp_dev->irq->start);
+//				mutex_unlock(&cpp_dev->mutex);
+//				return rc;
+				pr_err("%s: load firmware failure %d-retry\n",
 					__func__, rc);
-				enable_irq(cpp_dev->irq->start);
-				mutex_unlock(&cpp_dev->mutex);
-				return rc;
+				rc = msm_cpp_reset_vbif_and_load_fw(cpp_dev);
+				if (rc < 0) {
+					enable_irq(cpp_dev->irq->start);
+					mutex_unlock(&cpp_dev->mutex);
+					return rc;
+				}
+/*LGE_CHANGE E, cpp firmware fail recovery, 2017-02-09 */
 			}
 			rc = msm_cpp_fw_version(cpp_dev);
 			if (rc < 0) {
@@ -2973,8 +3077,7 @@ STREAM_BUFF_END:
 		uint32_t identity;
 		struct msm_cpp_buff_queue_info_t *buff_queue_info;
 		CPP_DBG("VIDIOC_MSM_CPP_DEQUEUE_STREAM_BUFF_INFO\n");
-		if ((ioctl_ptr->len == 0) ||
-		    (ioctl_ptr->len > sizeof(uint32_t))) {
+		if (ioctl_ptr->len != sizeof(uint32_t)) {
 			mutex_unlock(&cpp_dev->mutex);
 			return -EINVAL;
 		}

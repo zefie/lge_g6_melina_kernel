@@ -415,6 +415,7 @@ static struct device_attribute power_supply_attrs[] = {
 #ifdef CONFIG_LGE_PM_CYCLE_BASED_CHG_VOLTAGE
 	POWER_SUPPLY_ATTR(battery_cycle),
 #endif
+	POWER_SUPPLY_ATTR(capacity_qct),
 	/* Local extensions of type int64_t */
 	POWER_SUPPLY_ATTR(charge_counter_ext),
 	/* Properties of type `const char *' */

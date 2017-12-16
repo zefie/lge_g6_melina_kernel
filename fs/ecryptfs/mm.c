@@ -1,10 +1,3 @@
-/*
- * mm.c
- *
- *  Created on: Feb 17, 2016
- *  Author: mudzizi
- */
-
 #include <linux/kernel.h>
 #include <linux/mm.h>
 #include <linux/fs.h>

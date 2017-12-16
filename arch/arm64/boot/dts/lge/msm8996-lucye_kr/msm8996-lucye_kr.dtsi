@@ -16,7 +16,6 @@
 #include "msm8996-lucye_kr-pm.dtsi"
 #include "msm8996-lucye_kr-connectivity.dtsi"
 #include "msm8996-lucye_kr-nfc.dtsi"
-#include "msm8996-lucye_kr-mme.dtsi"
 #include "msm8996-lucye_kr-hdmi.dtsi"
 #include "msm8996-lucye_kr-fingerprint.dtsi"
 #include "msm8996-lucye_kr-usb.dtsi"
@@ -45,7 +44,7 @@
 			reg = <0 0x85800000 0 0x2800000>;
 		};
 
-		modem_mem: modem_region@88800000 {
+		modem_mem: modem_region@88000000 {
 			reg = <0 0x88000000 0 0x6900000>;
 		};
 	};
