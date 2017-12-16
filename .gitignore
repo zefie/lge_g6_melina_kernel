@@ -105,5 +105,5 @@ tools/gator/daemon/events_xml.h
 
 # zefie build system (output files)
 /build/
-arch/arm64/configs/lucye_us997_melina_defconfig
 scripts/dtbTool/
+arch/arm64/configs/melina_zefiescripts_defconfig
