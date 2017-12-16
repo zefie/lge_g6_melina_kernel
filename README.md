@@ -42,9 +42,9 @@ and you can also use .zefie/scripts/sideload.sh to automatically sideload the mo
 
 ## Benchmarks
 
-Stock Kernel (16a) | Melina Kernel ([ga4e29e9](https://git.zefie.net/zefie/lge_us997_melina_kernel/commit/a4e29e906665a3062bd4d6a0d6fffcb912f403cd))
+Stock Kernel (16a) | Melina Kernel ([ga4e29e9](commit/a4e29e906665a3062bd4d6a0d6fffcb912f403cd))
 --- | ---
-![Image](.zefie/benchmarks/stock_lge_16a_kernel.jpg?raw=true) | ![Image](.zefie/benchmarks/melina_kernel_ga4e29e9.jpg?raw=true) | (soon)
+![Image](https://github.com/zefie/lge_g6_kernel_scripts/raw/us997-7.0/benchmarks/stock_lge_16a_kernel.jpg) | ![Image](https://github.com/zefie/lge_g6_kernel_scripts/raw/us997-7.0/benchmarks/melina_kernel_ga4e29e9.jpg)
 [Details](http://browser.geekbench.com/v4/cpu/5472375) | [Details](http://browser.geekbench.com/v4/cpu/5472792)
 
 ### [GeekBench Comparison](http://browser.geekbench.com/v4/cpu/compare/5472792?baseline=5472375) (Left is Melina, Right is Stock)
