@@ -607,6 +607,8 @@ static int fb_notifier_callback(struct notifier_block *nb,
 struct platform_device *g_dev = NULL;
 
 #ifdef CONFIG_UCI
+static int first_parse = 1;
+static int last_enable_state = 0;
 // register sys uci listener
 static void uci_user_listener(void) {
 	if (g_dev && &g_dev->dev) {
@@ -629,6 +631,11 @@ static void uci_user_listener(void) {
 	g = uci_get_user_property_int_mm("kcal_green", g, 0, 256);
 	b = uci_get_user_property_int_mm("kcal_blue", b, 0, 256);
 	enable = uci_get_user_property_int_mm("kcal_enable", enable, 0, 1);
+	// don't apply anything if enable is still off and already off. That messes up the sRGB
+	// ... for users with no intention to use kcal control.
+	if (first_parse && !enable) goto exit;
+	if (last_enable_state == enable && !enable) goto exit;
+
 	lut_data->sat = sat;
 	lut_data->val = val;
 	lut_data->cont = cont;
@@ -643,6 +650,9 @@ static void uci_user_listener(void) {
 		mdss_mdp_kcal_update_igc(lut_data);
 	} else
 		lut_data->queue_changes = true;
+exit:
+	first_parse = 0;
+	last_enable_state = enable;
 	}
 }
 #endif
