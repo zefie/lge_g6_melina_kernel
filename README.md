@@ -1,7 +1,8 @@
 # Melina Kernel for LG G6 Stock ROMs
 
 Based on LGE OpenSource US997U v15a kernel ([commit 3189c52](https://github.com/zefie/lge_g6_melina_kernel/tree/3189c52e67deebe6c466ab09e11c5a9d64781c20))
-Based on LGE Opensource v10b kernel ([first commit (70c31dd)](https://github.com/zefie/lge_g6_melina_kernel/tree/70c31dde4f4575255d7aadf2f626d50e2c36d25a))
+
+Previously based on LGE Opensource v10b kernel ([first commit (70c31dd)](https://github.com/zefie/lge_g6_melina_kernel/tree/70c31dde4f4575255d7aadf2f626d50e2c36d25a))
 
 **Note**: I own the US997, therefore I cannot test any other releases made available,
 only compile them and let you try them. Keep that in mind.
@@ -12,7 +13,7 @@ only compile them and let you try them. Keep that in mind.
 
  * For use on LG Nougat Stock ROMs
  * Uses [osm0sis's AnyKernel2](https://forum.xda-developers.com/showthread.php?t=2670512) system
- * Tested on LGE Stock US997v16a
+ * Developer tested on LGE Stock US997v16a
  
 ## Features:
 
