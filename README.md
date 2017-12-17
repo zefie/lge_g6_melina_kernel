@@ -31,6 +31,8 @@ only compile them and let you try them. Keep that in mind.
 ## How to build:
 
  * [Prepare your toolchain](ubertc-guide.md)
+ * Clone repo
+ * Run ```git submodule init && git submoduleupdate```
  * Edit .zefie/scripts/buildenv.sh, and set TOOLCHAIN, KERNEL_DEV and KERNEL_NAME path for your local setup
  * Run .zefie/scripts/fullbuild.sh
 
