@@ -8261,7 +8261,7 @@ static int smbchg_batt_id_checker(struct smbchg_chip *chip) {
 		else
 			valid_id = lge_val.intval;
 
-			return valid_id;
+		return valid_id;
 	}
 
 	valid_id = false;
@@ -9869,8 +9869,8 @@ static void lgcc_charger_reginfo(struct work_struct *work) {
 	else
 		delay_time = CHARGING_INFORM_NORMAL_TIME;
 
-		schedule_delayed_work(&chip->charging_info_work,
-			round_jiffies_relative(msecs_to_jiffies(delay_time)));
+	schedule_delayed_work(&chip->charging_info_work,
+		round_jiffies_relative(msecs_to_jiffies(delay_time)));
 
 }
 #endif
