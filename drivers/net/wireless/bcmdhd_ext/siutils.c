@@ -538,11 +538,16 @@ si_doattach(si_info_t *sii, uint devid, osl_t *osh, void *regs,
 	}
 
 	sih->bustype = bustype;
+
+	// What does this even do? ~zefie
+	// warning: self-comparison always evaluates to false [-Wtautological-compare]
+	/*
 	if (bustype != BUSTYPE(bustype)) {
 		SI_ERROR(("si_doattach: bus type %d does not match configured bus type %d\n",
 			bustype, BUSTYPE(bustype)));
 		return NULL;
 	}
+	*/
 
 	/* bus/core/clk setup for register access */
 	if (!si_buscore_prep(sii, bustype, devid, sdh)) {

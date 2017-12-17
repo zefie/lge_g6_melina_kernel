@@ -54,58 +54,59 @@ static long audio_ioctl_shared(struct file *file, unsigned int cmd,
 	int rc = 0;
 
 	switch (cmd) {
-	case AUDIO_START: {
-		pr_err("%s[%pK]: AUDIO_START session_id[%d]\n", __func__,
-			audio, audio->ac->session);
-		if (audio->feedback == NON_TUNNEL_MODE) {
-			/* Configure PCM output block */
-			rc = q6asm_enc_cfg_blk_pcm(audio->ac,
-			audio->pcm_cfg.sample_rate,
-			audio->pcm_cfg.channel_count);
+		case AUDIO_START: {
+			pr_err("%s[%pK]: AUDIO_START session_id[%d]\n", __func__,
+				audio, audio->ac->session);
+			if (audio->feedback == NON_TUNNEL_MODE) {
+				/* Configure PCM output block */
+				rc = q6asm_enc_cfg_blk_pcm(audio->ac,
+				audio->pcm_cfg.sample_rate,
+				audio->pcm_cfg.channel_count);
+				if (rc < 0) {
+					pr_err("pcm output block config failed\n");
+					break;
+				}
+			}
+			amrwbplus_drv_config =
+			(struct msm_audio_amrwbplus_config_v2 *)audio->codec_cfg;
+
+			q6_amrwbplus_cfg.size_bytes     =
+				amrwbplus_drv_config->size_bytes;
+			q6_amrwbplus_cfg.version        =
+				amrwbplus_drv_config->version;
+			q6_amrwbplus_cfg.num_channels   =
+				amrwbplus_drv_config->num_channels;
+			q6_amrwbplus_cfg.amr_band_mode  =
+				amrwbplus_drv_config->amr_band_mode;
+			q6_amrwbplus_cfg.amr_dtx_mode   =
+				amrwbplus_drv_config->amr_dtx_mode;
+			q6_amrwbplus_cfg.amr_frame_fmt  =
+				amrwbplus_drv_config->amr_frame_fmt;
+			q6_amrwbplus_cfg.amr_lsf_idx    =
+				amrwbplus_drv_config->amr_lsf_idx;
+
+			rc = q6asm_media_format_block_amrwbplus(audio->ac,
+								&q6_amrwbplus_cfg);
 			if (rc < 0) {
-				pr_err("pcm output block config failed\n");
+				pr_err("q6asm_media_format_block_amrwb+ failed...\n");
 				break;
 			}
-		}
-		amrwbplus_drv_config =
-		(struct msm_audio_amrwbplus_config_v2 *)audio->codec_cfg;
+			rc = audio_aio_enable(audio);
+			audio->eos_rsp = 0;
+			audio->eos_flag = 0;
+			if (!rc) {
+				audio->enabled = 1;
+			} else {
+				audio->enabled = 0;
+				pr_err("Audio Start procedure failed rc=%d\n", rc);
+				break;
+			}
+			pr_debug("%s:AUDIO_START sessionid[%d]enable[%d]\n", __func__,
+				audio->ac->session,
+				audio->enabled);
+			if (audio->stopped == 1)
+				audio->stopped = 0;
 
-		q6_amrwbplus_cfg.size_bytes     =
-			amrwbplus_drv_config->size_bytes;
-		q6_amrwbplus_cfg.version        =
-			amrwbplus_drv_config->version;
-		q6_amrwbplus_cfg.num_channels   =
-			amrwbplus_drv_config->num_channels;
-		q6_amrwbplus_cfg.amr_band_mode  =
-			amrwbplus_drv_config->amr_band_mode;
-		q6_amrwbplus_cfg.amr_dtx_mode   =
-			amrwbplus_drv_config->amr_dtx_mode;
-		q6_amrwbplus_cfg.amr_frame_fmt  =
-			amrwbplus_drv_config->amr_frame_fmt;
-		q6_amrwbplus_cfg.amr_lsf_idx    =
-			amrwbplus_drv_config->amr_lsf_idx;
-
-		rc = q6asm_media_format_block_amrwbplus(audio->ac,
-							&q6_amrwbplus_cfg);
-		if (rc < 0) {
-			pr_err("q6asm_media_format_block_amrwb+ failed...\n");
-			break;
-		}
-		rc = audio_aio_enable(audio);
-		audio->eos_rsp = 0;
-		audio->eos_flag = 0;
-		if (!rc) {
-			audio->enabled = 1;
-		} else {
-			audio->enabled = 0;
-			pr_err("Audio Start procedure failed rc=%d\n", rc);
-			break;
-		}
-		pr_debug("%s:AUDIO_START sessionid[%d]enable[%d]\n", __func__,
-			audio->ac->session,
-			audio->enabled);
-		if (audio->stopped == 1)
-			audio->stopped = 0;
 			break;
 		}
 	default:
