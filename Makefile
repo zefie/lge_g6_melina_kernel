@@ -405,7 +405,6 @@ KBUILD_CPPFLAGS := -D__KERNEL__
 KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -fno-strict-aliasing -fno-common \
 		   -Werror-implicit-function-declaration \
-		   -Wno-tautological-compare \
 		   -Wno-format-security \
 		   -std=gnu89 \
 		   -mcpu=cortex-a57 -mtune=cortex-a57 -fdiagnostics-color=always
