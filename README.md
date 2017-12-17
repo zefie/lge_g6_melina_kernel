@@ -11,6 +11,7 @@ only compile them and let you try them. Keep that in mind.
 ## Information
 
  * For use on LG Nougat Stock ROMs
+ * Uses [osm0sis's AnyKernel2](https://forum.xda-developers.com/showthread.php?t=2670512) system
  * Tested on LGE Stock US997v16a
  
 ## Features:
@@ -24,15 +25,15 @@ only compile them and let you try them. Keep that in mind.
 
 ## Current Status:
 
- * Compiles: Yes ~ *Confirmed*: US997
- * Boots: Yes ~ *Confirmed*: US997
- * Bugs: None known
+ * Compiles: Yes ~ *Confirmed*: US997 H870
+ * Boots: Yes ~ *Confirmed*: US997 H870
+ * Bugs: **US997**: None ~ **H870**: no wifi
 
 ## How to build:
 
  * [Prepare your toolchain](ubertc-guide.md)
  * Clone repo
- * Run ```git submodule init && git submoduleupdate```
+ * Run ```git submodule init && git submodule update```
  * Edit .zefie/scripts/buildenv.sh, and set TOOLCHAIN, KERNEL_DEV and KERNEL_NAME path for your local setup
  * Run .zefie/scripts/fullbuild.sh
 
@@ -47,6 +48,12 @@ and you can also use .zefie/scripts/sideload.sh to automatically sideload the mo
  * [DX-Mi5 by pappschlumpf](https://github.com/pappschlumpf/DX-Mi5)
  * [Noire Kernel by me](https://git.zefie.net/zefie/android_kernel_samsung_msm8916)
 
+## XDA Credits
+
+ * [osm0sis for AnyKernel2](https://forum.xda-developers.com/showthread.php?t=2670512)
+ * [CrazyGamerGR for CrazyAquaKernel](https://forum.xda-developers.com/lg-g6/development/kernel-crazyaquakernel-t3661459)
+ * [@nexusownerforlife](https://forum.xda-developers.com/member.php?u=6382322) for testing on Fulmics
+ * [@Killua96](https://forum.xda-developers.com/member.php?u=4580019) for the data needed for H870 builds
 
 ## Benchmarks
 
