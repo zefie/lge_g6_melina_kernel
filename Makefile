@@ -391,6 +391,12 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -std=gnu89 \
 		   -mcpu=cortex-a57 -mtune=cortex-a57 -fdiagnostics-color=always
 
+ifneq ($(KBUILD_SRC),)
+       ifeq ($(shell test $(shell $(KBUILD_SRC)/scripts/gcc-version.sh $(CC)) -ge 600; echo $$?),0)
+               KBUILD_CFLAGS += -Wunused-const-variable=0
+       endif
+endif
+
 KBUILD_AFLAGS_KERNEL :=
 KBUILD_CFLAGS_KERNEL :=
 KBUILD_AFLAGS   := -D__ASSEMBLY__
