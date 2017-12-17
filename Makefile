@@ -409,6 +409,12 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -Wno-format-security \
 		   -std=gnu89
 
+ifneq ($(KBUILD_SRC),)
+       ifeq ($(shell test $(shell $(KBUILD_SRC)/scripts/gcc-version.sh $(CC)) -ge 600; echo $$?),0)
+               KBUILD_CFLAGS += -Wunused-const-variable=0
+       endif
+endif
+
 KBUILD_AFLAGS_KERNEL :=
 KBUILD_CFLAGS_KERNEL :=
 KBUILD_AFLAGS   := -D__ASSEMBLY__
