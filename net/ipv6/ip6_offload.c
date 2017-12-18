@@ -255,7 +255,6 @@ out:
 	return pp;
 }
 
-/*
 static struct sk_buff **sit_gro_receive(struct sk_buff **head,
 					struct sk_buff *skb)
 {
@@ -268,7 +267,6 @@ static struct sk_buff **sit_gro_receive(struct sk_buff **head,
 
 	return ipv6_gro_receive(head, skb);
 }
-*/
 
 static int ipv6_gro_complete(struct sk_buff *skb, int nhoff)
 {
