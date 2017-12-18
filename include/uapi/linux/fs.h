@@ -39,6 +39,10 @@
 #define RENAME_EXCHANGE		(1 << 1)	/* Exchange source and dest */
 #define RENAME_WHITEOUT		(1 << 2)	/* Whiteout source */
 
+#ifdef CONFIG_SDCARD_FS
+#define RENAME_NOPROPAGATE     (1 << 3)        /* Don't Propagate*/
+#endif
+
 struct fstrim_range {
 	__u64 start;
 	__u64 len;
@@ -157,8 +161,7 @@ struct inodes_stat_t {
 #define FIFREEZE	_IOWR('X', 119, int)	/* Freeze */
 #define FITHAW		_IOWR('X', 120, int)	/* Thaw */
 #define FITRIM		_IOWR('X', 121, struct fstrim_range)	/* Trim */
-
-#define FIDTRIM	_IOWR('f', 128, struct fstrim_range)	/* Deep discard trim */
+#define FIDTRIM        _IOWR('f', 128, struct fstrim_range)    /* Deep discard trim */
 
 #define	FS_IOC_GETFLAGS			_IOR('f', 1, long)
 #define	FS_IOC_SETFLAGS			_IOW('f', 2, long)
