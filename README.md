@@ -17,10 +17,11 @@ only compile them and let you try them. Keep that in mind.
 
 ## Features:
 
- * Meticulously updated from v3.18.31 to **v3.18.53** (Linux security, performance, bugfix, etc updates)
+ * Meticulously updated from v3.18.31 to **v3.18.53** (Linux security, performance, bugfix, etc updates) ([rel4](https://github.com/zefie/lge_g6_melina_kernel/releases/tag/rel4) or newer)
  * Binary releases built with ubertc aarch64-linux-android-6.x
  * DriveDroid CD-ROM Emulation Support
- * Flash Friendly FS (F2FS) Support
+ * Qualcomm MDSS KCAL Support
+ * Flash Friendly FS (F2FS) Support ([rel4](https://github.com/zefie/lge_g6_melina_kernel/releases/tag/rel4) or newer)
  * Open source compatible replacement for Tuxera exFAT driver
  * zzmove and elementalx governors
  * Higher performance with lower battery usage ([due to dtb and power updates from US997Uv15a](https://github.com/zefie/lge_g6_melina_kernel/tree/3189c52e67deebe6c466ab09e11c5a9d64781c20)) ([rel2](https://github.com/zefie/lge_g6_melina_kernel/releases/tag/rel2) or newer)
