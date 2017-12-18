@@ -12,13 +12,15 @@ only compile them and let you try them. Keep that in mind.
 ## Information
 
  * For use on LG Nougat Stock ROMs
- * Uses [osm0sis's AnyKernel2](https://forum.xda-developers.com/showthread.php?t=2670512) system
  * Developer tested on LGE Stock US997v16a
- 
+ * Uses [osm0sis's AnyKernel2](https://forum.xda-developers.com/showthread.php?t=2670512) system
+
 ## Features:
 
+ * Meticulously updated from v3.18.31 to **v3.18.53** (Linux security, performance, bugfix, etc updates)
  * Binary releases built with ubertc aarch64-linux-android-6.x
  * DriveDroid CD-ROM Emulation Support
+ * Flash Friendly FS (F2FS) Support
  * Open source compatible replacement for Tuxera exFAT driver
  * zzmove and elementalx governors
  * Higher performance with lower battery usage ([due to dtb and power updates from US997Uv15a](https://github.com/zefie/lge_g6_melina_kernel/tree/3189c52e67deebe6c466ab09e11c5a9d64781c20)) ([rel2](https://github.com/zefie/lge_g6_melina_kernel/releases/tag/rel2) or newer)
@@ -55,6 +57,7 @@ and you can also use .zefie/scripts/sideload.sh to automatically sideload the mo
  * [CrazyGamerGR for CrazyAquaKernel](https://forum.xda-developers.com/lg-g6/development/kernel-crazyaquakernel-t3661459)
  * [@nexusownerforlife](https://forum.xda-developers.com/member.php?u=6382322) for testing on Fulmics
  * [@Killua96](https://forum.xda-developers.com/member.php?u=4580019) for the data needed for H870 builds
+ * Kernel updates cherry-picked (then rebased) from [leskal/f2fs-stable](https://github.com/leskal/f2fs-stable)
 
 ## Benchmarks
 
