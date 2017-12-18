@@ -62,6 +62,13 @@ scm_version()
 				printf '%s%s' -g "`git show-ref -s --abbrev --tags $atag 2>/dev/null`"
 			fi
 		else
+                        # Check for any tag
+                        if atag="`git describe --exact-match --tags HEAD 2>/dev/null`"; then
+				printf '-'
+                                printf '%s' "$atag"
+                                return
+                        fi
+
 			# If only the short version is requested, don't bother
 			# running further git commands
 			if $short; then
