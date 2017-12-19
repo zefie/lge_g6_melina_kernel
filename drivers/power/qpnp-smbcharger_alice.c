@@ -621,6 +621,7 @@ module_param_named(
 	int, S_IRUSR | S_IWUSR
 );
 
+#ifndef CONFIG_SILENCE_SMBCHG_LOG
 #define pr_smb(reason, fmt, ...)				\
 	do {							\
 		if (smbchg_debug_mask & (reason))		\
@@ -636,6 +637,15 @@ module_param_named(
 		else							\
 			pr_debug_ratelimited(fmt, ##__VA_ARGS__);	\
 	} while (0)
+#else
+#define pr_smb(reason, fmt, ...)				\
+	do {							\
+	} while (0)
+
+#define pr_smb_rt(reason, fmt, ...)					\
+	do {								\
+	} while (0)
+#endif
 
 #ifdef CONFIG_LGE_PM_PARALLEL_CHARGING
 struct dual_current_table {
