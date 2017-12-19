@@ -390,6 +390,7 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -Werror-implicit-function-declaration \
 		   -Wno-format-security \
 		   -Wno-unused-function \
+		   -Wno-maybe-uninitialized \
 		   -std=gnu89 \
 		   -mcpu=cortex-a57 -mtune=cortex-a57 -fdiagnostics-color=always
 
