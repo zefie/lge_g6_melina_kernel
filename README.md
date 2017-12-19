@@ -17,6 +17,7 @@ only compile them and let you try them. Keep that in mind.
 
 ## Features:
 
+ * Optimize for performance rather than size ([rel5](https://github.com/zefie/lge_g6_melina_kernel/releases/tag/rel5) or newer)
  * Meticulously updated from v3.18.31 to **v3.18.53** (Linux security, performance, bugfix, etc updates) ([rel4](https://github.com/zefie/lge_g6_melina_kernel/releases/tag/rel4) or newer)
  * Binary releases built with ubertc aarch64-linux-android-6.x
  * DriveDroid CD-ROM Emulation Support
@@ -31,7 +32,7 @@ only compile them and let you try them. Keep that in mind.
 
  * Compiles: Yes ~ *Confirmed*: US997 H870
  * Boots: Yes ~ *Confirmed*: US997 H870
- * Bugs: **US997**: None ~ **H870**: no wifi
+ * Bugs: **US997**: None ~ **H870**: None
 
 ## How to build:
 
