@@ -30,6 +30,7 @@
  */
 
 #define pr_fmt(fmt) "CHARGING-TIME: %s: " fmt, __func__
+#ifndef CONFIG_SILENCE_SMBCHG_LOG
 #define pr_chgtime(reason, fmt, ...)			\
 do {							\
 	if (debug_mask & (reason))			\
@@ -37,6 +38,11 @@ do {							\
 	else						\
 		pr_debug(fmt, ##__VA_ARGS__);		\
 } while (0)
+#else
+#define pr_chgtime(reason, fmt, ...)			\
+do {							\
+} while (0)
+#endif
 
 #define CHARGING_TIME_COMPATIBLE	"lge,charging-time"
 #define CHARGING_TIME_NAME		"lge-charging-time"
