@@ -762,6 +762,7 @@ module_param_named(
 	int, S_IRUSR | S_IWUSR
 );
 
+#ifndef CONFIG_SILENCE_SMBCHG_LOG
 #define pr_smb(reason, fmt, ...)				\
 	do {							\
 		if (smbchg_debug_mask & (reason))		\
@@ -777,6 +778,15 @@ module_param_named(
 		else							\
 			pr_debug_ratelimited(fmt, ##__VA_ARGS__);	\
 	} while (0)
+#else
+#define pr_smb(reason, fmt, ...)				\
+	do {							\
+	} while (0)
+
+#define pr_smb_rt(reason, fmt, ...)					\
+	do {								\
+	} while (0)
+#endif
 
 #ifdef CONFIG_LGE_PM
 struct smbchg_chip *smb_chip;
@@ -4771,7 +4781,9 @@ static int smbchg_config_chg_battery_type(struct smbchg_chip *chip)
 			rc = chip->lge_batt_id_lpc->get_property(chip->lge_batt_id_lpc,
 				LGE_POWER_PROP_BATT_INFO, &lge_val);
 			sprintf(chip->battery_name,"%s", lge_val.strval);
+#ifndef CONFIG_SILENCE_SMBCHG_LOG
 			pr_err("BATTERY FULL NAME : %s\n", chip->battery_name);
+#endif
 		}
 	} else {
 		chip->battery_name = UNKNOWN_BATT_TYPE;
