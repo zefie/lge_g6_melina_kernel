@@ -1,8 +1,10 @@
 # Melina Kernel for LG G6 Stock ROMs
 
-Based on LGE OpenSource US997U v15a kernel ([commit 3189c52](https://github.com/zefie/lge_g6_melina_kernel/tree/3189c52e67deebe6c466ab09e11c5a9d64781c20))
+Based on LGE OpenSource US997 v16a Kernel ([commit 1e31008](https://github.com/zefie/lge_g6_melina_kernel/commit/1e31008c168093b1513193a33b14a9606ed418ad))
 
-Previously based on LGE Opensource v10b kernel ([first commit (70c31dd)](https://github.com/zefie/lge_g6_melina_kernel/tree/70c31dde4f4575255d7aadf2f626d50e2c36d25a))
+Previous kernel bases:
+* LGE OpenSource US997U v15a kernel ([commit 3189c52](https://github.com/zefie/lge_g6_melina_kernel/tree/3189c52e67deebe6c466ab09e11c5a9d64781c20))
+* LGE OpenSource v10b kernel ([first commit (70c31dd)](https://github.com/zefie/lge_g6_melina_kernel/tree/70c31dde4f4575255d7aadf2f626d50e2c36d25a))
 
 **Note**: I own the US997, therefore I cannot test any other releases made available,
 only compile them and let you try them. Keep that in mind.
@@ -17,6 +19,8 @@ only compile them and let you try them. Keep that in mind.
 
 ## Features:
 
+ * [CVE-2017-0705](https://nvd.nist.gov/vuln/detail/CVE-2017-0705) and [CVE-2017-0706](https://nvd.nist.gov/vuln/detail/CVE-2017-0706) Broadcom Wifi Security Updates ([rel6](https://github.com/zefie/lge_g6_melina_kernel/releases/tag/rel6) or newer)
+ * [LGE Updates](https://github.com/zefie/lge_g6_melina_kernel/commit/1e31008c168093b1513193a33b14a9606ed418ad) ([rel6](https://github.com/zefie/lge_g6_melina_kernel/releases/tag/rel6) or newer)
  * Optimize for performance rather than size ([rel5](https://github.com/zefie/lge_g6_melina_kernel/releases/tag/rel5) or newer)
  * Meticulously updated from v3.18.31 to **v3.18.53** (Linux security, performance, bugfix, etc updates) ([rel4](https://github.com/zefie/lge_g6_melina_kernel/releases/tag/rel4) or newer)
  * Binary releases built with ubertc aarch64-linux-android-6.x
