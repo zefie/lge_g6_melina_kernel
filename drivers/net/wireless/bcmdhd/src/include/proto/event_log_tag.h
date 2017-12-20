@@ -188,9 +188,11 @@
 #define EVENT_LOG_TAG_RANDMAC_DBG		160
 #define EVENT_LOG_TAG_RANDMAC_ERR		161
 #define EVENT_LOG_TAG_AWDL_DFSP_DBG		162
+#define EVENT_LOG_TAG_TPA_ERR			163
+#define EVENT_LOG_TAG_TPA_INFO			164
 
 /* EVENT_LOG_TAG_MAX	= Set to the same value of last tag, not last tag + 1 */
-#define EVENT_LOG_TAG_MAX			162
+#define EVENT_LOG_TAG_MAX			164
 /* Note: New event should be added/reserved in trunk before adding it to branches */
 
 

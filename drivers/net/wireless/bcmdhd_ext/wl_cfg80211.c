@@ -2160,6 +2160,7 @@ wl_cfg80211_change_virtual_iface(struct wiphy *wiphy, struct net_device *ndev,
 	s32 err = BCME_OK;
 	s32 index;
 	s32 conn_idx = -1;
+	s32 timeout;
 	chanspec_t chspec;
 	struct bcm_cfg80211 *cfg = wiphy_priv(wiphy);
 	struct net_device *primary_ndev = bcmcfg_to_prmry_ndev(cfg);
@@ -2253,9 +2254,13 @@ wl_cfg80211_change_virtual_iface(struct wiphy *wiphy, struct net_device *ndev,
 			wl_clr_p2p_status(cfg, IF_CHANGED);
 			wl_cfgp2p_ifchange(cfg, wl_to_p2p_bss_macaddr(cfg, conn_idx),
 				htod32(wlif_type), chspec, conn_idx);
-			wait_event_interruptible_timeout(cfg->netif_change_event,
+			timeout = wait_event_interruptible_timeout(cfg->netif_change_event,
 				(wl_get_p2p_status(cfg, IF_CHANGED) == true),
 				msecs_to_jiffies(MAX_WAIT_TIME));
+			if (timeout <= 0 || !wl_get_p2p_status(cfg, IF_CHANGED)) {
+				WL_ERR(("Did not receive the interface event.\n"));
+				return BCME_ERROR;
+			}
 			wl_set_mode_by_netdev(cfg, ndev, mode);
 			dhd->op_mode &= ~DHD_FLAG_P2P_GC_MODE;
 			dhd->op_mode |= DHD_FLAG_P2P_GO_MODE;
@@ -2326,13 +2331,13 @@ wl_cfg80211_notify_ifadd(int ifidx, char *name, uint8 *mac, uint8 bssidx)
 	if (ifadd_expected) {
 		wl_if_event_info *if_event_info = &cfg->if_event_info;
 
-		if_event_info->valid = TRUE;
 		if_event_info->ifidx = ifidx;
 		if_event_info->bssidx = bssidx;
 		strncpy(if_event_info->name, name, IFNAMSIZ);
 		if_event_info->name[IFNAMSIZ] = '\0';
 		if (mac)
 			memcpy(if_event_info->mac, mac, ETHER_ADDR_LEN);
+		if_event_info->valid = TRUE;
 		smp_wmb();
 		wake_up_interruptible(&cfg->netif_change_event);
 		return BCME_OK;
@@ -2357,9 +2362,9 @@ wl_cfg80211_notify_ifdel(int ifidx, char *name, uint8 *mac, uint8 bssidx)
 	}
 
 	if (ifdel_expected) {
-		if_event_info->valid = TRUE;
 		if_event_info->ifidx = ifidx;
 		if_event_info->bssidx = bssidx;
+		if_event_info->valid = TRUE;
 		smp_wmb();
 		wake_up_interruptible(&cfg->netif_change_event);
 		return BCME_OK;
@@ -3777,7 +3782,7 @@ wl_cfg80211_create_iface(struct wiphy *wiphy,
 	struct net_device *primary_ndev = NULL;
 	s32 ret = BCME_OK;
 	s32 bsscfg_idx = 0;
-	u32 timeout;
+	s32 timeout;
 	wl_if_event_info *event = NULL;
 	struct wireless_dev *wdev = NULL;
 	u8 addr[ETH_ALEN];
@@ -3879,8 +3884,9 @@ wl_cfg80211_create_iface(struct wiphy *wiphy,
 	 */
 	WL_DBG(("Wait for the FW I/F Event\n"));
 	timeout = wait_event_interruptible_timeout(cfg->netif_change_event,
-		!cfg->bss_pending_op, msecs_to_jiffies(MAX_WAIT_TIME));
-	if (timeout <= 0 || cfg->bss_pending_op) {
+		((!cfg->bss_pending_op) && (cfg->if_event_info.valid)),
+		msecs_to_jiffies(MAX_WAIT_TIME));
+	if (timeout <= 0 || cfg->bss_pending_op || !cfg->if_event_info.valid) {
 		WL_ERR(("ADD_IF event, didn't come. Return \n"));
 		goto fail;
 	}
@@ -3979,7 +3985,7 @@ wl_cfg80211_del_iface(struct wiphy *wiphy, bcm_struct_cfgdev *cfgdev)
 #endif
 	s32 ret = BCME_OK;
 	s32 bsscfg_idx = 1;
-	u32 timeout;
+	s32 timeout;
 	u32 ifidx;
 	enum nl80211_iftype iface_type = NL80211_IFTYPE_STATION;
 
@@ -4021,8 +4027,9 @@ wl_cfg80211_del_iface(struct wiphy *wiphy, bcm_struct_cfgdev *cfgdev)
 	}
 
 	timeout = wait_event_interruptible_timeout(cfg->netif_change_event,
-		!cfg->bss_pending_op, msecs_to_jiffies(MAX_WAIT_TIME));
-	if (timeout <= 0 || cfg->bss_pending_op) {
+		((!cfg->bss_pending_op) && (cfg->if_event_info.valid)),
+		msecs_to_jiffies(MAX_WAIT_TIME));
+	if (timeout <= 0 || cfg->bss_pending_op || !cfg->if_event_info.valid) {
 		WL_ERR(("timeout in waiting IF_DEL event\n"));
 	}
 
@@ -7352,6 +7359,11 @@ wl_cfg80211_mgmt_tx(struct wiphy *wiphy, bcm_struct_cfgdev *cfgdev,
 
 	WL_DBG(("Enter \n"));
 
+	if (len > ACTION_FRAME_SIZE) {
+		WL_ERR(("bad length:%zu\n", len));
+		return BCME_BADLEN;
+	}
+
 	dev = cfgdev_to_wlc_ndev(cfgdev, cfg);
 
 	if (!dev) {
@@ -8624,7 +8636,7 @@ wl_cfg80211_bcn_bringup_ap(
 #endif /* SOFTAP_UAPSD_OFF */
 	s32 err = BCME_OK;
 	s32 is_rsdb_supported = BCME_ERROR;
-	u32 timeout;
+	s32 timeout;
 #if (defined(DHD_DEBUG) && defined(BCMPCIE) && defined(DHD_FW_COREDUMP)) || defined(CUSTOMER_HW10)
 	dhd_pub_t *dhdp = (dhd_pub_t *)(cfg->pub);
 #endif /* DHD_DEBUG && BCMPCIE && DHD_FW_COREDUMP */
@@ -8836,8 +8848,8 @@ wl_cfg80211_bcn_bringup_ap(
 	}
 	/* Wait for Linkup event to mark successful AP/GO bring up */
 	timeout = wait_event_interruptible_timeout(cfg->netif_change_event,
-		wl_get_drv_status(cfg, AP_CREATED, dev), msecs_to_jiffies(MAX_AP_LINK_WAIT_TIME));
-	if (timeout <= 0 || !wl_get_drv_status(cfg, AP_CREATED, dev)) {
+		(wl_get_drv_status(cfg, AP_CREATED, dev) && cfg->if_event_info.valid), msecs_to_jiffies(MAX_AP_LINK_WAIT_TIME));
+	if (timeout <= 0 || !wl_get_drv_status(cfg, AP_CREATED, dev) || !cfg->if_event_info.valid) {
 		WL_ERR(("Link up didn't come for AP interface. AP/GO creation failed! \n"));
 #if defined(DHD_DEBUG) && defined(BCMPCIE) && defined(DHD_FW_COREDUMP)
 		if (dhdp->memdump_enabled) {

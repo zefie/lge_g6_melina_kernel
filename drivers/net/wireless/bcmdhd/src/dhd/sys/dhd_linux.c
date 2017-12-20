@@ -8425,7 +8425,7 @@ dhd_preinit_ioctls(dhd_pub_t *dhd)
 		iovbuf[4] = (unsigned char)(rand_mac >> 8);
 		iovbuf[5] = (unsigned char)(rand_mac >> 16);
 
-		ret = dhd_iovar(dhd, 0, "cur_etheraddr", (char *)&iovbuf, ETHER_ADDR_LEN, NULL, 0,
+		ret = dhd_iovar(dhd, 0, "cur_etheraddr", (char *)iovbuf, ETHER_ADDR_LEN, NULL, 0,
 				TRUE);
 		if (ret < 0) {
 			DHD_ERROR(("%s: can't set MAC address , error=%d\n", __FUNCTION__, ret));
@@ -8796,7 +8796,7 @@ dhd_preinit_ioctls(dhd_pub_t *dhd)
 	/* Read 4-way handshake requirements */
 	if (dhd_use_idsup == 1) {
 		ret = dhd_iovar(dhd, 0, "sup_wpa", (char *)&sup_wpa, sizeof(sup_wpa),
-				(char *)&iovbuf, sizeof(iovbuf), FALSE);
+				(char *)iovbuf, sizeof(iovbuf), FALSE);
 		/* sup_wpa iovar returns NOTREADY status on some platforms using modularized
 		 * in-dongle supplicant.
 		 */

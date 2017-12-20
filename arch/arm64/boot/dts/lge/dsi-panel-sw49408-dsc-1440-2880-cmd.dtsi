@@ -159,7 +159,7 @@
 			/* IE Setting2 */
 			39 01 00 00 00 00 05 F2 01 00 04 00
 			/* IE Setting3 */
-			39 01 00 00 00 00 0D F3 00 43 8B C0 00 01 13 00 00 00 00 00
+			39 01 00 00 00 00 0D F3 00 4F 93 C3 00 01 13 00 00 00 00 00
 			/* CABC Control 1*/
 			39 01 00 00 00 00 18 FA 20 40 60 80 A0 C0 E0 10 1C 20 20 1F 16 18 00 B4 C0 CD DA E8 F0 F7 FF
 			/* CABC Control 2*/
@@ -270,7 +270,7 @@
 			/* IE Setting2 */
 			39 01 00 00 00 00 05 F2 01 00 04 00
 			/* IE Setting3 */
-			39 01 00 00 00 00 0D F3 00 43 8B C0 00 01 13 00 00 00 00 00
+			39 01 00 00 00 00 0D F3 00 4F 93 C3 00 01 13 00 00 00 00 00
 			/* CABC Control 1*/
 			39 01 00 00 00 00 18 FA 20 40 60 80 A0 C0 E0 10 1C 20 20 1F 16 18 00 B4 C0 CD DA E8 F0 F7 FF
 			/* CABC Control 2*/
@@ -366,7 +366,7 @@
 
 		lge,mdss-dsi-f3h-command = [
 			/* SAT value */
-			39 01 00 00 00 00 0D F3 00 43 8B C0 00 01 13 00 00 00 00 00
+			39 01 00 00 00 00 0D F3 00 4F 93 C3 00 01 13 00 00 00 00 00
 		];
 		lge,mdss-dsi-fbh-command = [
 			/* CABC value payload[4] = 0x06(on), 0x02(off) */
