@@ -43,6 +43,7 @@ mdss-dsi-objs += mdss_dsi_phy.o
 mdss-dsi-objs += mdss_dsi_clk.o
 obj-$(CONFIG_FB_MSM_MDSS) += mdss-dsi.o
 obj-$(CONFIG_FB_MSM_MDSS) += mdss_panel.o
+obj-$(CONFIG_FB_MSM_MDSS_KCAL_CTRL) += mdss_mdp_kcal_ctrl.o
 
 ifeq ($(CONFIG_SPI_QUP), y)
 obj-$(CONFIG_FB_MSM_MDSS_SPI_PANEL) += mdss_spi_client.o
