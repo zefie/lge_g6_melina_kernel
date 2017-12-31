@@ -3609,7 +3609,10 @@ static void ffs_closed(struct ffs_data *ffs)
 	ci = opts->func_inst.group.cg_item.ci_parent->ci_parent;
 	ffs_dev_unlock();
 
+#ifdef CONFIG_USB_CONFIGFS
 	unregister_gadget_item(ci);
+#endif
+
 	return;
 done:
 	ffs_dev_unlock();
