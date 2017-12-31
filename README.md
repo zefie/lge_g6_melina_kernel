@@ -19,6 +19,8 @@ only compile them and let you try them. Keep that in mind.
 
 ## Features:
 
+ * Meticulously updated from v3.18.53 to **v3.18.62** (Linux security, performance, bugfix, etc updates) ([rel7](https://github.com/zefie/lge_g6_melina_kernel/releases/tag/rel7) or newer)
+ * Removes /sbin/rctd and related service entry in init.lge.rc if detected ([rel7](https://github.com/zefie/lge_g6_melina_kernel/releases/tag/rel7) or newer)
  * [CVE-2017-0705](https://nvd.nist.gov/vuln/detail/CVE-2017-0705) and [CVE-2017-0706](https://nvd.nist.gov/vuln/detail/CVE-2017-0706) Broadcom Wifi Security Updates ([rel6](https://github.com/zefie/lge_g6_melina_kernel/releases/tag/rel6) or newer)
  * [LGE Updates](https://github.com/zefie/lge_g6_melina_kernel/commit/1e31008c168093b1513193a33b14a9606ed418ad) ([rel6](https://github.com/zefie/lge_g6_melina_kernel/releases/tag/rel6) or newer)
  * Optimize for performance rather than size ([rel5](https://github.com/zefie/lge_g6_melina_kernel/releases/tag/rel5) or newer)
@@ -56,6 +58,8 @@ and you can also use .zefie/scripts/sideload.sh to automatically sideload the mo
  * [CrazyAquaKernel for LineageOS by CrazyGamerGR](https://github.com/CrazyGamerGR/CrazyAquaKernel-g5-g6-los-nougat)
  * [DX-Mi5 by pappschlumpf](https://github.com/pappschlumpf/DX-Mi5)
  * [Noire Kernel by me](https://git.zefie.net/zefie/android_kernel_samsung_msm8916)
+ * Kernel updates (3.18.31 - > 3.18.53) cherry-picked (then rebased) from [leskal/f2fs-stable](https://github.com/leskal/f2fs-stable)
+ * Kernel updates (3.18.54 - > 3.18.62) cherry-picked (then rebased) from [Google Git for 3.18.y](https://kernel.googlesource.com/pub/scm/linux/kernel/git/stable/linux-stable/+log/linux-3.18.y)
 
 ## XDA Credits
 
@@ -63,7 +67,6 @@ and you can also use .zefie/scripts/sideload.sh to automatically sideload the mo
  * [CrazyGamerGR for CrazyAquaKernel](https://forum.xda-developers.com/lg-g6/development/kernel-crazyaquakernel-t3661459)
  * [@nexusownerforlife](https://forum.xda-developers.com/member.php?u=6382322) for testing on Fulmics
  * [@Killua96](https://forum.xda-developers.com/member.php?u=4580019) for the data needed for H870 builds
- * Kernel updates cherry-picked (then rebased) from [leskal/f2fs-stable](https://github.com/leskal/f2fs-stable)
 
 ## Benchmarks
 
