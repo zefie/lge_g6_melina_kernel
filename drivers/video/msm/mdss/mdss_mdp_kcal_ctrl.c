@@ -585,6 +585,21 @@ static int mdss_mdp_kcal_update_queue(struct device *dev)
 	return 0;
 }
 
+#ifdef CONFIG_UCI
+static int first_parse = 1;
+static int last_enable_state = 0;
+static void uci_user_listener(void);
+
+static void kcal_uci_set(struct work_struct * kcal_uci_set_work) {
+	if (last_enable_state == 1) {
+		last_enable_state = 0; // simply set to last enable false and ...
+		uci_user_listener(); // ... call listener as if config changed, it will set stuff...
+	}
+}
+DECLARE_DELAYED_WORK(kcal_uci_set_work, kcal_uci_set);
+
+#endif
+
 #if defined(CONFIG_FB) && !defined(CONFIG_MMI_PANEL_NOTIFICATIONS)
 static int fb_notifier_callback(struct notifier_block *nb,
 	unsigned long event, void *data)
@@ -597,7 +612,19 @@ static int fb_notifier_callback(struct notifier_block *nb,
 	if (evdata && evdata->data && event == FB_EVENT_BLANK) {
 		blank = evdata->data;
 		if (*blank == FB_BLANK_UNBLANK)
+#ifdef CONFIG_UCI
+		{
+			if (last_enable_state == 1) {
+				// on some devices like u ultra, on screen on we need to set the kcal again if it's enabled
+				// because of probably another screen off blank/unblank or framework sets over the kcal values.
+				lut_data->queue_changes = false; // dequeue
+				schedule_delayed_work(&kcal_uci_set_work,20);
+			} else
+#endif
 			mdss_mdp_kcal_update_queue(&lut_data->dev);
+#ifdef CONFIG_UCI
+		}
+#endif
 	}
 
 	return 0;
@@ -607,8 +634,6 @@ static int fb_notifier_callback(struct notifier_block *nb,
 struct platform_device *g_dev = NULL;
 
 #ifdef CONFIG_UCI
-static int first_parse = 1;
-static int last_enable_state = 0;
 // register sys uci listener
 static void uci_user_listener(void) {
 	if (g_dev && &g_dev->dev) {
