@@ -72,7 +72,6 @@ static int firstboot_check = 1;
 #include <linux/slimport.h>
 #endif
 
-
 #ifdef CONFIG_LGE_ALICE_FRIENDS
 #include <linux/fb.h>
 #endif
