@@ -926,11 +926,10 @@ static void __get_memory_limit(struct dm_bufio_client *c,
 {
 	unsigned long buffers;
 
-	if (unlikely(ACCESS_ONCE(dm_bufio_cache_size) != dm_bufio_cache_size_latch)) {
-		if (mutex_trylock(&dm_bufio_clients_lock)) {
-			__cache_size_refresh();
-			mutex_unlock(&dm_bufio_clients_lock);
-		}
+	if (ACCESS_ONCE(dm_bufio_cache_size) != dm_bufio_cache_size_latch) {
+		mutex_lock(&dm_bufio_clients_lock);
+		__cache_size_refresh();
+		mutex_unlock(&dm_bufio_clients_lock);
 	}
 
 	buffers = dm_bufio_cache_size_per_client >>

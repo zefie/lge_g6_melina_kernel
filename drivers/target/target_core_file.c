@@ -760,7 +760,8 @@ fd_execute_rw(struct se_cmd *cmd, struct scatterlist *sgl, u32 sgl_nents,
 		return TCM_LOGICAL_UNIT_COMMUNICATION_FAILURE;
 	}
 
-	target_complete_cmd(cmd, SAM_STAT_GOOD);
+	if (ret)
+		target_complete_cmd(cmd, SAM_STAT_GOOD);
 	return 0;
 }
 

@@ -543,8 +543,7 @@ unblock_all_signals(void)
 	spin_unlock_irqrestore(&current->sighand->siglock, flags);
 }
 
-static void collect_signal(int sig, struct sigpending *list, siginfo_t *info,
-			   bool *resched_timer)
+static void collect_signal(int sig, struct sigpending *list, siginfo_t *info)
 {
 	struct sigqueue *q, *first = NULL;
 
@@ -566,12 +565,6 @@ static void collect_signal(int sig, struct sigpending *list, siginfo_t *info,
 still_pending:
 		list_del_init(&first->list);
 		copy_siginfo(info, &first->info);
-
-		*resched_timer =
-			(first->flags & SIGQUEUE_PREALLOC) &&
-			(info->si_code == SI_TIMER) &&
-			(info->si_sys_private);
-
 		__sigqueue_free(first);
 	} else {
 		/*
@@ -588,7 +581,7 @@ still_pending:
 }
 
 static int __dequeue_signal(struct sigpending *pending, sigset_t *mask,
-			siginfo_t *info, bool *resched_timer)
+			siginfo_t *info)
 {
 	int sig = next_signal(pending, mask);
 
@@ -602,7 +595,7 @@ static int __dequeue_signal(struct sigpending *pending, sigset_t *mask,
 			}
 		}
 
-		collect_signal(sig, pending, info, resched_timer);
+		collect_signal(sig, pending, info);
 	}
 
 	return sig;
@@ -616,16 +609,15 @@ static int __dequeue_signal(struct sigpending *pending, sigset_t *mask,
  */
 int dequeue_signal(struct task_struct *tsk, sigset_t *mask, siginfo_t *info)
 {
-	bool resched_timer = false;
 	int signr;
 
 	/* We only dequeue private signals from ourselves, we don't let
 	 * signalfd steal them
 	 */
-	signr = __dequeue_signal(&tsk->pending, mask, info, &resched_timer);
+	signr = __dequeue_signal(&tsk->pending, mask, info);
 	if (!signr) {
 		signr = __dequeue_signal(&tsk->signal->shared_pending,
-					 mask, info, &resched_timer);
+					 mask, info);
 		/*
 		 * itimer signal ?
 		 *
@@ -670,7 +662,7 @@ int dequeue_signal(struct task_struct *tsk, sigset_t *mask, siginfo_t *info)
 		 */
 		current->jobctl |= JOBCTL_STOP_DEQUEUED;
 	}
-	if (resched_timer) {
+	if ((info->si_code & __SI_MASK) == __SI_TIMER && info->si_sys_private) {
 		/*
 		 * Release the siglock to ensure proper locking order
 		 * of timer locks outside of siglocks.  Note, we leave

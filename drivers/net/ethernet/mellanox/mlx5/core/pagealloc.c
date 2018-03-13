@@ -30,7 +30,7 @@
  * SOFTWARE.
  */
 
-#include <linux/highmem.h>
+#include <asm-generic/kmap_types.h>
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/mlx5/driver.h>
