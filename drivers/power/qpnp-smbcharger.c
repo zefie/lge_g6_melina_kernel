@@ -8772,6 +8772,8 @@ static enum power_supply_property smbchg_battery_properties[] = {
 #ifdef CONFIG_LGE_PM_WATERPROOF_PROTECTION
 	POWER_SUPPLY_PROP_INPUT_SUSPEND,
 #endif
+	POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN,
+	POWER_SUPPLY_PROP_CYCLE_COUNT
 };
 
 static int smbchg_battery_set_property(struct power_supply *psy,
@@ -9164,6 +9166,10 @@ static int smbchg_battery_get_property(struct power_supply *psy,
 	 */	val->intval = is_usb_present(chip) && chip->input_blocked;
 		break;
 #endif
+	case POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN:
+	case POWER_SUPPLY_PROP_CYCLE_COUNT:
+		get_property_from_fg(chip, prop, &val->intval);
+		break;
 	default:
 		return -EINVAL;
 	}
