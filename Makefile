@@ -3,6 +3,7 @@ PATCHLEVEL = 18
 SUBLEVEL = 120
 EXTRAVERSION =
 NAME = Diseased Newt
+export KERNEL_COMPRESSION_SUFFIX=gz
 
 # *DOCUMENTATION*
 # To see a list of typical targets execute "make help"
