@@ -108,3 +108,4 @@ tools/gator/daemon/events_xml.h
 scripts/dtbTool/
 arch/arm64/configs/melina_us997_defconfig
 arch/arm64/configs/melina_h870_defconfig
+.zefie/*
