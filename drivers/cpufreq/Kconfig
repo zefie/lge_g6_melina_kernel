@@ -157,8 +157,6 @@ config CPU_FREQ_DEFAULT_GOV_ZZMOOVE
 	  frequency lookup tables and optimized scaling triggers instead of
 	  % frequency steps to get smooth up/downscaling dependant on CPU load.
 
->>>>>>> ae43107... add zzmoove big.LITTLE Edition
-
 config CPU_FREQ_GOV_PERFORMANCE
 	tristate "'performance' governor"
 	help
