@@ -104,3 +104,13 @@ tools/gator/daemon/defaults_xml.h
 tools/gator/daemon/escape
 tools/gator/daemon/events.xml
 tools/gator/daemon/events_xml.h
+
+# fetched Android config fragments
+android/configs/android-*.cfg
+
+# zefie build system (output files)
+/build/
+scripts/dtbTool/
+arch/arm64/configs/*melina*_defconfig
+.zefie/*
+firmware/analogix/mi1_eeprom_20_8b.img
