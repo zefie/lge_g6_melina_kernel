@@ -10519,11 +10519,12 @@ static void lgcc_charger_reginfo(struct work_struct *work) {
 	pr_info("[STATS] ICL_STS_1[0x%02x] ICL_STS_2[0x%02x] CHGPTH_CMDIL[0x%02x]\n",
 			reg_icl_sts_1, reg_icl_sts_2, reg_chgpth_cmd_il);
 #endif
-	if (chip->usb_present)
+	if (chip->usb_present) {
 		delay_time = CHARGING_INFORM_NORMAL_TIME / 2;
-	else
+	}
+	else {
 		delay_time = CHARGING_INFORM_NORMAL_TIME;
-
+	}
 		schedule_delayed_work(&chip->charging_info_work,
 			round_jiffies_relative(msecs_to_jiffies(delay_time)));
 
