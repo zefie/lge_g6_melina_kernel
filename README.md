@@ -9,7 +9,7 @@ Previous kernel bases:
 **Note**: I own the US997, therefore I cannot test any other releases made available,
 only compile them and let you try them. Keep that in mind.
 
-**Always retain a backup of your current kernel and system (we update kernel modules in /system)**.
+**Always retain a backup of your current kernel and system (we update kernel modules in /system/lib/modules)**.
 
 ## Information
 
@@ -36,7 +36,7 @@ only compile them and let you try them. Keep that in mind.
 
  * Compiles: Yes ~ *Confirmed*: US997 H870
  * Boots: Yes ~ *Confirmed*: US997 H870
- * Bugs: **US997**: None ~ **H870**: None
+ * Bugs: **US997**: Poor SDCard Performance ~ **H870**: None Reported (Probably same as US997)
 
 ## How to build:
 
@@ -55,15 +55,15 @@ and you can also use .zefie/scripts/sideload.sh to automatically sideload the mo
 
  * [CrazyAquaKernel for LineageOS by CrazyGamerGR](https://github.com/CrazyGamerGR/CrazyAquaKernel-g5-g6-los-nougat)
  * [DX-Mi5 by pappschlumpf](https://github.com/pappschlumpf/DX-Mi5)
- * [Noire Kernel by me](https://git.zefie.net/zefie/android_kernel_samsung_msm8916)
-
+ * [leskal/f2fs-stable](https://github.com/leskal/f2fs-stable)
+ * My old Noire Kernel (Samsung SM-T560NU code)
+ 
 ## XDA Credits
 
  * [osm0sis for AnyKernel2](https://forum.xda-developers.com/showthread.php?t=2670512)
  * [CrazyGamerGR for CrazyAquaKernel](https://forum.xda-developers.com/lg-g6/development/kernel-crazyaquakernel-t3661459)
  * [@nexusownerforlife](https://forum.xda-developers.com/member.php?u=6382322) for testing on Fulmics
  * [@Killua96](https://forum.xda-developers.com/member.php?u=4580019) for the data needed for H870 builds
- * Kernel updates cherry-picked (then rebased) from [leskal/f2fs-stable](https://github.com/leskal/f2fs-stable)
 
 ## Benchmarks
 
