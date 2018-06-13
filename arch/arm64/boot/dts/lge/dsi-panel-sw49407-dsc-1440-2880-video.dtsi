@@ -187,7 +187,6 @@
 			05 01 00 00 5A 00 01 10
 		];
 		qcom,mdss-dsi-off-command-state = "dsi_hs_mode";
-		qcom,cont-splash-enabled;
 
 		qcom,mode-control-dsi-state = "dsi_lp_mode";
 

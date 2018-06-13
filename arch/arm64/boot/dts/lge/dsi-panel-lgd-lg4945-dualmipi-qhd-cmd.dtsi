@@ -145,7 +145,6 @@
 			39 01 00 00 69 00 05 CC 01 00 00 00
 			];
 		qcom,mdss-dsi-off-command-state = "dsi_lp_mode";
-		qcom,cont-splash-enabled;
 
 		qcom,mode-control-dsi-state = "dsi_lp_mode";
 		lge,mode-change-cmds-u2-to-u1 = [

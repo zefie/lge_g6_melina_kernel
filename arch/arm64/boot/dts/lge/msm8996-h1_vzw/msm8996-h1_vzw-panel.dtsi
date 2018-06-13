@@ -67,7 +67,6 @@
 	qcom,mdss-dsi-bl-pmic-control-type = "bl_ctrl_wled";
 	qcom,mdss-dsi-bl-min-level = <1>;
 	qcom,mdss-dsi-bl-max-level = <4095>;
-	qcom,cont-splash-enabled;
 	qcom,panel-supply-entries = <&dsi_panel_pwr_supply>;
 };
 
@@ -75,7 +74,6 @@
 	qcom,mdss-dsi-bl-pmic-control-type = "bl_ctrl_wled";
 	qcom,mdss-dsi-bl-min-level = <1>;
 	qcom,mdss-dsi-bl-max-level = <4095>;
-	qcom,cont-splash-enabled;
 	qcom,panel-supply-entries = <&dsi_panel_pwr_supply>;
 };
 
@@ -83,7 +81,6 @@
 	qcom,mdss-dsi-bl-pmic-control-type = "bl_ctrl_wled";
 	qcom,mdss-dsi-bl-min-level = <1>;
 	qcom,mdss-dsi-bl-max-level = <4095>;
-	qcom,cont-splash-enabled;
 	qcom,panel-supply-entries = <&dsi_panel_pwr_supply>;
 };
 
@@ -91,7 +88,6 @@
 	qcom,mdss-dsi-bl-pmic-control-type = "bl_ctrl_wled";
 	qcom,mdss-dsi-bl-min-level = <1>;
 	qcom,mdss-dsi-bl-max-level = <4095>;
-	qcom,cont-splash-enabled;
 	qcom,panel-supply-entries = <&dsi_panel_pwr_supply>;
 	qcom,mdss-dsi-panel-timings-phy-v2 = [24 1f 08 09 05 03 04 a0
 			24 1f 08 09 05 03 04 a0
