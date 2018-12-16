@@ -703,6 +703,7 @@ static int fpc1020_probe(struct platform_device *pdev)
 	rc = hw_reset(fpc1020);
 
 	fpc1020->fb_notif.notifier_call = fb_notifier_callback;
+	fpc1020->fb_notif.priority = INT_MAX;
 	rc = fb_register_client(&fpc1020->fb_notif);
 	if (rc) {
 		pr_err("Unable to register fb_notifier : %d\n", rc);
