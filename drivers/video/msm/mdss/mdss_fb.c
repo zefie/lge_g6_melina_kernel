@@ -392,8 +392,7 @@ static void mdss_fb_set_bl_brightness(struct led_classdev *led_cdev,
 
 	/* This maps android backlight level 0 to 255 into
 	   driver backlight level 0 to bl_max with rounding */
-	MDSS_BRIGHT_TO_BL(bl_lvl, value, mfd->panel_info->bl_max,
-				mfd->panel_info->brightness_max);
+	bl_lvl = mdss_brightness_to_bl(mfd->panel_info, value);
 
 	if (!bl_lvl && value)
 		bl_lvl = 1;
@@ -408,12 +407,22 @@ static void mdss_fb_set_bl_brightness(struct led_classdev *led_cdev,
 #endif
 		mutex_unlock(&mfd->bl_lock);
 	}
+	mfd->bl_level_usr = bl_lvl;
+}
+
+static enum led_brightness mdss_fb_get_bl_brightness(
+	struct led_classdev *led_cdev)
+{
+	struct msm_fb_data_type *mfd = dev_get_drvdata(led_cdev->dev->parent);
+
+	return mdss_bl_to_brightness(mfd->panel_info, mfd->bl_level_usr);
 }
 
 static struct led_classdev backlight_led = {
 	.name           = "lcd-backlight",
 	.brightness     = MDSS_MAX_BL_BRIGHTNESS / 2,
 	.brightness_set = mdss_fb_set_bl_brightness,
+	.brightness_get = mdss_fb_get_bl_brightness,
 	.max_brightness = MDSS_MAX_BL_BRIGHTNESS,
 };
 
@@ -1401,8 +1410,8 @@ static int mdss_fb_probe(struct platform_device *pdev)
 
 	mfd->ext_ad_ctrl = -1;
 	if (mfd->panel_info && mfd->panel_info->brightness_max > 0)
-		MDSS_BRIGHT_TO_BL(mfd->bl_level, backlight_led.brightness,
-		mfd->panel_info->bl_max, mfd->panel_info->brightness_max);
+		mfd->bl_level = mdss_brightness_to_bl(mfd->panel_info,
+			backlight_led.brightness);
 	else
 		mfd->bl_level = 0;
  
@@ -1415,6 +1424,7 @@ static int mdss_fb_probe(struct platform_device *pdev)
 #if IS_ENABLED(CONFIG_LGE_DISPLAY_BL_EXTENDED)
 	mfd->unset_bl_level_ex = U32_MAX;
 #endif
+	mfd->bl_level_usr = backlight_led.brightness;
 
 	mfd->pdev = pdev;
 
@@ -3956,6 +3966,14 @@ int mdss_fb_atomic_commit(struct fb_info *info,
 	mfd->msm_fb_backup.atomic_commit = true;
 	mfd->msm_fb_backup.disp_commit.l_roi =  commit_v1->left_roi;
 	mfd->msm_fb_backup.disp_commit.r_roi =  commit_v1->right_roi;
+
+	if (commit_v1->flags & MDP_COMMIT_UPDATE_BRIGHTNESS) {
+		mfd->bl_extn_level = mdss_brightness_to_bl(mfd->panel_info,
+			commit_v1->bl_level);
+		if (!mfd->bl_extn_level && commit_v1->bl_level)
+			mfd->bl_extn_level = 1;
+	} else
+		mfd->bl_extn_level = -1;
 
 	mutex_lock(&mfd->mdp_sync_pt_data.sync_mutex);
 	atomic_inc(&mfd->mdp_sync_pt_data.commit_cnt);
