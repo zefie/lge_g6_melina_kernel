@@ -261,6 +261,47 @@ struct msm_mdp_interface {
 				do_div(out, 2 * max_bright);\
 				} while (0)
 #endif
+
+/*
+ * This maps android backlight level 0 to 255 into driver backlight level
+ * 0 always maps to 0 backlight level, and any value from 1-brightness_max
+ * will map to range bl_min to bl_max rounding to closest integer
+ */
+static inline int mdss_brightness_to_bl(struct mdss_panel_info *pinfo, int val)
+{
+	int bl_lvl, bl_min, bl_range;
+
+	if (val <= 0)
+		return 0;
+	else if (val >= pinfo->brightness_max)
+		return pinfo->bl_max;
+
+	/* ensure tha bl_min is at least 1 since 0 is mapped to off */
+	bl_min = pinfo->bl_min ? : 1;
+	bl_range = pinfo->bl_max - bl_min;
+	bl_lvl = DIV_ROUND_CLOSEST((val - 1) * bl_range,
+				   pinfo->brightness_max - 1);
+
+	return bl_min + bl_lvl;
+}
+
+static inline int mdss_bl_to_brightness(struct mdss_panel_info *pinfo, int val)
+{
+	int bl_lvl, bl_min, bl_range;
+
+	bl_min = pinfo->bl_min ? : 1;
+	if (val < bl_min)
+		return 0;
+	else if (val >= pinfo->bl_max)
+		return pinfo->brightness_max;
+
+	/* ensure that value returned is at least 1 since 0 is mapped to off */
+	bl_range = pinfo->bl_max - bl_min;
+	bl_lvl = val - bl_min;
+
+	return 1 + mult_frac(bl_lvl, pinfo->brightness_max - 1, bl_range);
+}
+
 struct mdss_fb_file_info {
 	struct file *file;
 	struct list_head list;
@@ -333,11 +374,13 @@ struct msm_fb_data_type {
 	u32 calib_mode_bl;
 	u32 ad_bl_level;
 	u32 bl_level;
+	int bl_extn_level;
 	u32 bl_scale;
 	u32 bl_min_lvl;
 	u32 unset_bl_level;
 	bool allow_bl_update;
 	u32 bl_level_scaled;
+	u32 bl_level_usr;
 	u32 br_level_val;
 #if IS_ENABLED(CONFIG_LGE_DISPLAY_BL_EXTENDED)
 	u32 br_lvl_ex;
