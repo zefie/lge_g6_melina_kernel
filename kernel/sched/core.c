@@ -650,7 +650,7 @@ void resched_cpu(int cpu)
 
 	raw_spin_lock_irqsave(&rq->lock, flags);
 	if (cpu_online(cpu) || cpu == smp_processor_id())
-		resched_curr(rq);
+	resched_curr(rq);
 	raw_spin_unlock_irqrestore(&rq->lock, flags);
 }
 
@@ -829,6 +829,14 @@ void sched_set_cluster_dstate(const cpumask_t *cluster_cpus, int dstate,
 	cluster->dstate_wakeup_latency = wakeup_latency;
 }
 
+/* ADAPT_LGE_BMC */
+int
+sched_get_cpu_cstate(int cpu)
+{
+	struct rq *rq = cpu_rq(cpu);
+
+	return rq->cstate;
+}
 #endif /* CONFIG_SCHED_HMP */
 
 #endif /* CONFIG_SMP */
@@ -1980,7 +1988,7 @@ static int send_notification(struct rq *rq, int check_pred, int check_groups)
 	unsigned int cur_freq, freq_required;
 	unsigned long flags;
 	int rc = 0;
-	u64 group_load = 0, new_load;
+	u64 group_load = 0, new_load = 0;
 
 	if (!sched_enable_hmp)
 		return 0;
@@ -3446,6 +3454,17 @@ exit_early:
 	}
 }
 
+unsigned long sched_get_busy(int cpu)
+{
+	struct cpumask query_cpu = CPU_MASK_NONE;
+	struct sched_load busy;
+
+	cpumask_set_cpu(cpu, &query_cpu);
+	sched_get_cpus_busy(&busy, &query_cpu);
+
+	return busy.prev_load;
+}
+
 void sched_set_io_is_busy(int val)
 {
 	sched_io_is_busy = val;
@@ -3762,12 +3781,12 @@ static void transfer_busy_time(struct rq *rq, struct related_thread_group *grp,
 {
 	u64 wallclock;
 	struct group_cpu_time *cpu_time;
-	u64 *src_curr_runnable_sum, *dst_curr_runnable_sum;
-	u64 *src_prev_runnable_sum, *dst_prev_runnable_sum;
-	u64 *src_nt_curr_runnable_sum, *dst_nt_curr_runnable_sum;
-	u64 *src_nt_prev_runnable_sum, *dst_nt_prev_runnable_sum;
+	u64 *src_curr_runnable_sum = NULL, *dst_curr_runnable_sum = NULL;
+	u64 *src_prev_runnable_sum = NULL, *dst_prev_runnable_sum = NULL;
+	u64 *src_nt_curr_runnable_sum = NULL, *dst_nt_curr_runnable_sum = NULL;
+	u64 *src_nt_prev_runnable_sum = NULL, *dst_nt_prev_runnable_sum = NULL;
 	struct migration_sum_data d;
-	int migrate_type;
+	int migrate_type = 0;
 
 	if (!sched_freq_aggregate)
 		return;

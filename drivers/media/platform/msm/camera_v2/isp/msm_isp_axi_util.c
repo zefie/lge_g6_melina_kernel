@@ -1008,6 +1008,13 @@ void msm_isp_notify(struct vfe_device *vfe_dev, uint32_t event_type,
 	int i, j;
 	unsigned long flags;
 
+/* LGE_CHANGE_S, STATIC_ANALYSYS_DEV */
+	if (frame_src >= VFE_SRC_MAX) {
+		pr_err("%s: frame_src value is error = %d\n", __func__,	frame_src);
+		return;
+	}
+/* LGE_CHANGE_E, STATIC_ANALYSYS_DEV */
+
 	memset(&event_data, 0, sizeof(event_data));
 
 	switch (event_type) {
@@ -3102,8 +3109,10 @@ static int msm_isp_stop_axi_stream(struct vfe_device *vfe_dev,
 			!vfe_dev->axi_data.src_info[intf].active) {
 			msm_isp_axi_stream_enable_cfg(vfe_dev, stream_info, 0);
 			stream_info->state = INACTIVE;
-			vfe_dev->hw_info->vfe_ops.core_ops.reg_update(vfe_dev,
-				SRC_TO_INTF(stream_info->stream_src));
+			if (!vfe_dev->axi_data.src_info[intf].active) { /*LGE_CHANGE, Fix line corruption at dula Camera,2017-01-24,hyungtae.lee@lge.com*/
+				vfe_dev->hw_info->vfe_ops.core_ops.reg_update(vfe_dev,
+					SRC_TO_INTF(stream_info->stream_src));
+			}
 
 			/*
 			 * Active bit is reset in disble_camif for PIX.
@@ -3231,7 +3240,7 @@ int msm_isp_cfg_axi_stream(struct vfe_device *vfe_dev, void *arg)
 	int rc = 0, ret;
 	struct msm_vfe_axi_stream_cfg_cmd *stream_cfg_cmd = arg;
 	struct msm_vfe_axi_shared_data *axi_data = &vfe_dev->axi_data;
-	enum msm_isp_camif_update_state camif_update;
+	enum msm_isp_camif_update_state camif_update = NO_UPDATE;
 	int halt = 0;
 
 	rc = msm_isp_axi_check_stream_state(vfe_dev, stream_cfg_cmd);

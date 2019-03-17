@@ -3,6 +3,7 @@ config WIL6210
 	select WANT_DEV_COREDUMP
 	depends on CFG80211
 	depends on PCI
+	depends on !MACH_LGE
 	default n
 	---help---
 	  This module adds support for wireless adapter based on

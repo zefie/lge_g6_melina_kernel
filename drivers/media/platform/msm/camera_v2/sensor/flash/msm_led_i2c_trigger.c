@@ -187,7 +187,7 @@ int msm_flash_led_init(struct msm_led_flash_ctrl_t *fctrl)
 	}
 	rc = msm_camera_request_gpio_table(
 		power_info->gpio_conf->cam_gpio_req_tbl,
-		power_info->gpio_conf->cam_gpio_req_tbl_size, 1);
+		power_info->gpio_conf->cam_gpio_req_tbl_size, 1, 0);
 	if (rc < 0) {
 		pr_err("%s: request gpio failed\n", __func__);
 		return rc;
@@ -279,7 +279,7 @@ int msm_flash_led_release(struct msm_led_flash_ctrl_t *fctrl)
 	}
 	rc = msm_camera_request_gpio_table(
 		power_info->gpio_conf->cam_gpio_req_tbl,
-		power_info->gpio_conf->cam_gpio_req_tbl_size, 0);
+		power_info->gpio_conf->cam_gpio_req_tbl_size, 0, 0);
 	if (rc < 0) {
 		pr_err("%s: request gpio failed\n", __func__);
 		return rc;

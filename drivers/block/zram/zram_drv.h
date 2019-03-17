@@ -122,4 +122,8 @@ struct zram {
 	u64 disksize;	/* bytes */
 	char compressor[10];
 };
+
+#ifdef CONFIG_HSWAP
+extern int zram0_free_size(void);
+#endif
 #endif

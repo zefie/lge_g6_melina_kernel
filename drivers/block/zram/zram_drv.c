@@ -49,7 +49,11 @@ static const char *default_compressor = "lzo";
 #define ALLOC_ERROR_LOG_RATE_MS 1000
 
 /* Module params (documentation at end) */
+#ifndef CONFIG_HSWAP
 static unsigned int num_devices = 1;
+#else
+static unsigned int num_devices = 2;
+#endif
 
 static inline void deprecated_attr_warn(const char *name)
 {
@@ -119,6 +123,32 @@ static int zram_show_mem_notifier(struct notifier_block *nb,
 static struct notifier_block zram_show_mem_notifier_block = {
 	.notifier_call = zram_show_mem_notifier
 };
+
+#ifdef CONFIG_HSWAP
+int zram0_free_size(void)
+{
+	struct zram *zram;
+	u64 val = 0;
+
+	if (!zram_devices)
+		return 0;
+
+	zram = &zram_devices[0];
+
+	if (!zram)
+		return 0;
+
+	if (init_done(zram))
+		val += ((zram->disksize >> PAGE_SHIFT) -
+			atomic64_read(&zram->stats.pages_stored) -
+			atomic64_read(&zram->stats.zero_pages));
+
+	if (val > 0)
+		return val;
+
+	return 0;
+}
+#endif
 
 static inline struct zram *dev_to_zram(struct device *dev)
 {
@@ -632,11 +662,11 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
 {
 	int ret = 0;
 	size_t clen;
-	unsigned long handle;
+	unsigned long handle = 0;
 	struct page *page;
 	unsigned char *user_mem, *cmem, *src, *uncmem = NULL;
 	struct zram_meta *meta = zram->meta;
-	struct zcomp_strm *zstrm;
+	struct zcomp_strm *zstrm = NULL;
 	bool locked = false;
 	unsigned long alloced_pages;
 	static unsigned long zram_rs_time;

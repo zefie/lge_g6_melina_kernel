@@ -671,9 +671,14 @@ static void bcl_poll_ibat_low(struct work_struct *work)
 	int ret = 0, val = 0;
 	struct bcl_peripheral_data *perph_data =
 		&bcl_perph->param[BCL_PARAM_CURRENT];
-
+#ifndef CONFIG_LGE_PM
 	trace_bcl_hw_event("ibat poll low. Enter");
 	mutex_lock(&perph_data->state_trans_lock);
+#else
+	mutex_lock(&perph_data->state_trans_lock);
+	trace_bcl_hw_event("ibat poll low. Enter");
+#endif
+
 	if (perph_data->state != BCL_PARAM_POLLING) {
 		pr_err("Invalid ibat state %d\n", perph_data->state);
 		goto exit_ibat;
@@ -700,15 +705,27 @@ static void bcl_poll_ibat_low(struct work_struct *work)
 	}
 
 exit_ibat:
+#ifndef CONFIG_LGE_PM
 	mutex_unlock(&perph_data->state_trans_lock);
 	trace_bcl_hw_event("ibat poll low. Exit");
+#else
+	trace_bcl_hw_event("ibat poll low by exit. exit");
+	mutex_unlock(&perph_data->state_trans_lock);
+#endif
 	return;
 
 reschedule_ibat:
+#ifndef CONFIG_LGE_PM
 	mutex_unlock(&perph_data->state_trans_lock);
+#else
+	trace_bcl_hw_event("ibat poll low by reschedule. Exit");
+	mutex_unlock(&perph_data->state_trans_lock);
+#endif
 	schedule_delayed_work(&perph_data->poll_work,
 		msecs_to_jiffies(perph_data->polling_delay_ms));
+#ifndef CONFIG_LGE_PM
 	trace_bcl_hw_event("ibat poll low. Exit");
+#endif
 	return;
 }
 
@@ -717,9 +734,14 @@ static void bcl_poll_vbat_high(struct work_struct *work)
 	int ret = 0, val = 0;
 	struct bcl_peripheral_data *perph_data =
 		&bcl_perph->param[BCL_PARAM_VOLTAGE];
-
+#ifndef CONFIG_LGE_PM
 	trace_bcl_hw_event("vbat poll high. Enter");
 	mutex_lock(&perph_data->state_trans_lock);
+#else
+	mutex_lock(&perph_data->state_trans_lock);
+	trace_bcl_hw_event("vbat poll high. Enter");
+#endif
+
 	if (perph_data->state != BCL_PARAM_POLLING) {
 		pr_err("Invalid vbat state %d\n", perph_data->state);
 		goto exit_vbat;
@@ -746,15 +768,27 @@ static void bcl_poll_vbat_high(struct work_struct *work)
 	}
 
 exit_vbat:
+#ifndef CONFIG_LGE_PM
 	mutex_unlock(&perph_data->state_trans_lock);
 	trace_bcl_hw_event("vbat poll high. Exit");
+#else
+	trace_bcl_hw_event("vbat poll high by exit. Exit");
+	mutex_unlock(&perph_data->state_trans_lock);
+#endif
 	return;
 
 reschedule_vbat:
+#ifndef CONFIG_LGE_PM
 	mutex_unlock(&perph_data->state_trans_lock);
+#else
+	trace_bcl_hw_event("vbat poll high by reschedule. Exit");
+	mutex_unlock(&perph_data->state_trans_lock);
+#endif
 	schedule_delayed_work(&perph_data->poll_work,
 		msecs_to_jiffies(perph_data->polling_delay_ms));
+#ifndef CONFIG_LGE_PM
 	trace_bcl_hw_event("vbat poll high. Exit");
+#endif
 	return;
 }
 

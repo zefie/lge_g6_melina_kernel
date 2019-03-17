@@ -15,7 +15,9 @@
 #ifdef CONFIG_DIAG_OVER_USB
 #include <linux/usb/usbdiag.h>
 #endif
+#ifdef USB_QCOM_DIAG_BRIDGE
 #include <linux/usb/diag_bridge.h>
+#endif
 
 #define HSIC_1			0
 #define HSIC_2			1

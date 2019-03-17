@@ -282,4 +282,12 @@ config BTFM_SLIM_WCN3990
 	  It is designed to adapt any future BT/FM device to implement a specific
 	  chip initialization process and control.
 
+config LGE_BLUETOOTH_PM
+	tristate "LGE Bluetooth Power & Sleep driver"
+	depends on RFKILL
+	default n
+	help
+		LGE Bluetooth Power & Sleep
+		This driver provides support for LGE BT Power & Sleep.
+
 endmenu
