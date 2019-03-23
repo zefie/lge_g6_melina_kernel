@@ -28,6 +28,7 @@
 #include <linux/delay.h>
 #include <linux/gpio.h>
 #include <linux/interrupt.h>
+#include <linux/fb.h>
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/mutex.h>
@@ -36,7 +37,7 @@
 #include <linux/platform_device.h>
 #include <linux/regulator/consumer.h>
 #include <linux/input.h>
-#define FPC_TTW_HOLD_TIME 1000
+#define FPC_TTW_HOLD_TIME 1500
 
 #define RESET_LOW_SLEEP_MIN_US 5000
 #define RESET_LOW_SLEEP_MAX_US (RESET_LOW_SLEEP_MIN_US + 100)
@@ -74,13 +75,21 @@ struct fpc1020_data {
 	struct pinctrl_state *pinctrl_state[ARRAY_SIZE(pctl_names)];
 	struct regulator *vreg[ARRAY_SIZE(vreg_conf)];
 
-	struct wakeup_source ttw_wl;
 	int irq_gpio;
 	int rst_gpio;
+	bool irq_enabled;
+	struct notifier_block fb_notif;
 	struct mutex lock; /* To set/get exported values in sysfs */
+	struct work_struct pm_work;
+	struct workqueue_struct *fpc1020_wq;
 	bool prepared;
+	int screen_on;
+	int proximity_state; /* 0:far 1:near */
 	atomic_t wakeup_enabled; /* Used both in ISR and non-ISR */
 };
+
+static int fb_notifier_callback(struct notifier_block *self,
+		unsigned long event, void *data);
 
 static int vreg_setup(struct fpc1020_data *fpc1020, const char *name,
 	bool enable)
@@ -120,6 +129,11 @@ found:
 					"Unable to set voltage on %s, %d\n",
 					name, rc);
 		}
+
+		rc = regulator_set_optimum_mode(vreg, vreg_conf[i].ua_load);
+		if (rc < 0)
+			dev_err(dev, "Unable to set current on %s, %d\n",
+					name, rc);
 
 		rc = regulator_enable(vreg);
 		if (rc) {
@@ -188,7 +202,7 @@ static int select_pin_ctl(struct fpc1020_data *fpc1020, const char *name)
 			if (rc)
 				dev_err(dev, "cannot select '%s'\n", name);
 			else
-				dev_info(dev, "Selected '%s'\n", name);
+				dev_dbg(dev, "Selected '%s'\n", name);
 			goto exit;
 		}
 	}
@@ -392,6 +406,18 @@ static ssize_t irq_get(struct device *dev,
 	return scnprintf(buf, PAGE_SIZE, "%i\n", irq);
 }
 
+static void config_irq(struct fpc1020_data *fpc1020, bool enabled)
+{
+	if (enabled != fpc1020->irq_enabled) {
+		if (enabled)
+			enable_irq(gpio_to_irq(fpc1020->irq_gpio));
+		else
+			disable_irq(gpio_to_irq(fpc1020->irq_gpio));
+
+		fpc1020->irq_enabled = enabled;
+	}
+}
+
 /**
  * writing to the irq node will just drop a printk message
  * and return success, used for latency measurement.
@@ -408,6 +434,26 @@ static ssize_t irq_ack(struct device *dev,
 }
 static DEVICE_ATTR(irq, S_IRUSR | S_IWUSR, irq_get, irq_ack);
 
+static ssize_t proximity_state_set(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t count)
+{
+	struct fpc1020_data *fpc1020 = dev_get_drvdata(dev);
+	int rc, val;
+	rc = kstrtoint(buf, 10, &val);
+	if (rc)
+		return -EINVAL;
+
+	fpc1020->proximity_state = !!val;
+	if (!fpc1020->screen_on) {
+		if (fpc1020->proximity_state)
+			config_irq(fpc1020, false);
+		else
+			config_irq(fpc1020, true);
+	}
+	return count;
+}
+static DEVICE_ATTR(proximity_state, S_IWUSR, NULL, proximity_state_set);
+
 static struct attribute *attributes[] = {
 	&dev_attr_pinctl_set.attr,
 	&dev_attr_device_prepare.attr,
@@ -416,6 +462,7 @@ static struct attribute *attributes[] = {
 	&dev_attr_wakeup_enable.attr,
 	&dev_attr_clk_enable.attr,
 	&dev_attr_irq.attr,
+	&dev_attr_proximity_state.attr,
 	NULL
 };
 
@@ -430,7 +477,7 @@ static irqreturn_t fpc1020_irq_handler(int irq, void *handle)
 	dev_dbg(fpc1020->dev, "%s\n", __func__);
 
 	if (atomic_read(&fpc1020->wakeup_enabled)) {
-		__pm_wakeup_event(&fpc1020->ttw_wl,
+		pm_wakeup_event(fpc1020->dev,
 					msecs_to_jiffies(FPC_TTW_HOLD_TIME));
 	}
 
@@ -459,6 +506,56 @@ static int fpc1020_request_named_gpio(struct fpc1020_data *fpc1020,
 	}
 	dev_dbg(dev, "%s %d\n", label, *gpio);
 
+	return 0;
+}
+
+static void set_fingerprintd_nice(int nice)
+{
+	struct task_struct *p;
+
+	read_lock(&tasklist_lock);
+	for_each_process(p) {
+		if (!memcmp(p->comm, "fingerprint@2.1", 16)) {
+			pr_info("%s nice changed to %i\n", p->comm, nice);
+			set_user_nice(p, nice);
+			break;
+		}
+	}
+	read_unlock(&tasklist_lock);
+}
+
+static void fpc1020_suspend_resume(struct work_struct *work)
+{
+	struct fpc1020_data *fpc1020 =
+		container_of(work, typeof(*fpc1020), pm_work);
+
+	/* Escalate fingerprintd priority when screen is off */
+	if (!fpc1020->screen_on)
+		set_fingerprintd_nice(-1);
+	else
+		set_fingerprintd_nice(0);
+
+	config_irq(fpc1020, true);
+}
+
+static int fb_notifier_callback(struct notifier_block *self,
+		unsigned long event, void *data)
+{
+	int *blank;
+	struct fb_event *evdata = data;
+
+	struct fpc1020_data *fpc1020 = container_of(self, struct fpc1020_data, fb_notif);
+	blank = evdata->data;
+	if (evdata && evdata->data && event == FB_EVENT_BLANK && fpc1020) {
+		blank = evdata->data;
+		if (*blank == FB_BLANK_UNBLANK) {
+			fpc1020->screen_on = 1;
+			queue_work(fpc1020->fpc1020_wq, &fpc1020->pm_work);
+		} else if (*blank == FB_BLANK_POWERDOWN) {
+			fpc1020->screen_on = 0;
+			queue_work(fpc1020->fpc1020_wq, &fpc1020->pm_work);
+		}
+	}
 	return 0;
 }
 
@@ -567,7 +664,7 @@ static int fpc1020_probe(struct platform_device *pdev)
 		input_free_device(fpc1020->input);
 		goto exit;
 	}
-
+  
 	mutex_init(&fpc1020->lock);
 	rc = devm_request_threaded_irq(dev, gpio_to_irq(fpc1020->irq_gpio),
 			NULL, fpc1020_irq_handler, irqf,
@@ -583,8 +680,6 @@ static int fpc1020_probe(struct platform_device *pdev)
 	/* Request that the interrupt should be wakeable */
 	enable_irq_wake(gpio_to_irq(fpc1020->irq_gpio));
 
-	wakeup_source_init(&fpc1020->ttw_wl, "fpc_ttw_wl");
-
 	/* create sysfs grou under virtual input*/
 	rc = sysfs_create_group(&fpc1020->input->dev.kobj, &attribute_group);
 	if (rc) {
@@ -597,7 +692,24 @@ static int fpc1020_probe(struct platform_device *pdev)
 		(void)device_prepare(fpc1020, true);
 	}
 
+	fpc1020->fpc1020_wq = alloc_workqueue("fpc1020_wq", WQ_HIGHPRI, 1);
+	if (!fpc1020->fpc1020_wq) {
+		pr_err("Create input workqueue failed\n");
+		goto exit;
+	}
+
+	INIT_WORK(&fpc1020->pm_work, fpc1020_suspend_resume);
+
 	rc = hw_reset(fpc1020);
+
+	fpc1020->fb_notif.notifier_call = fb_notifier_callback;
+	rc = fb_register_client(&fpc1020->fb_notif);
+	if (rc) {
+		pr_err("Unable to register fb_notifier : %d\n", rc);
+		goto exit;
+	}
+
+	device_init_wakeup(dev, true);
 
 	dev_info(dev, "%s: ok\n", __func__);
 
@@ -611,7 +723,6 @@ static int fpc1020_remove(struct platform_device *pdev)
 
 	sysfs_remove_group(&fpc1020->input->dev.kobj, &attribute_group);
 	mutex_destroy(&fpc1020->lock);
-	wakeup_source_trash(&fpc1020->ttw_wl);
 	(void)vreg_setup(fpc1020, "vdd_ana", false);
 	(void)vreg_setup(fpc1020, "vdd_io", false);
 	(void)vreg_setup(fpc1020, "vcc_spi", false);
