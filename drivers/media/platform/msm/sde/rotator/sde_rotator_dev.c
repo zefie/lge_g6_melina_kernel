@@ -469,8 +469,9 @@ static int sde_rotator_queue_setup(struct vb2_queue *q,
 	case V4L2_BUF_TYPE_VIDEO_OUTPUT:
 		ctx->nbuf_out = *num_buffers;
 		kfree(ctx->vbinfo_out);
-		ctx->vbinfo_out = kzalloc(sizeof(struct sde_rotator_vbinfo) *
-					ctx->nbuf_out, GFP_KERNEL);
+		ctx->vbinfo_out = kcalloc(ctx->nbuf_out,
+					  sizeof(struct sde_rotator_vbinfo),
+					  GFP_KERNEL);
 		if (!ctx->vbinfo_out)
 			return -ENOMEM;
 		for (i = 0; i < ctx->nbuf_out; i++)
@@ -479,8 +480,9 @@ static int sde_rotator_queue_setup(struct vb2_queue *q,
 	case V4L2_BUF_TYPE_VIDEO_CAPTURE:
 		ctx->nbuf_cap = *num_buffers;
 		kfree(ctx->vbinfo_cap);
-		ctx->vbinfo_cap = kzalloc(sizeof(struct sde_rotator_vbinfo) *
-					ctx->nbuf_cap, GFP_KERNEL);
+		ctx->vbinfo_cap = kcalloc(ctx->nbuf_cap,
+					  sizeof(struct sde_rotator_vbinfo),
+					  GFP_KERNEL);
 		if (!ctx->vbinfo_cap)
 			return -ENOMEM;
 		for (i = 0; i < ctx->nbuf_cap; i++)
@@ -2018,18 +2020,6 @@ static long sde_rotator_compat_ioctl32(struct file *file,
 }
 #endif
 
-static int sde_rotator_ctrl_subscribe_event(struct v4l2_fh *fh,
-				const struct v4l2_event_subscription *sub)
-{
-	return -EINVAL;
-}
-
-static int sde_rotator_event_unsubscribe(struct v4l2_fh *fh,
-			   const struct v4l2_event_subscription *sub)
-{
-	return -EINVAL;
-}
-
 /* V4l2 ioctl handlers */
 static const struct v4l2_ioctl_ops sde_rotator_ioctl_ops = {
 	.vidioc_querycap          = sde_rotator_querycap,
@@ -2056,8 +2046,8 @@ static const struct v4l2_ioctl_ops sde_rotator_ioctl_ops = {
 	.vidioc_s_priority	  = sde_rotator_s_priority,
 	.vidioc_default           = sde_rotator_private_ioctl,
 	.vidioc_log_status        = v4l2_ctrl_log_status,
-	.vidioc_subscribe_event   = sde_rotator_ctrl_subscribe_event,
-	.vidioc_unsubscribe_event = sde_rotator_event_unsubscribe,
+	.vidioc_subscribe_event   = v4l2_ctrl_subscribe_event,
+	.vidioc_unsubscribe_event = v4l2_event_unsubscribe,
 };
 
 /*

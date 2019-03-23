@@ -99,6 +99,7 @@ static int32_t msm_sensor_driver_create_i2c_v4l_subdev
 		pr_err("failed: camera_init_i2c_v4l2 rc %d", rc);
 		return rc;
 	}
+
 	CDBG("%s rc %d session_id %d\n", __func__, rc, session_id);
 	snprintf(s_ctrl->msm_sd.sd.name,
 		sizeof(s_ctrl->msm_sd.sd.name), "%s",
@@ -140,6 +141,7 @@ static int32_t msm_sensor_driver_create_v4l_subdev
 		pr_err("failed: camera_init_v4l2 rc %d", rc);
 		return rc;
 	}
+
 	CDBG("rc %d session_id %d", rc, session_id);
 	s_ctrl->sensordata->sensor_info->session_id = session_id;
 
@@ -568,7 +570,7 @@ static int32_t msm_sensor_get_pw_settings_compat(
 {
 	int32_t rc = 0, i = 0;
 	struct msm_sensor_power_setting32 *ps32 =
-		kzalloc(sizeof(*ps32) * size, GFP_KERNEL);
+		kcalloc(size, sizeof(*ps32), GFP_KERNEL);
 
 	if (!ps32) {
 		pr_err("failed: no memory ps32");
@@ -646,7 +648,7 @@ static int32_t msm_sensor_get_power_down_settings(void *setting,
 		return -EINVAL;
 	}
 	/* Allocate memory for power down setting */
-	pd = kzalloc(sizeof(*pd) * size_down, GFP_KERNEL);
+	pd = kcalloc(size_down, sizeof(*pd), GFP_KERNEL);
 	if (!pd)
 		return -EFAULT;
 
@@ -711,7 +713,7 @@ static int32_t msm_sensor_get_power_up_settings(void *setting,
 	}
 
 	/* Allocate memory for power up setting */
-	pu = kzalloc(sizeof(*pu) * size, GFP_KERNEL);
+	pu = kcalloc(size, sizeof(*pu), GFP_KERNEL);
 	if (!pu)
 		return -ENOMEM;
 

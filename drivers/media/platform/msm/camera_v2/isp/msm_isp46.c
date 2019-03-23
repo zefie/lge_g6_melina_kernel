@@ -1,4 +1,4 @@
-/* Copyright (c) 2013-2018, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2013-2017, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -138,14 +138,14 @@ static int32_t msm_vfe46_init_dt_parms(struct vfe_device *vfe_dev,
 		pr_err("%s: NO QOS entries found\n", __func__);
 		return -EINVAL;
 	} else {
-		dt_settings = kzalloc(sizeof(uint32_t) * num_dt_entries,
-			GFP_KERNEL);
+		dt_settings = kcalloc(num_dt_entries, sizeof(uint32_t),
+				      GFP_KERNEL);
 		if (!dt_settings) {
 			pr_err("%s:%d No memory\n", __func__, __LINE__);
 			return -ENOMEM;
 		}
-		dt_regs = kzalloc(sizeof(uint32_t) * num_dt_entries,
-			GFP_KERNEL);
+		dt_regs = kcalloc(num_dt_entries, sizeof(uint32_t),
+				  GFP_KERNEL);
 		if (!dt_regs) {
 			pr_err("%s:%d No memory\n", __func__, __LINE__);
 			kfree(dt_settings);
@@ -824,18 +824,15 @@ static int msm_vfe46_start_fetch_engine(struct vfe_device *vfe_dev,
 			fe_cfg->stream_id);
 		vfe_dev->fetch_engine_info.bufq_handle = bufq_handle;
 
-		mutex_lock(&vfe_dev->buf_mgr->lock);
 		rc = vfe_dev->buf_mgr->ops->get_buf_by_index(
 			vfe_dev->buf_mgr, bufq_handle, fe_cfg->buf_idx, &buf);
 		if (rc < 0 || !buf) {
 			pr_err("%s: No fetch buffer rc= %d buf= %pK\n",
 				__func__, rc, buf);
-			mutex_unlock(&vfe_dev->buf_mgr->lock);
 			return -EINVAL;
 		}
 		mapped_info = buf->mapped_info[0];
 		buf->state = MSM_ISP_BUFFER_STATE_DISPATCHED;
-		mutex_unlock(&vfe_dev->buf_mgr->lock);
 	} else {
 		rc = vfe_dev->buf_mgr->ops->map_buf(vfe_dev->buf_mgr,
 			&mapped_info, fe_cfg->fd);

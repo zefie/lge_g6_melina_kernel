@@ -2944,7 +2944,7 @@ static int venus_hfi_session_process_batch(void *sess,
 		int num_etbs, struct vidc_frame_data etbs[],
 		int num_ftbs, struct vidc_frame_data ftbs[])
 {
-	int rc = -EINVAL, c = 0;
+	int rc = 0, c = 0;
 	struct hal_session *session = sess;
 	struct venus_hfi_device *device;
 	struct hfi_cmd_session_sync_process_packet pkt;
@@ -3961,8 +3961,8 @@ static int __init_resources(struct venus_hfi_device *device,
 	}
 
 	device->sys_init_capabilities =
-		kzalloc(sizeof(struct msm_vidc_capability)
-		* VIDC_MAX_SESSIONS, GFP_TEMPORARY);
+		kcalloc(VIDC_MAX_SESSIONS, sizeof(struct msm_vidc_capability),
+			GFP_TEMPORARY);
 
 	return rc;
 
@@ -4683,3 +4683,4 @@ int venus_hfi_initialize(struct hfi_device *hdev, u32 device_id,
 err_venus_hfi_init:
 	return rc;
 }
+

@@ -21,6 +21,7 @@
 #include "msm_camera_dt_util.h"
 #include "msm_camera_io_util.h"
 
+//#define OIS_HALL_READ_WORK_Q
 #define DEFINE_MSM_MUTEX(mutexname) \
 	static struct mutex mutexname = __MUTEX_INITIALIZER(mutexname)
 

@@ -1,4 +1,4 @@
-/* Copyright (c) 2012-2016, 2019 The Linux Foundation. All rights reserved.
+/* Copyright (c) 2012-2017, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -606,11 +606,6 @@ static int hfi_fill_codec_info(u8 *data_ptr,
 				vidc_get_hal_codec((1 << i) & codecs);
 			capability->domain =
 				vidc_get_hal_domain(HFI_VIDEO_DOMAIN_DECODER);
-			if (codec_count == VIDC_MAX_DECODE_SESSIONS) {
-				dprintk(VIDC_ERR,
-					"Max supported decoder sessions reached");
-				break;
-			}
 		}
 	}
 	codecs = sys_init_done->enc_codec_supported;
@@ -622,11 +617,6 @@ static int hfi_fill_codec_info(u8 *data_ptr,
 				vidc_get_hal_codec((1 << i) & codecs);
 			capability->domain =
 				vidc_get_hal_domain(HFI_VIDEO_DOMAIN_ENCODER);
-			if (codec_count == VIDC_MAX_SESSIONS) {
-				dprintk(VIDC_ERR,
-					"Max supported sessions reached");
-				break;
-			}
 		}
 	}
 	sys_init_done->codec_count = codec_count;
@@ -1229,7 +1219,7 @@ static int hfi_process_session_prop_info(u32 device_id,
 {
 	struct msm_vidc_cb_cmd_done cmd_done = {0};
 	struct hfi_profile_level profile_level = {0};
-	enum hal_h264_entropy entropy = 0;
+	enum hal_h264_entropy entropy = {0};
 	struct buffer_requirements buff_req = { { {0} } };
 
 	dprintk(VIDC_DBG, "Received SESSION_PROPERTY_INFO[%#x]\n",
