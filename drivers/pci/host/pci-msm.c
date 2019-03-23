@@ -415,7 +415,7 @@
 			"INFO:%s: " fmt, __func__, arg); \
 	if ((dev) && (dev)->ipc_log)   \
 		ipc_log_string((dev)->ipc_log, "%s: " fmt, __func__, arg); \
-	pr_info("%s: " fmt, __func__, arg);  \
+	pr_debug("%s: " fmt, __func__, arg);  \
 	} while (0)
 
 #define PCIE_ERR(dev, fmt, arg...) do {			 \
@@ -1630,9 +1630,15 @@ static void pcie_pcs_port_phy_init(struct msm_pcie_dev_t *dev)
 	msm_pcie_write_reg(dev->phy,
 		PCIE_N_PWRUP_RESET_DLY_TIME_AUXCLK(dev->rc_idx, common_phy),
 		0x00);
+#if !defined(CONFIG_MACH_MSM8996_LUCYE)
 	msm_pcie_write_reg(dev->phy,
 		PCIE_N_LP_WAKEUP_DLY_TIME_AUXCLK(dev->rc_idx, common_phy),
-		0x01);
+		0x08); /* Wait 8 AuxClk cycles when return from L1ss */
+#else
+        msm_pcie_write_reg(dev->phy,
+                PCIE_N_LP_WAKEUP_DLY_TIME_AUXCLK(dev->rc_idx, common_phy),
+                0x04); /* Wait 4 AuxClk cycles when return from L1ss */
+#endif
 	msm_pcie_write_reg(dev->phy,
 		PCIE_N_PLL_LOCK_CHK_DLY_TIME(dev->rc_idx, common_phy),
 		0x05);
@@ -2456,7 +2462,7 @@ int msm_pcie_debug_info(struct pci_dev *dev, u32 option, u32 base,
 			u32 offset, u32 mask, u32 value)
 {
 	int ret = 0;
-	struct msm_pcie_dev_t *pdev;
+	struct msm_pcie_dev_t *pdev = NULL;
 
 	if (!dev) {
 		pr_err("PCIe: the input pci dev is NULL.\n");
@@ -3851,7 +3857,7 @@ static int msm_pcie_config_link_state(struct msm_pcie_dev_t *dev)
 
 	while (current_offset) {
 		if (msm_pcie_check_align(dev, current_offset)) {
-#ifndef CONFIG_BCMDHD_PCIE			
+#ifndef CONFIG_BCMDHD_PCIE
 			return;
 #else
 			return MSM_PCIE_ERROR;
@@ -3871,7 +3877,7 @@ static int msm_pcie_config_link_state(struct msm_pcie_dev_t *dev)
 		PCIE_DBG(dev,
 			"RC%d endpoint does not support PCIe capability registers\n",
 			dev->rc_idx);
-#ifndef CONFIG_BCMDHD_PCIE			
+#ifndef CONFIG_BCMDHD_PCIE
 		return;
 #else
 		return MSM_PCIE_ERROR;
@@ -3967,7 +3973,7 @@ static int msm_pcie_config_link_state(struct msm_pcie_dev_t *dev)
 		current_offset = PCIE_EXT_CAP_OFFSET;
 		while (current_offset) {
 			if (msm_pcie_check_align(dev, current_offset)) {
-#ifndef CONFIG_BCMDHD_PCIE	
+#ifndef CONFIG_BCMDHD_PCIE
 				return;
 #else
 				return MSM_PCIE_ERROR;	
@@ -3988,7 +3994,7 @@ static int msm_pcie_config_link_state(struct msm_pcie_dev_t *dev)
 			PCIE_DBG(dev,
 				"RC%d endpoint does not support l1ss registers\n",
 				dev->rc_idx);
-#ifndef CONFIG_BCMDHD_PCIE			
+#ifndef CONFIG_BCMDHD_PCIE
 			return;
 #else
 			return MSM_PCIE_ERROR;
@@ -4121,7 +4127,7 @@ static int msm_pcie_get_resources(struct msm_pcie_dev_t *dev,
 	cnt = of_property_count_strings((&pdev->dev)->of_node,
 			"clock-names");
 	if (cnt > 0) {
-		clkfreq = kzalloc(cnt * sizeof(*clkfreq),
+		clkfreq = kcalloc(cnt, sizeof(*clkfreq),
 					GFP_KERNEL);
 		if (!clkfreq) {
 			PCIE_ERR(dev, "PCIe: memory alloc failed for RC%d\n",
@@ -6509,6 +6515,7 @@ int __init pcie_init(void)
 
 	for (i = 0; i < MAX_RC_NUM; i++) {
 		snprintf(rc_name, MAX_RC_NAME_LEN, "pcie%d-short", i);
+#ifdef CONFIG_IPC_LOGGING
 		msm_pcie_dev[i].ipc_log =
 			ipc_log_context_create(PCIE_LOG_PAGES, rc_name, 0);
 		if (msm_pcie_dev[i].ipc_log == NULL)
@@ -6538,6 +6545,7 @@ int __init pcie_init(void)
 			PCIE_DBG(&msm_pcie_dev[i],
 				"PCIe IPC logging %s is enable for RC%d\n",
 				rc_name, i);
+#endif
 		spin_lock_init(&msm_pcie_dev[i].cfg_lock);
 		msm_pcie_dev[i].cfg_access = true;
 		mutex_init(&msm_pcie_dev[i].setup_lock);

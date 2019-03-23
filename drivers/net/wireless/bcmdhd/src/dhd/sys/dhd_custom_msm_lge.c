@@ -379,7 +379,7 @@ const struct cntry_locales_custom bcm_wifi_translate_custom_table[] = {
 	{"KI", "KI", 0},
 	{"KM", "KM", 0},
 	{"KN", "KN", 0},
-#ifdef CONFIG_MACH_MSM8996_ANNA
+#if defined(CONFIG_MACH_MSM8996_ANNA) || defined(CONFIG_MACH_MSM8996_ELSA_DCM_JP) || defined(CONFIG_MACH_MSM8996_ELSA_KDDI_JP)
 	{"KR", "KR", 962}, /* updated 2017.06.08 */
 #else // h1, elsa
 	{"KR", "KR", 990},

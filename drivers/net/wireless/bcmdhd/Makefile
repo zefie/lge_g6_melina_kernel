@@ -247,7 +247,7 @@ DHDCFLAGS += -DBT_DHCP_OPPR_WIN_TIME=10000
 ifeq ($(CONFIG_DHD_DEBUG_ENABLED),y)
 DHDCFLAGS += -DSHOW_LOGTRACE
 DHDCFLAGS += -DDHD_DEBUG_ENABLED
-DHDCFLAGS += -DDEBUGABILITY
+#DHDCFLAGS += -DDEBUGABILITY
 DHDCFLAGS += -DDBG_PKT_MON
 endif
 
@@ -762,6 +762,7 @@ DHDOFILES := src/dhd/sys/dhd_pno.o		src/dhd/sys/dhd_common.o\
 	src/wl/sys/wl_linux_mon.o		src/wl/sys/wl_roam.o \
 	src/dhd/sys/dhd_wlfc.o
 
+CFLAGS_dhd_linux.o += -Wno-sizeof-pointer-memaccess
 ifeq ($(CONFIG_BCMDHD_SDIO),y)
 DHDOFILES += src/bcmsdio/sys/bcmsdh.o		src/bcmsdio/sys/bcmsdh_linux.o \
 	src/bcmsdio/sys/bcmsdh_sdmmc.o		src/bcmsdio/sys/bcmsdh_sdmmc_linux.o \
