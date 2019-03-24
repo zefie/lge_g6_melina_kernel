@@ -436,6 +436,11 @@ struct smbchg_chip {
     u32 batt_life_cycle_fcc_ma[MAX_CYCLE_STEP];
     u32 batt_life_cycle_vfloat[MAX_CYCLE_STEP];
 #endif
+#ifdef CONFIG_LGE_PM_INCOMPATIBLE_HVDCP_SUPPORT
+	int	incompatible_hvdcp_detected;
+	bool incompatible_hvdcp_det_ignore_uv;
+	struct delayed_work			hvdcp_disable_work;
+#endif
 };
 
 #ifdef CONFIG_LGE_PM
@@ -653,6 +658,18 @@ enum wake_reason {
 #define	HVDCP_OTG_VOTER			"HVDCP_OTG_VOTER"
 #define	HVDCP_PULSING_VOTER		"HVDCP_PULSING_VOTER"
 
+#ifdef CONFIG_LGE_PM_INCOMPATIBLE_HVDCP_SUPPORT
+enum incompatible_hvdcp_detect_step {
+	CABLE_REMOVED,
+	FIRST_APSD_DETECT_DCP,
+	SECOND_APSD_DETECT_DCP,
+	WEAK_CHARGER_DETECTED,
+	INCOMPATIBLE_DETECTED,
+	HVDCP_DETECT_CONFIRMED,
+};
+#define USBIN_VOLT_THRESHOLD  6000
+#endif
+
 #ifdef CONFIG_LGE_PM_FACTORY_TESTMODE
 enum chgstep {
 	CHGSTEP_DISCHG,
@@ -842,7 +859,7 @@ static int lgcc_set_charging_enable(struct smbchg_chip *chip,
 		int enable) {
 	int rc = 0;
 
-	vote(chip->battchg_suspend_votable, LGCC_EN_VOTER, !enable, 0);
+	rc = vote(chip->battchg_suspend_votable, LGCC_EN_VOTER, !enable, 0);
 	if (rc < 0)
 		pr_smb(PR_LGE, "failed to set Charging Status \n");
 
@@ -854,8 +871,8 @@ const char * lgcc_get_effective_icl(void) {
 	const char *rc;
 
 	rc = get_effective_client(smb_chip->usb_icl_votable);
-	if (rc < 0)
-		pr_err("Failed to get fcc votable\n");
+//	if (!rc)
+//		pr_err("Failed to get fcc votable\n");
 
 	return rc;
 }
@@ -6548,6 +6565,15 @@ prepare_hvdcp_detection:
 	if (usb_supply_type != POWER_SUPPLY_TYPE_USB_DCP)
 		return;
 
+#ifdef CONFIG_LGE_PM_INCOMPATIBLE_HVDCP_SUPPORT
+	if (chip->incompatible_hvdcp_detected == WEAK_CHARGER_DETECTED)
+		chip->incompatible_hvdcp_detected = INCOMPATIBLE_DETECTED;
+	else
+		chip->incompatible_hvdcp_detected = SECOND_APSD_DETECT_DCP;
+
+	pr_smb(PR_LGE, "detection status = %d\n", chip->incompatible_hvdcp_detected);
+#endif
+
 	cancel_delayed_work_sync(&chip->hvdcp_det_work);
 	schedule_delayed_work(&chip->hvdcp_det_work,
 				msecs_to_jiffies(HVDCP_CHECK_MS));
@@ -6593,6 +6619,9 @@ static void smbchg_hvdcp_recovery_work(struct work_struct *work)
 
 	usbin_vol = get_usb_adc(chip);
 	if (usbin_vol > HVDCP_RECOVERY_MV) {
+#ifdef CONFIG_LGE_PM_INCOMPATIBLE_HVDCP_SUPPORT
+		chip->incompatible_hvdcp_detected = HVDCP_DETECT_CONFIRMED;
+#endif
 		schedule_delayed_work(&chip->hvdcp_recovery_work,
 				msecs_to_jiffies(HVDCP_RECOVERY_MS));
 		goto out;
@@ -6777,6 +6806,48 @@ reschedule:
 
 }
 #endif
+
+#ifdef CONFIG_LGE_PM_INCOMPATIBLE_HVDCP_SUPPORT
+#define HVDCP_DISABLE_DELAY_MS	100
+static void hvdcp_disable_work(struct work_struct *work){
+	struct smbchg_chip *chip = container_of(work,
+				struct smbchg_chip,
+				hvdcp_disable_work.work);
+	int rc;
+	int usb_present;
+	pr_smb(PR_LGE, "Disable hvdcp. Forced to 5V charge.\n");
+
+	/* disable HVDCP */
+	cancel_delayed_work(&chip->hvdcp_recovery_work);
+
+	usb_present = is_usb_present(chip);
+
+	if(!usb_present){
+		pr_smb(PR_LGE, "USB present false. Force out.\n");
+		return;
+	}
+
+	smbchg_change_usb_supply_type(chip,
+				POWER_SUPPLY_TYPE_USB_DCP);
+
+	if (chip->psy_registered)
+		power_supply_changed(&chip->batt_psy);
+
+	rc = smbchg_sec_masked_write(chip,
+				chip->usb_chgpth_base + CHGPTH_CFG,
+				HVDCP_EN_BIT, 0);
+
+	chip->incompatible_hvdcp_det_ignore_uv = true;
+	rc = fake_insertion_removal_for_uv(chip, false);
+	msleep(500);
+	rc = fake_insertion_removal_for_uv(chip, true);
+	smbchg_relax(chip, PM_DETECT_HVDCP);
+	chip->incompatible_hvdcp_det_ignore_uv = false;
+
+	return;
+}
+#endif
+
 static void smbchg_hvdcp_det_work(struct work_struct *work)
 {
 	struct smbchg_chip *chip = container_of(work,
@@ -6804,6 +6875,19 @@ static void smbchg_hvdcp_det_work(struct work_struct *work)
 				pr_err("could not force 9V HVDCP continuing rc=%d\n",
 						rc);
 		}
+
+#ifdef CONFIG_LGE_PM_INCOMPATIBLE_HVDCP_SUPPORT
+		if((chip->incompatible_hvdcp_detected == INCOMPATIBLE_DETECTED) &&
+			(chip->incompatible_hvdcp_det_ignore_uv == false)){
+			pr_smb(PR_LGE, "Incompatible_hvdcp_detected. Forced to 5V charge.\n");
+			cancel_delayed_work(&chip->hvdcp_disable_work);
+			schedule_delayed_work(&chip->hvdcp_disable_work,
+					msecs_to_jiffies(HVDCP_DISABLE_DELAY_MS));
+			return;
+		}
+
+#endif
+
 #ifdef CONFIG_LGE_PM_MAXIM_EVP_CONTROL
 		smbchg_evp_det_start(chip, false);
 #endif
@@ -7074,6 +7158,13 @@ static void handle_usb_removal(struct smbchg_chip *chip)
 #endif
 #if defined(CONFIG_LGE_USB_ANX7688_OVP) || defined(CONFIG_LGE_USB_TUSB422)
 	chip->hvdcp_det_retry = 0;
+#ifdef CONFIG_LGE_PM_INCOMPATIBLE_HVDCP_SUPPORT
+	if(chip->incompatible_hvdcp_detected == INCOMPATIBLE_DETECTED)
+		pr_smb(PR_LGE, "incompatible_hvdcp removed.\n");
+	//reset to default value even though TA is not incompatible.
+	chip->incompatible_hvdcp_detected = CABLE_REMOVED;
+	cancel_delayed_work(&chip->hvdcp_recovery_work);
+#endif
 #endif
 #ifdef CONFIG_LGE_PM
 	chip->hvdcp_uv_count = 0;
@@ -7194,6 +7285,12 @@ static void handle_usb_insertion(struct smbchg_chip *chip)
 	if (!chip->hvdcp_not_supported &&
 			(usb_supply_type == POWER_SUPPLY_TYPE_USB_DCP)) {
 #if defined(CONFIG_LGE_USB_ANX7688_OVP) || defined(CONFIG_LGE_USB_TUSB422)
+#ifdef CONFIG_LGE_PM_INCOMPATIBLE_HVDCP_SUPPORT
+	if (chip->incompatible_hvdcp_detected != INCOMPATIBLE_DETECTED){
+		chip->incompatible_hvdcp_detected = FIRST_APSD_DETECT_DCP;
+		pr_smb(PR_LGE, "FIRST_APSD_DETECT_DCP.\n");
+	}
+#endif
 #ifdef CONFIG_LGE_PM_LGE_POWER_CLASS_SIMPLE
 		// do nothing
 #else
@@ -8679,6 +8776,10 @@ skip_current_for_non_sdp:
 					if ((chip->ctype_rp == 1) &&
 						(usb_supply_type ==
 							 POWER_SUPPLY_TYPE_USB_DCP)) {
+#ifdef CONFIG_LGE_PM_INCOMPATIBLE_HVDCP_SUPPORT
+						pr_smb(PR_LGE, "hvdcp detected status = %d\n",chip->incompatible_hvdcp_detected);
+						if(chip->incompatible_hvdcp_detected != INCOMPATIBLE_DETECTED)
+#endif
 						schedule_delayed_work(&chip->hvdcp_det_prepare_work,
 							msecs_to_jiffies(500));
 					}
@@ -9698,6 +9799,9 @@ static irqreturn_t usbin_uv_handler(int irq, void *_chip)
 	enum power_supply_type usb_supply_type;
 	char *usb_type_name = "null";
 #endif
+#ifdef CONFIG_LGE_PM_INCOMPATIBLE_HVDCP_SUPPORT
+	int usbin_volt;
+#endif
 
 	rc = smbchg_read(chip, &reg, chip->usb_chgpth_base + RT_STS, 1);
 	if (rc) {
@@ -9731,11 +9835,43 @@ static irqreturn_t usbin_uv_handler(int irq, void *_chip)
 		goto out;
 
 	if ((reg & USBIN_UV_BIT) && (reg & USBIN_SRC_DET_BIT)) {
-#ifdef CONFIG_LGE_PM_DEBUG
-		pr_smb(PR_STATUS, "Very weak charger detected. VBUS[%d]\n",
-				get_usb_adc(chip));
+#ifdef CONFIG_LGE_PM_INCOMPATIBLE_HVDCP_SUPPORT
+		usbin_volt = get_usb_adc(chip);
+		pr_smb(PR_STATUS, "Very weak charger detected. VBUS[%d]\n", usbin_volt);
 #else
-		pr_smb(PR_STATUS, "Very weak charger detected\n");
+		pr_smb(PR_STATUS, "Very weak charger detected. VBUS[%d]\n", get_usb_adc(chip));
+#endif
+#ifdef CONFIG_LGE_PM_INCOMPATIBLE_HVDCP_SUPPORT
+		if (chip->incompatible_hvdcp_det_ignore_uv){
+			pr_smb(PR_LGE, "incompatible_hvdcp_det_ignore_uv. skip.\n");
+			goto out;
+		}
+
+		if (chip->incompatible_hvdcp_detected == HVDCP_DETECT_CONFIRMED){
+			pr_smb(PR_LGE, "HVDCP_DETECTED_OK. skip.\n");
+			goto out;
+		}
+
+		if (usbin_volt > USBIN_VOLT_THRESHOLD){
+			pr_smb(PR_LGE, "USBIN is high enough. skip incompatible check work.\n");
+		}else{
+			if(chip->incompatible_hvdcp_detected == FIRST_APSD_DETECT_DCP){
+				chip->incompatible_hvdcp_detected = WEAK_CHARGER_DETECTED;
+				pr_smb(PR_LGE, "weak hvdcp detected. status = %d\n",chip->incompatible_hvdcp_detected);
+			} else if (chip->incompatible_hvdcp_detected == SECOND_APSD_DETECT_DCP){
+				chip->incompatible_hvdcp_detected = INCOMPATIBLE_DETECTED;
+				pr_smb(PR_LGE, "weak hvdcp detected. status = %d\n",chip->incompatible_hvdcp_detected);
+			} else {
+				pr_smb(PR_LGE, "weak hvdcp detected. status = %d\n",chip->incompatible_hvdcp_detected);
+				if (is_hvdcp_present(chip)) {
+					pr_err("Incompatible_hvdcp_detected. Forced to 5V charge.\n");
+					chip->incompatible_hvdcp_detected = INCOMPATIBLE_DETECTED;
+					cancel_delayed_work(&chip->hvdcp_disable_work);
+					schedule_delayed_work(&chip->hvdcp_disable_work,
+							msecs_to_jiffies(HVDCP_DISABLE_DELAY_MS));
+				}
+			}
+		}
 #endif
 		chip->very_weak_charger = true;
 		rc = smbchg_read(chip, &reg,
@@ -9838,6 +9974,14 @@ static irqreturn_t src_detect_handler(int irq, void *_chip)
 
 	if (chip->hvdcp_3_det_ignore_uv)
 		goto out;
+
+#ifdef CONFIG_LGE_PM_INCOMPATIBLE_HVDCP_SUPPORT
+	if (chip->incompatible_hvdcp_det_ignore_uv){
+		pr_smb(PR_LGE, "incompatible_hvdcp_det_ignore_uv. skip.\n");
+		goto out;
+	}
+#endif
+
 
 	/*
 	 * When VBAT is above the AICL threshold (4.25V) - 180mV (4.07V),
@@ -10048,7 +10192,7 @@ static int smbchg_check_chg_status(struct smbchg_chip *chip) {
 /* After test, make decision to delete or not */
 static void lgcc_charger_reginfo(struct work_struct *work) {
 	struct smbchg_chip *chip = container_of(work,
-		struct smbchg_chip, charging_info_work.work);
+	struct smbchg_chip, charging_info_work.work);
 	struct power_supply *parallel_psy = get_parallel_psy(chip);
 	int rc, batt_volt, batt_temp;
 	union power_supply_propval ret = {0, };
@@ -10373,8 +10517,8 @@ static void lgcc_charger_reginfo(struct work_struct *work) {
 	else
 		delay_time = CHARGING_INFORM_NORMAL_TIME;
 
-		schedule_delayed_work(&chip->charging_info_work,
-			round_jiffies_relative(msecs_to_jiffies(delay_time)));
+	schedule_delayed_work(&chip->charging_info_work,
+		round_jiffies_relative(msecs_to_jiffies(delay_time)));
 
 }
 #endif
@@ -12303,7 +12447,7 @@ static int smbchg_probe(struct spmi_device *spmi)
 	init_completion(&chip->usbin_uv_lowered);
 	init_completion(&chip->usbin_uv_raised);
 	init_completion(&chip->hvdcp_det_done);
-#ifdef CONFIG_LGE_PM_DEBUG
+#ifdef CONFIG_LGE_PM_LGE_POWER_CLASS_CHARGING_CONTROLLER
 	INIT_DELAYED_WORK(&chip->charging_info_work, lgcc_charger_reginfo);
 	schedule_delayed_work(&chip->charging_info_work,
 		round_jiffies_relative(msecs_to_jiffies(CHARGING_INFORM_NORMAL_TIME)));
@@ -12319,6 +12463,9 @@ static int smbchg_probe(struct spmi_device *spmi)
 #endif
 #ifdef CONFIG_LGE_PM
 	INIT_DELAYED_WORK(&chip->batt_pack_check_work, weak_batt_pack_check_work);
+#endif
+#ifdef CONFIG_LGE_PM_INCOMPATIBLE_HVDCP_SUPPORT
+	INIT_DELAYED_WORK(&chip->hvdcp_disable_work, hvdcp_disable_work);
 #endif
 	chip->vadc_dev = vadc_dev;
 	chip->vchg_vadc_dev = vchg_vadc_dev;
@@ -12538,6 +12685,10 @@ static int smbchg_probe(struct spmi_device *spmi)
 #endif
 #ifdef CONFIG_LGE_PM
 	chip->batt_pack_verify_cnt = 1;
+#ifdef CONFIG_LGE_PM_INCOMPATIBLE_HVDCP_SUPPORT
+	chip->incompatible_hvdcp_detected = CABLE_REMOVED;
+	chip->incompatible_hvdcp_det_ignore_uv = false;
+#endif
 #endif
 
 	if (!chip->skip_usb_notification) {
@@ -12575,7 +12726,7 @@ static int smbchg_probe(struct spmi_device *spmi)
 #endif
 #endif
 #endif
-#ifdef CONFIG_LGE_PM_DEBUG
+#ifdef CONFIG_LGE_PM_LGE_POWER_CLASS_CHARGING_CONTROLLER
 	schedule_delayed_work(&chip->charging_info_work,
 		round_jiffies_relative(msecs_to_jiffies(CHARGING_INFORM_NORMAL_TIME)));
 #endif
@@ -12676,7 +12827,7 @@ static int smbchg_remove(struct spmi_device *spmi)
 	destroy_votable(chip->usb_icl_votable);
 	destroy_votable(chip->fcc_votable);
 
-#ifdef CONFIG_LGE_PM_DEBUG
+#ifdef CONFIG_LGE_PM_LGE_POWER_CLASS_CHARGING_CONTROLLER
 	cancel_delayed_work(&chip->charging_info_work);
 #endif
 #ifdef CONFIG_LGE_PM_MAXIM_EVP_CONTROL
@@ -12684,6 +12835,9 @@ static int smbchg_remove(struct spmi_device *spmi)
 #endif
 #ifdef CONFIG_LGE_PM
 	cancel_delayed_work(&chip->batt_pack_check_work);
+#endif
+#ifdef CONFIG_LGE_PM_INCOMPATIBLE_HVDCP_SUPPORT
+	cancel_delayed_work(&chip->hvdcp_disable_work);
 #endif
 #ifdef CONFIG_LGE_PM_WAKE_LOCK_FOR_CHG_LOGO
 	wake_lock_destroy(&chip->chg_logo_wake_lock);
