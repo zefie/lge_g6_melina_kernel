@@ -375,6 +375,9 @@ void get_customized_country_code(void *adapter, char *country_iso_code, wl_count
 			return;
 		}
 	}
+	/* if no country code matched return first universal code from translate_custom_table */
+	memcpy(cspec->ccode, translate_custom_table[0].custom_locale, WLC_CNTRY_BUF_SZ);
+	cspec->rev = translate_custom_table[0].custom_locale_rev;
 	return;
 #endif /* (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 39)) */
 }
