@@ -106,4 +106,8 @@ static inline bool qpnp_pon_check_hard_reset_stored(void)
 }
 #endif
 
+#ifdef CONFIG_LGE_DISPLAY_LABIBB_RECOVERY
+extern void do_msm_hard_reset(void);
+#endif
+
 #endif

@@ -557,10 +557,11 @@ static int qpnp_pon_reset_config(struct qpnp_pon *pon,
 {
 	int rc;
 	u16 rst_en_reg;
-	struct qpnp_pon_config *cfg;
 #ifdef CONFIG_LGE_PM
 	u8 reg;
 #endif
+
+	struct qpnp_pon_config *cfg;
 
 	/* Ignore the PS_HOLD reset config if TWM ENTRY is enabled */
 	if (pon->support_twm_config && pon->twm_state == PMIC_TWM_ENABLE) {
@@ -954,10 +955,6 @@ qpnp_pon_input_dispatch(struct qpnp_pon *pon, u32 pon_type)
 	pr_debug("PMIC input: code=%d, sts=0x%hhx\n",
 					cfg->key_code, pon_rt_sts);
 	key_status = pon_rt_sts & pon_rt_bit;
-#ifdef CONFIG_LGE_PM_DEBUG
-	pr_err("%s: code(%d), value(%d)\n",
-			__func__, cfg->key_code, key_status);
-#endif
 
 #ifdef CONFIG_LGE_PM_WAKE_LOCK_FOR_CHG_LOGO
 	if (lge_get_boot_mode() == LGE_BOOT_MODE_CHARGERLOGO) {
@@ -1911,7 +1908,11 @@ static bool smpl_en;
 
 static int qpnp_pon_smpl_en_get(char *buf, const struct kernel_param *kp)
 {
-	bool enabled = false;
+#ifdef CONFIG_LGE_PM
+	bool enabled = 0;
+#else
+	bool enabled;
+#endif
 	int rc;
 
 	rc = qpnp_pon_get_trigger_config(PON_SMPL, &enabled);
