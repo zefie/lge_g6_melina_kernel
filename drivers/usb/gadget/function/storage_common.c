@@ -415,6 +415,17 @@ ssize_t fsg_show_nofua(struct fsg_lun *curlun, char *buf)
 }
 EXPORT_SYMBOL_GPL(fsg_show_nofua);
 
+#ifdef CONFIG_DRIVEDROID_CDROM
+ssize_t fsg_show_cdrom_dd(struct device *dev, struct device_attribute *attr,
+			   char *buf)
+{
+	struct fsg_lun  *curlun = fsg_lun_from_dev(dev);
+
+	return sprintf(buf, "%d\n", curlun->cdrom);
+}
+EXPORT_SYMBOL_GPL(fsg_show_cdrom_dd);
+#endif
+
 ssize_t fsg_show_perf(struct device *dev, struct device_attribute *attr,
 				char *buf)
 {
@@ -571,8 +582,7 @@ ssize_t fsg_store_file(struct fsg_lun *curlun, struct rw_semaphore *filesem,
 	} else if (fsg_lun_is_open(curlun)) {
 		fsg_lun_close(curlun);
 		curlun->unit_attention_data = SS_MEDIUM_NOT_PRESENT;
-	}
-	up_write(filesem);
+	}	up_write(filesem);
 	return (rc < 0 ? rc : count);
 }
 EXPORT_SYMBOL_GPL(fsg_store_file);
@@ -615,5 +625,37 @@ ssize_t fsg_store_removable(struct fsg_lun *curlun, const char *buf,
 	return count;
 }
 EXPORT_SYMBOL_GPL(fsg_store_removable);
+
+#ifdef CONFIG_DRIVEDROID_CDROM
+ssize_t fsg_store_cdrom_dd(struct device *dev, struct device_attribute *attr,
+				  const char *buf, size_t count)
+{
+	ssize_t    rc;
+	struct fsg_lun  *curlun = fsg_lun_from_dev(dev);
+	struct rw_semaphore  *filesem = dev_get_drvdata(dev);
+	unsigned  cdrom;
+
+	rc = kstrtouint(buf, 2, &cdrom);
+	if (rc)
+		return rc;
+
+	/*
+	 * Allow the cdrom status to change only while the
+	 * backing file is closed.
+	 */
+	down_read(filesem);
+	if (fsg_lun_is_open(curlun)) {
+		LDBG(curlun, "cdrom status change prevented\n");
+		rc = -EBUSY;
+	} else {
+		curlun->cdrom = cdrom;
+		LDBG(curlun, "cdrom status set to %d\n", curlun->cdrom);
+		rc = count;
+	}
+	up_read(filesem);
+	return rc;
+}
+EXPORT_SYMBOL_GPL(fsg_store_cdrom_dd);
+#endif
 
 MODULE_LICENSE("GPL");
