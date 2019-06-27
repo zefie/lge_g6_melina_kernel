@@ -263,10 +263,6 @@ int cfg80211_validate_key_settings(struct cfg80211_registered_device *rdev,
 		if (params->key_len != WLAN_KEY_LEN_AES_CMAC)
 			return -EINVAL;
 		break;
-	case WLAN_CIPHER_SUITE_SMS4:
-		if (params->key_len != WLAN_KEY_LEN_SMS4)
-			return -EINVAL;
-		break;
 	default:
 		/*
 		 * We don't know anything about this algorithm,
@@ -823,8 +819,7 @@ void cfg80211_process_wdev_events(struct wireless_dev *wdev)
 		wdev_lock(wdev);
 		switch (ev->type) {
 		case EVENT_CONNECT_RESULT:
-			if (!is_zero_ether_addr(ev->cr.bssid))
-				bssid = ev->cr.bssid;
+			bssid = ev->cr.bssid;
 			__cfg80211_connect_result(
 				wdev->netdev, bssid,
 				ev->cr.req_ie, ev->cr.req_ie_len,
