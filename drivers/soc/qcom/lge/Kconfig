@@ -539,19 +539,19 @@ config LGE_USB_DEBUGGER
 	  Support USB type UART debugger cable
 
 config LGE_BOOTLOADER_TIME_CHECKER
-	tristate "Supprt bootloader(LK, SBL) time"
-	default n
-	depends on MACH_LGE
-	help
-	  Check LK, SBL booting time at
-	  sys/module/lge_bootloader_time_checker/parameters/lk_time
-	  sys/module/lge_bootloader_time_checker/parameters/sbl_time
+    tristate "Supprt bootloader(LK, SBL) time"
+    default n
+    depends on MACH_LGE
+    help
+      Check LK, SBL booting time at
+      sys/module/lge_bootloader_time_checker/parameters/lk_time
+      sys/module/lge_bootloader_time_checker/parameters/sbl_time
 
 config LGE_PM_DEBUG
-	tristate "Support LGE PM Debug Feature"
-	default n
-	depends on MACH_LGE
-	help
+        tristate "Support LGE PM Debug Feature"
+        default n
+        depends on MACH_LGE
+        help
 	  LGE PM Debug Feature
 
 config LGE_PM_CABLE_DETECTION

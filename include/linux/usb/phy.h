@@ -134,6 +134,7 @@ struct usb_phy {
 			char *event, int msg1, int msg2);
 	/* update DP/DM state */
 	int	(*change_dpdm)(struct usb_phy *x, int dpdm);
+
 	/* return linestate with Idp_src (used for DCD with USB2 PHY) */
 	int	(*dpdm_with_idp_src)(struct usb_phy *x);
 
