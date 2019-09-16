@@ -3,6 +3,8 @@
 
 #include <linux/i2c.h>
 
+#define OIS_FIRMWARE_LOCATION "/system/vendor/etc/camera" // LGE_CHANGES
+
 int32_t ois_i2c_write_table(struct msm_camera_i2c_reg_setting *write_setting);
 int32_t ois_i2c_write_seq_table(struct msm_camera_i2c_seq_reg_setting *write_setting);
 int32_t ois_i2c_write(uint16_t addr, uint16_t data, enum msm_camera_i2c_data_type data_type);

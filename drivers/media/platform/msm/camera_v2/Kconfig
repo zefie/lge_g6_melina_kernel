@@ -278,40 +278,39 @@ config MSM_SEC_CCI_DEBUG
 	---help---
 	  Enables simulation of secure camera for Secure CCI Realy
 	  debugging.
-
 config LGE_CAMERA_DRIVER
 	bool "LG Camera Support"
 	depends on MSMB_CAMERA
-	---help---
-	  This flag enables support for LG Camera
+    ---help---
+      This flag enables support for LG Camera
 
 config LG_TCS
-	bool "Qualcomm MSM camera TCS support"
-	depends on MSMB_CAMERA
-	---help---
-	  Enable support for true color sensor for msm camera.
+        bool "Qualcomm MSM camera TCS support"
+        depends on MSMB_CAMERA
+        ---help---
+        Enable support for true color sensor for msm camera.
 
 config LGE_EEPROM
 	bool "LG Camera EEPROM Support"
 	depends on MSM_EEPROM
-	---help---
-	  This flag enables support for LG Camera
+    ---help---
+      This flag enables support for LG Camera
 
 config LG_OIS
 	bool "LG Camera OIS support"
 	depends on MSMB_CAMERA
 	---help---
-	  Enable support for ois for LG Camera.
+	Enable support for ois for LG Camera.
 
 config LG_PROXY
-	bool "Qualcomm MSM camera proxy support"
-	depends on MSMB_CAMERA
-	---help---
-	  Enable support for proxy sensor for msm camera.
+    bool "Qualcomm MSM camera proxy support"
+    depends on MSMB_CAMERA
+    ---help---
+    Enable support for proxy sensor for msm camera.
 
 config LC898123F40
 	bool "OIS/AF Controller & Driver"
 	---help---
-	  LC898123F40XC is a system LSI integrating an onchip 32bit DSP, a Flash Memory and peripherals including
-	  analog circuits for OIS(Optical Image Stabilization) /AF(Auto Focus) control and H-bridge and linear
-	  drivers.
+	LC898123F40XC is a system LSI integrating an onchip 32bit DSP, a Flash Memory and peripherals including
+	analog circuits for OIS(Optical Image Stabilization) /AF(Auto Focus) control and H-bridge and linear
+	drivers.

@@ -38,6 +38,7 @@ DEFINE_MSM_MUTEX(msm_ois_mutex);
 	#endif
 #endif
 
+#ifdef CONFIG_LG_OIS
 #if defined(CONFIG_MACH_MSM8996_LUCYE)
 static struct msm_ois_ctrl_t *local_msm_ois_t;
 uint16_t cal_ver = 0;
@@ -69,6 +70,7 @@ extern void lc898122a_af_vcm_code(int16_t UsVcmCod);
 
 
 static struct msm_ois_ctrl_t *local_msm_ois_t;
+#endif
 #endif
 
 static struct v4l2_file_operations msm_ois_v4l2_subdev_fops;
@@ -554,9 +556,10 @@ static int32_t msm_ois_control(struct msm_ois_ctrl_t *o_ctrl,
 	if (set_info->ois_params.setting_size > 0 &&
 		set_info->ois_params.setting_size
 		< MAX_OIS_REG_SETTINGS) {
-		settings = kmalloc_array(set_info->ois_params.setting_size,
-					 sizeof(struct reg_settings_ois_t),
-					 GFP_KERNEL);
+		settings = kmalloc(
+			sizeof(struct reg_settings_ois_t) *
+			(set_info->ois_params.setting_size),
+			GFP_KERNEL);
 		if (settings == NULL) {
 			pr_err("Error allocating memory\n");
 			return -EFAULT;
@@ -674,9 +677,9 @@ static int32_t msm_ois_config(struct msm_ois_ctrl_t *o_ctrl,
 			rc = -EFAULT;
 			break;
 		}
-		reg_setting = kcalloc(conf_array.size,
-				      sizeof(struct msm_camera_i2c_seq_reg_array),
-				      GFP_KERNEL);
+		reg_setting = kzalloc(conf_array.size *
+			(sizeof(struct msm_camera_i2c_seq_reg_array)),
+			GFP_KERNEL);
 		if (!reg_setting) {
 			pr_err("%s:%d failed\n", __func__, __LINE__);
 			rc = -ENOMEM;

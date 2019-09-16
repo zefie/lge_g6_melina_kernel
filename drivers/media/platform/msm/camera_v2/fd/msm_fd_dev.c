@@ -22,6 +22,7 @@
 #include <media/v4l2-ioctl.h>
 #include <media/v4l2-event.h>
 #include <media/videobuf2-core.h>
+#include <linux/async.h>// LGE async fd_driver init
 
 #include "msm_fd_dev.h"
 #include "msm_fd_hw.h"
@@ -335,12 +336,12 @@ static struct vb2_mem_ops msm_fd_vb2_mem_ops = {
 static int msm_fd_vbif_error_handler(void *handle, uint32_t error)
 {
 	struct fd_ctx *ctx;
-	struct msm_fd_device *fd = NULL;
+	struct msm_fd_device *fd;
 	struct msm_fd_buffer *active_buf;
 	int ret;
 
 	if (NULL == handle) {
-		pr_err("FD Ctx is null, Cannot recover\n");
+		pr_err("FD Ctx is null, Cannot recover \n");
 		return 0;
 	}
 	ctx = (struct fd_ctx *)handle;
@@ -1355,9 +1356,7 @@ static int fd_probe(struct platform_device *pdev)
 	}
 	fd->hw_revision = msm_fd_hw_get_revision(fd);
 
-	/* Reset HW and don't wait for complete in probe */
 	msm_fd_hw_put(fd);
-	fd->init = true;
 
 	ret = msm_fd_hw_request_irq(pdev, fd, msm_fd_wq_handler);
 	if (ret < 0) {
@@ -1455,9 +1454,19 @@ static struct platform_driver fd_driver = {
 	},
 };
 
+// LGE async fd_driver init
+static void async_msm_fd_init_module(void *data, async_cookie_t cookie)
+{
+	int ret = 0;
+	ret = platform_driver_register(&fd_driver);
+	if (ret < 0)
+		pr_err("failed to register fd_driver. \n");
+}
+
 static int __init msm_fd_init_module(void)
 {
-	return platform_driver_register(&fd_driver);
+	//return platform_driver_register(&fd_driver);
+	return async_schedule(async_msm_fd_init_module, NULL);
 }
 
 static void __exit msm_fd_exit_module(void)

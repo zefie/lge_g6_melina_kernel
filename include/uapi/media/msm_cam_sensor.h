@@ -339,7 +339,7 @@ struct msm_eeprom_cfg_data {
 	enum eeprom_cfg_type_t cfgtype;
 	uint8_t is_supported;
 	union {
-		char eeprom_name[MAX_SENSOR_NAME];
+		char eeprom_name[MAX_EEPROM_NAME];
 		struct eeprom_get_t get_data;
 		struct eeprom_read_t read_data;
 		struct eeprom_write_t write_data;
@@ -822,4 +822,3 @@ struct msm_tcs_cfg_data32 {
 	_IOWR('V', BASE_VIDIOC_PRIVATE + 17, struct msm_iris_cfg_data)
 #endif
 #endif
-

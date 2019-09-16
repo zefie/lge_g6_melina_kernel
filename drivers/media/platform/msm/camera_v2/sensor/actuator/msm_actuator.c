@@ -30,9 +30,9 @@ DEFINE_MSM_MUTEX(msm_actuator_mutex);
 #define CDBG(fmt, args...) pr_debug(fmt, ##args)
 #endif
 
-#define PARK_LENS_LONG_STEP 7
-#define PARK_LENS_MID_STEP 5
-#define PARK_LENS_SMALL_STEP 3
+#define PARK_LENS_LONG_STEP 1
+#define PARK_LENS_MID_STEP 1
+#define PARK_LENS_SMALL_STEP 1
 #define MAX_QVALUE 4096
 
 static struct v4l2_file_operations msm_actuator_v4l2_subdev_fops;
@@ -106,7 +106,6 @@ static void msm_actuator_parse_i2c_params(struct msm_actuator_ctrl_t *a_ctrl,
 	struct msm_camera_i2c_reg_array *i2c_tbl = NULL;
 	CDBG("Enter\n");
 
-#ifndef CONFIG_MACH_LGE
 	if (a_ctrl == NULL) {
 		pr_err("failed. actuator ctrl is NULL");
 		return;
@@ -116,14 +115,6 @@ static void msm_actuator_parse_i2c_params(struct msm_actuator_ctrl_t *a_ctrl,
 		pr_err("failed. i2c reg tabl is NULL");
 		return;
 	}
-#else
-	if ((!a_ctrl) ||
-		(!a_ctrl->reg_tbl) ||
-		(!a_ctrl->i2c_reg_tbl)) {
-		pr_err("failed. NULL actuator pointers");
-		return;
-	}
-#endif
 
 	size = a_ctrl->reg_tbl_size;
 	write_arr = a_ctrl->reg_tbl;
@@ -647,9 +638,9 @@ static int32_t msm_actuator_move_focus(
 		return -EFAULT;
 	}
 	/*Allocate memory for damping parameters of all regions*/
-	ringing_params_kernel = kmalloc_array(a_ctrl->region_size,
-					      sizeof(struct damping_params_t),
-					      GFP_KERNEL);
+	ringing_params_kernel = kmalloc(
+		sizeof(struct damping_params_t)*(a_ctrl->region_size),
+		GFP_KERNEL);
 	if (!ringing_params_kernel) {
 		pr_err("kmalloc for damping parameters failed\n");
 		return -EFAULT;
@@ -1038,7 +1029,7 @@ static int32_t msm_actuator_claf_move_focus(
 		}
 	}
 	#endif
-#ifdef CONFIG_MACH_MSM8996_LUCYE
+#if defined (CONFIG_MACH_MSM8996_LUCYE)
 	tar_pos = curr_lens_pos;// - 300;// - 512; [Offset]
 #else
     tar_pos = curr_lens_pos - 300;// - 512; [Offset]
@@ -1048,7 +1039,7 @@ static int32_t msm_actuator_claf_move_focus(
 	//pr_err("KSY macro_dac: %d, macro_mech: %d, infinity: %d, curr_lens_pos: %d, tar_pos: %d, a_ctrl->total_steps = %d\n", a_ctrl->region_params[0].macro_dac,
 		//a_ctrl->region_params[0].macro_mecha_end, a_ctrl->region_params[0].infinity_dac, curr_lens_pos, tar_pos, a_ctrl->total_steps);
 
-#ifdef CONFIG_MACH_MSM8996_LUCYE
+#if defined (CONFIG_MACH_MSM8996_LUCYE)
 	if(eeprom_slave_id == LGIT_EEPROM_SLAVE_ID){
 	    if(map_ver == 0x01 && cal_ver == 0x02){ // LGIT OLAF Module
 			lgit_imx258_rohm_write_vcm(tar_pos);// + 512); // for bu24235gwl unsigned 10bit
@@ -1124,9 +1115,9 @@ static int32_t msm_actuator_bivcm_move_focus(
 		return -EFAULT;
 	}
 	/*Allocate memory for damping parameters of all regions*/
-	ringing_params_kernel = kmalloc_array(a_ctrl->region_size,
-					      sizeof(struct damping_params_t),
-					      GFP_KERNEL);
+	ringing_params_kernel = kmalloc(
+		sizeof(struct damping_params_t)*(a_ctrl->region_size),
+		GFP_KERNEL);
 	if (!ringing_params_kernel) {
 		pr_err("kmalloc for damping parameters failed\n");
 		return -EFAULT;
@@ -1218,7 +1209,9 @@ static int32_t msm_actuator_park_lens(struct msm_actuator_ctrl_t *a_ctrl)
 	next_lens_pos = a_ctrl->step_position_table[a_ctrl->curr_step_pos];
 	while (next_lens_pos) {
 		/* conditions which help to reduce park lens time */
-		if (next_lens_pos > (a_ctrl->park_lens.max_step *
+      if (next_lens_pos > (a_ctrl->step_position_table[a_ctrl->total_steps] / 2)) {
+			next_lens_pos = (uint16_t)(a_ctrl->step_position_table[a_ctrl->total_steps] * 1 / 2);
+      } else if (next_lens_pos > (a_ctrl->park_lens.max_step *
 			PARK_LENS_LONG_STEP)) {
 			next_lens_pos = next_lens_pos -
 				(a_ctrl->park_lens.max_step *
@@ -1294,9 +1287,8 @@ static int32_t msm_actuator_bivcm_init_step_table(
 	}
 	/* Fill step position table */
 	a_ctrl->step_position_table =
-		kmalloc_array(set_info->af_tuning_params.total_steps + 1,
-			      sizeof(uint16_t),
-			      GFP_KERNEL);
+		kmalloc(sizeof(uint16_t) *
+		(set_info->af_tuning_params.total_steps + 1), GFP_KERNEL);
 
 	if (a_ctrl->step_position_table == NULL)
 		return -ENOMEM;
@@ -1384,9 +1376,8 @@ static int32_t msm_actuator_init_step_table(struct msm_actuator_ctrl_t *a_ctrl,
 	}
 	/* Fill step position table */
 	a_ctrl->step_position_table =
-		kmalloc_array(set_info->af_tuning_params.total_steps + 1,
-			      sizeof(uint16_t),
-			      GFP_KERNEL);
+		kmalloc(sizeof(uint16_t) *
+		(set_info->af_tuning_params.total_steps + 1), GFP_KERNEL);
 
 	if (a_ctrl->step_position_table == NULL)
 		return -ENOMEM;
@@ -1688,7 +1679,7 @@ static int32_t msm_actuator_claf_set_position(
 
 		//pr_err("macro_dac: %d, infinity: %d, tar_pos: %d, a_ctrl->total_steps = %d\n", a_ctrl->region_params[0].macro_dac,
 		//	a_ctrl->region_params[0].infinity_dac, tar_pos, a_ctrl->total_steps);
-#if defined(CONFIG_MACH_MSM8996_LUCYE)
+#if defined (CONFIG_MACH_MSM8996_LUCYE)
 	if(eeprom_slave_id == LGIT_EEPROM_SLAVE_ID){
 	    if(map_ver == 0x01 && cal_ver == 0x02){ // LGIT OLAF Module
 			lgit_imx258_rohm_write_vcm(tar_pos);// + 512); // for bu24235gwl unsigned 10bit
@@ -1799,9 +1790,8 @@ static int32_t msm_actuator_set_param(struct msm_actuator_ctrl_t *a_ctrl,
 
 	a_ctrl->i2c_reg_tbl = NULL;
 	a_ctrl->i2c_reg_tbl =
-		kmalloc_array(set_info->af_tuning_params.total_steps + 1,
-			      sizeof(struct msm_camera_i2c_reg_array),
-			      GFP_KERNEL);
+		kmalloc(sizeof(struct msm_camera_i2c_reg_array) *
+		(set_info->af_tuning_params.total_steps + 1), GFP_KERNEL);
 	if (!a_ctrl->i2c_reg_tbl) {
 		pr_err("kmalloc fail\n");
 		return -ENOMEM;
@@ -1822,9 +1812,9 @@ static int32_t msm_actuator_set_param(struct msm_actuator_ctrl_t *a_ctrl,
 		set_info->actuator_params.init_setting_size
 		<= MAX_ACTUATOR_INIT_SET) {
 		if (a_ctrl->func_tbl->actuator_init_focus) {
-			init_settings = kmalloc_array(set_info->actuator_params.init_setting_size,
-						      sizeof(struct reg_settings_t),
-						      GFP_KERNEL);
+			init_settings = kmalloc(sizeof(struct reg_settings_t) *
+				(set_info->actuator_params.init_setting_size),
+				GFP_KERNEL);
 			if (init_settings == NULL) {
 				kfree(a_ctrl->i2c_reg_tbl);
 				a_ctrl->i2c_reg_tbl = NULL;

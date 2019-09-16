@@ -94,10 +94,12 @@ static int32_t msm_sensor_driver_create_i2c_v4l_subdev
 	struct i2c_client *client = s_ctrl->sensor_i2c_client->client;
 
 	CDBG("%s %s I2c probe succeeded\n", __func__, client->name);
-	rc = camera_init_v4l2(&client->dev, &session_id);
-	if (rc < 0) {
-		pr_err("failed: camera_init_i2c_v4l2 rc %d", rc);
-		return rc;
+	if (0 == s_ctrl->bypass_video_node_creation) {
+		rc = camera_init_v4l2(&client->dev, &session_id);
+		if (rc < 0) {
+			pr_err("failed: camera_init_i2c_v4l2 rc %d", rc);
+			return rc;
+		}
 	}
 
 	CDBG("%s rc %d session_id %d\n", __func__, rc, session_id);
@@ -136,10 +138,12 @@ static int32_t msm_sensor_driver_create_v4l_subdev
 	int32_t rc = 0;
 	uint32_t session_id = 0;
 
-	rc = camera_init_v4l2(&s_ctrl->pdev->dev, &session_id);
-	if (rc < 0) {
-		pr_err("failed: camera_init_v4l2 rc %d", rc);
-		return rc;
+	if (0 == s_ctrl->bypass_video_node_creation) {
+		rc = camera_init_v4l2(&s_ctrl->pdev->dev, &session_id);
+		if (rc < 0) {
+			pr_err("failed: camera_init_v4l2 rc %d", rc);
+			return rc;
+		}
 	}
 
 	CDBG("rc %d session_id %d", rc, session_id);
@@ -570,7 +574,7 @@ static int32_t msm_sensor_get_pw_settings_compat(
 {
 	int32_t rc = 0, i = 0;
 	struct msm_sensor_power_setting32 *ps32 =
-		kcalloc(size, sizeof(*ps32), GFP_KERNEL);
+		kzalloc(sizeof(*ps32) * size, GFP_KERNEL);
 
 	if (!ps32) {
 		pr_err("failed: no memory ps32");
@@ -648,7 +652,7 @@ static int32_t msm_sensor_get_power_down_settings(void *setting,
 		return -EINVAL;
 	}
 	/* Allocate memory for power down setting */
-	pd = kcalloc(size_down, sizeof(*pd), GFP_KERNEL);
+	pd = kzalloc(sizeof(*pd) * size_down, GFP_KERNEL);
 	if (!pd)
 		return -EFAULT;
 
@@ -713,7 +717,7 @@ static int32_t msm_sensor_get_power_up_settings(void *setting,
 	}
 
 	/* Allocate memory for power up setting */
-	pu = kcalloc(size, sizeof(*pu), GFP_KERNEL);
+	pu = kzalloc(sizeof(*pu) * size, GFP_KERNEL);
 	if (!pu)
 		return -ENOMEM;
 
@@ -900,6 +904,8 @@ int32_t msm_sensor_driver_probe(void *setting,
 			slave_info32->sensor_init_params;
 		slave_info->output_format =
 			slave_info32->output_format;
+		slave_info->bypass_video_node_creation =
+			!!slave_info32->bypass_video_node_creation;
 		kfree(slave_info32);
 	} else
 #endif
@@ -942,6 +948,8 @@ int32_t msm_sensor_driver_probe(void *setting,
 		slave_info->sensor_init_params.position);
 	CDBG("mount %d",
 		slave_info->sensor_init_params.sensor_mount_angle);
+	CDBG("bypass video node creation %d",
+		slave_info->bypass_video_node_creation);
 #ifdef SENSOR_INFO
 	if(slave_info->camera_id == 0)
 	{
@@ -1157,6 +1165,9 @@ CSID_TG:
 	}
 
 	pr_err("%s probe succeeded", slave_info->sensor_name);
+
+	s_ctrl->bypass_video_node_creation =
+		slave_info->bypass_video_node_creation;
 
 	/*
 	 * Update the subdevice id of flash-src based on availability in kernel.
