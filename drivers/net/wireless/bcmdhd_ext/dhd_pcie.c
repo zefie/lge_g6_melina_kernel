@@ -24,7 +24,7 @@
  *
  * <<Broadcom-WL-IPTag/Open:>>
  *
- * $Id: dhd_pcie.c 678582 2017-01-10 06:36:39Z $
+ * $Id: dhd_pcie.c 684103 2017-02-10 08:56:29Z $
  */
 
 
@@ -3719,6 +3719,7 @@ dhdpcie_bus_suspend(struct dhd_bus *bus, bool state)
 	int timeleft;
 	unsigned long flags;
 	int rc = 0;
+	uint prev_intrcnt = 0;
 
 	if (bus->dhd == NULL) {
 		DHD_ERROR(("bus not inited\n"));
@@ -3795,6 +3796,7 @@ dhdpcie_bus_suspend(struct dhd_bus *bus, bool state)
 		DHD_OS_WAKE_LOCK_WAIVE(bus->dhd);
 		dhd_os_set_ioctl_resp_timeout(D3_ACK_RESP_TIMEOUT);
 		dhdpcie_send_mb_data(bus, H2D_HOST_D3_INFORM);
+		prev_intrcnt = bus->intrcount;
 		timeleft = dhd_os_d3ack_wait(bus->dhd, &bus->wait_for_d3_ack);
 		dhd_os_set_ioctl_resp_timeout(IOCTL_RESP_TIMEOUT);
 		DHD_OS_WAKE_LOCK_RESTORE(bus->dhd);
@@ -3832,11 +3834,11 @@ dhdpcie_bus_suspend(struct dhd_bus *bus, bool state)
 		}
 
 		if (bus->wait_for_d3_ack) {
-			DHD_ERROR(("%s: Got D3 Ack \n", __FUNCTION__));
+			DHD_ERROR(("%s: Got D3 Ack, additional interrupt check (intr increased = %d) \n", __FUNCTION__, bus->intrcount - prev_intrcnt));
 			/* Got D3 Ack. Suspend the bus */
-			if (active) {
-				DHD_ERROR(("%s():Suspend failed because of wakelock restoring "
-					"Dongle to D0\n", __FUNCTION__));
+			if (active || (prev_intrcnt+1) < bus->intrcount) {
+				DHD_ERROR(("%s():Suspend failed because of wakelock restoring(active=%d) or additional interrupt(intr increased = %d)"
+					"Dongle to D0\n", __FUNCTION__, active, bus->intrcount - prev_intrcnt));
 
 				/*
 				 * Dongle still thinks that it has to be in D3 state
@@ -5174,7 +5176,9 @@ int dhd_bus_init(dhd_pub_t *dhdp, bool enforce_mutex)
 	/* Make sure we're talking to the core. */
 	bus->reg = si_setcore(bus->sih, PCIE2_CORE_ID, 0);
 	ASSERT(bus->reg != NULL);
-
+#ifdef CUSTOMER_HW10
+	OSL_DELAY(200 * 1000);
+#endif /* CUSTOMER_HW10 */
 	/* before opening up bus for data transfer, check if shared are is intact */
 	ret = dhdpcie_readshared(bus);
 	if (ret < 0) {

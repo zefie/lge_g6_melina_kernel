@@ -430,7 +430,6 @@ typedef struct gscan_hotlist_scan_params {
 } gscan_hotlist_scan_params_t;
 
 #endif /* GSCAN_SUPPORT */
-
 typedef union dhd_pno_params {
 	struct dhd_pno_legacy_params params_legacy;
 	struct dhd_pno_batch_params params_batch;

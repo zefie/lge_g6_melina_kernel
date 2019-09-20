@@ -406,6 +406,13 @@ dhd_dbg_nan_event_handler(dhd_pub_t *dhdp, event_log_hdr_t *hdr, uint32 *data)
 			nan_hdr.version, DIAG_VERSION));
 		return BCME_VERSION;
 	}
+	/* nan event log should at least contain a wl_event_log_id_ver_t
+	 * header and a arm cycle count
+	 */
+	if (hdr->count < 2) {
+		return BCME_BADLEN;
+	}
+
 	memset(&msg_hdr, 0, sizeof(dhd_dbg_ring_entry_t));
 	ts_hdr = (void *)data - sizeof(event_log_hdr_t);
 	if (ts_hdr->tag == EVENT_LOG_TAG_TS) {
@@ -499,6 +506,14 @@ dhd_dbg_custom_evnt_handler(dhd_pub_t *dhdp, event_log_hdr_t *hdr, uint32 *data)
 		ts_data = (uint32 *)ts_hdr - ts_hdr->count;
 		ts_saved = (uint64)ts_data[0];
 	}
+
+	/* custom event log should at least contain a wl_event_log_id_ver_t
+	 * header and a arm cycle count
+	 */
+	if (hdr->count < 2) {
+		return BCME_BADLEN;
+	}
+
 	memset(&msg_hdr, 0, sizeof(dhd_dbg_ring_entry_t));
 	msg_hdr.timestamp = ts_saved;
 
@@ -724,7 +739,8 @@ dhd_dbg_msgtrace_log_parser(dhd_pub_t *dhdp, void *event_data,
 	msgtrace_hdr_t *hdr;
 	char *data;
 	int id;
-	uint32 hdrlen = sizeof(event_log_hdr_t);
+	const uint32 log_hdr_len = sizeof(event_log_hdr_t);
+	uint32 log_pyld_len;
 	static uint32 seqnum_prev = 0;
 	event_log_hdr_t *log_hdr;
 	bool event_type = FALSE, nan_event = FALSE;
@@ -733,6 +749,14 @@ dhd_dbg_msgtrace_log_parser(dhd_pub_t *dhdp, void *event_data,
 	loglist_item_t *log_item;
 	uint32 nan_evt_ring_log_level = 0;
 
+	/* log trace event consists of:
+	 * msgtrace header
+	 * event log block header
+	 * event log payload
+	 */
+	if (datalen <= MSGTRACE_HDRLEN + EVENT_LOG_BLOCK_HDRLEN) {
+		return;
+	}
 	hdr = (msgtrace_hdr_t *)event_data;
 	data = (char *)event_data + MSGTRACE_HDRLEN;
 	datalen -= MSGTRACE_HDRLEN;
@@ -740,26 +764,34 @@ dhd_dbg_msgtrace_log_parser(dhd_pub_t *dhdp, void *event_data,
 	if (dhd_dbg_msgtrace_seqchk(&seqnum_prev, ntoh32(hdr->seqnum)))
 		return;
 
-	data += 8;
-	datalen -= 8;
+	data += EVENT_LOG_BLOCK_HDRLEN;
+	datalen -= EVENT_LOG_BLOCK_HDRLEN;
 
 	/* start from the end and walk through the packet */
 	dll_init(&list_head);
-	while (datalen > 0) {
-		log_hdr = (event_log_hdr_t *)(data + datalen - hdrlen);
-		/* pratially overwritten entries */
-		if ((uint32 *)log_hdr - (uint32 *)data < log_hdr->count)
-			break;
-		/* end of frame? */
+	while (datalen > log_hdr_len) {
+		log_hdr = (event_log_hdr_t *)(data + datalen - log_hdr_len);
+		/* skip zero padding at end of frame */
 		if (log_hdr->tag == EVENT_LOG_TAG_NULL) {
-			log_hdr--;
-			datalen -= hdrlen;
+			datalen -= log_hdr_len;
 			continue;
+		}
+		/* Check argument count, any event log should contain at least
+		 * one argument (4 bytes) for arm cycle count and up to 16
+		 * arguments
+		 */
+		if ((log_hdr->count == 0) || (log_hdr->count > MAX_NO_OF_ARG)) {
+			break;
+		}
+
+		log_pyld_len = log_hdr->count * DATA_UNIT_FOR_LOG_CNT;
+		/* log data should not cross the event data boundary */
+		if (((char *)log_hdr - data) < log_pyld_len) {
+			break;
 		}
 		/* skip 4 bytes time stamp packet */
 		if (log_hdr->tag == EVENT_LOG_TAG_TS) {
-			datalen -= log_hdr->count * 4 + hdrlen;
-			log_hdr -= log_hdr->count + hdrlen / 4;
+			datalen -= log_pyld_len + log_hdr_len;
 			continue;
 		}
 		if (log_hdr->count > MAX_NO_OF_ARG)
@@ -771,7 +803,7 @@ dhd_dbg_msgtrace_log_parser(dhd_pub_t *dhdp, void *event_data,
 		}
 		log_item->hdr = log_hdr;
 		dll_insert(&log_item->list, &list_head);
-		datalen -= (log_hdr->count * 4 + hdrlen);
+		datalen -= (log_pyld_len + log_hdr_len);
 	}
 
 	while (!dll_empty(&list_head)) {

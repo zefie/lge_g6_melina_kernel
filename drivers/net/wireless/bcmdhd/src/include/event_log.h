@@ -96,6 +96,7 @@ typedef struct event_log_block {
 	uint32 timestamp;		/* Timestamp at start of use */
 	uint32 event_logs;
 } event_log_block_t;
+#define EVENT_LOG_BLOCK_HDRLEN		8 /* pktlen 2 + count 2 + extra_hdr_info 4 */
 
 /* There can be multiple event_sets with each logging a set of
  * associated events (i.e, "fast" and "slow" events).

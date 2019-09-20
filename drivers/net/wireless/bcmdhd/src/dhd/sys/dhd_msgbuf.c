@@ -3717,9 +3717,8 @@ dhd_prot_txstatus_process(dhd_pub_t *dhd, void *msg)
 		prot->active_tx_count--;
 
 		/* Release the Lock when no more tx packets are pending */
-		if (dhd->op_mode == DHD_FLAG_HOSTAP_MODE && prot->active_tx_count == 0)
-			 DHD_OS_WAKE_UNLOCK(dhd);
-
+		if ( prot->active_tx_count == 0)
+			 DHD_TXFL_WAKE_UNLOCK(dhd);
 	} else {
 		DHD_ERROR(("Extra packets are freed\n"));
 	}
@@ -4202,8 +4201,8 @@ dhd_prot_txdata(dhd_pub_t *dhd, void *PKTBUF, uint8 ifidx)
 	 * Take a wake lock, do not sleep if we have atleast one packet
 	 * to finish.
 	 */
-	if (dhd->op_mode == DHD_FLAG_HOSTAP_MODE && prot->active_tx_count == 1)
-		DHD_OS_WAKE_LOCK(dhd);
+	if (prot->active_tx_count >= 1)
+		DHD_TXFL_WAKE_LOCK_TIMEOUT(dhd, MAX_TX_TIMEOUT);
 
 	DHD_GENERAL_UNLOCK(dhd, flags);
 
