@@ -76,8 +76,8 @@ static int sdcardfs_create(struct inode *dir, struct dentry *dentry,
 	}
 
 	/* save current_cred and override it */
-	saved_cred = override_fsids(SDCARDFS_SB(dir->i_sb),
-					SDCARDFS_I(dir)->data);
+	saved_cred = override_fsids(SDCARDFS_SB(dir->i_sb),SDCARDFS_I(dir)->data);
+
 	if (!saved_cred)
 		return -ENOMEM;
 
@@ -142,8 +142,8 @@ static int sdcardfs_unlink(struct inode *dir, struct dentry *dentry)
 	}
 
 	/* save current_cred and override it */
-	saved_cred = override_fsids(SDCARDFS_SB(dir->i_sb),
-						SDCARDFS_I(dir)->data);
+	saved_cred = override_fsids(SDCARDFS_SB(dir->i_sb),SDCARDFS_I(dir)->data);
+
 	if (!saved_cred)
 		return -ENOMEM;
 
@@ -178,6 +178,40 @@ out:
 	sdcardfs_put_lower_path(dentry, &lower_path);
 	revert_fsids(saved_cred);
 out_eacces:
+	return err;
+}
+
+static int sdcardfs_symlink(struct inode *dir, struct dentry *dentry,
+			  const char *symname)
+{
+	int err;
+	struct dentry *lower_dentry;
+	struct dentry *lower_parent_dentry = NULL;
+	struct path lower_path;
+	const struct cred *saved_cred = NULL;
+
+	saved_cred = override_fsids(SDCARDFS_SB(dir->i_sb),
+			SDCARDFS_I(dir)->data);
+	if (!saved_cred)
+		return -ENOMEM;
+
+	sdcardfs_get_lower_path(dentry, &lower_path);
+	lower_dentry = lower_path.dentry;
+	lower_parent_dentry = lock_parent(lower_dentry);
+
+	err = vfs_symlink(lower_parent_dentry->d_inode, lower_dentry, symname);
+	if (err)
+		goto out;
+	err = sdcardfs_interpose(dentry, dir->i_sb, &lower_path, SDCARDFS_I(dir)->data->userid);
+	if (err)
+		goto out;
+	fsstack_copy_attr_times(dir, sdcardfs_lower_inode(dir));
+	fsstack_copy_inode_size(dir, lower_parent_dentry->d_inode);
+
+out:
+	unlock_dir(lower_parent_dentry);
+	sdcardfs_put_lower_path(dentry, &lower_path);
+	revert_fsids(saved_cred);
 	return err;
 }
 
@@ -222,8 +256,7 @@ static int sdcardfs_mkdir(struct inode *dir, struct dentry *dentry, umode_t mode
 	}
 
 	/* save current_cred and override it */
-	saved_cred = override_fsids(SDCARDFS_SB(dir->i_sb),
-						SDCARDFS_I(dir)->data);
+	saved_cred = override_fsids(SDCARDFS_SB(dir->i_sb),SDCARDFS_I(dir)->data);
 	if (!saved_cred)
 		return -ENOMEM;
 
@@ -308,20 +341,19 @@ static int sdcardfs_mkdir(struct inode *dir, struct dentry *dentry, umode_t mode
 		((pd->perm == PERM_ANDROID)
 				&& (qstr_case_eq(&dentry->d_name, &q_data)))) {
 		revert_fsids(saved_cred);
-		saved_cred = override_fsids(sbi,
-					SDCARDFS_I(dentry->d_inode)->data);
+		saved_cred = override_fsids(sbi,SDCARDFS_I(dentry->d_inode)->data);
 		if (!saved_cred) {
 			pr_err("sdcardfs: failed to set up .nomedia in %s: %d\n",
-						lower_path.dentry->d_name.name,
-						-ENOMEM);
+					lower_path.dentry->d_name.name,
+					-ENOMEM);
+
 			goto out;
 		}
 		set_fs_pwd(current->fs, &lower_path);
 		touch_err = touch(".nomedia", 0664);
 		if (touch_err) {
-			pr_err("sdcardfs: failed to create .nomedia in %s: %d\n",
-						lower_path.dentry->d_name.name,
-						touch_err);
+			pr_err("sdcardfs: failed to create .nomedia in %s: %d\n",lower_path.dentry->d_name.name,touch_err);
+
 			goto out;
 		}
 	}
@@ -354,8 +386,8 @@ static int sdcardfs_rmdir(struct inode *dir, struct dentry *dentry)
 	}
 
 	/* save current_cred and override it */
-	saved_cred = override_fsids(SDCARDFS_SB(dir->i_sb),
-						SDCARDFS_I(dir)->data);
+	saved_cred = override_fsids(SDCARDFS_SB(dir->i_sb),SDCARDFS_I(dir)->data);
+
 	if (!saved_cred)
 		return -ENOMEM;
 
@@ -411,8 +443,8 @@ static int sdcardfs_rename(struct inode *old_dir, struct dentry *old_dentry,
 	}
 
 	/* save current_cred and override it */
-	saved_cred = override_fsids(SDCARDFS_SB(old_dir->i_sb),
-						SDCARDFS_I(new_dir)->data);
+	saved_cred = override_fsids(SDCARDFS_SB(old_dir->i_sb),SDCARDFS_I(new_dir)->data);
+
 	if (!saved_cred)
 		return -ENOMEM;
 
@@ -466,7 +498,6 @@ out_eacces:
 	return err;
 }
 
-#if 0
 static int sdcardfs_readlink(struct dentry *dentry, char __user *buf, int bufsiz)
 {
 	int err;
@@ -492,9 +523,7 @@ out:
 	sdcardfs_put_lower_path(dentry, &lower_path);
 	return err;
 }
-#endif
 
-#if 0
 static void *sdcardfs_follow_link(struct dentry *dentry, struct nameidata *nd)
 {
 	char *buf;
@@ -523,7 +552,6 @@ out:
 	nd_set_link(nd, buf);
 	return NULL;
 }
-#endif
 
 static int sdcardfs_permission_wrn(struct inode *inode, int mask)
 {
@@ -657,8 +685,8 @@ static int sdcardfs_setattr(struct vfsmount *mnt, struct dentry *dentry, struct 
 		goto out_err;
 
 	/* save current_cred and override it */
-	saved_cred = override_fsids(SDCARDFS_SB(dentry->d_sb),
-						SDCARDFS_I(inode)->data);
+	saved_cred = override_fsids(SDCARDFS_SB(dentry->d_sb),SDCARDFS_I(inode)->data);
+
 	if (!saved_cred)
 		return -ENOMEM;
 
@@ -772,6 +800,8 @@ static int sdcardfs_getattr(struct vfsmount *mnt, struct dentry *dentry,
 		goto out;
 	sdcardfs_copy_and_fix_attrs(dentry->d_inode,
 			      lower_path.dentry->d_inode);
+	fsstack_copy_inode_size(dentry->d_inode,
+			lower_path.dentry->d_inode);
 	err = sdcardfs_fillattr(mnt, dentry->d_inode, &lower_stat, stat);
 out:
 	sdcardfs_put_lower_path(dentry, &lower_path);
@@ -781,13 +811,9 @@ out:
 const struct inode_operations sdcardfs_symlink_iops = {
 	.permission2	= sdcardfs_permission,
 	.setattr2	= sdcardfs_setattr,
-	/* XXX Following operations are implemented,
-	 *     but FUSE(sdcard) or FAT does not support them
-	 *     These methods are *NOT* perfectly tested.
 	.readlink	= sdcardfs_readlink,
 	.follow_link	= sdcardfs_follow_link,
 	.put_link	= kfree_put_link,
-	 */
 };
 
 const struct inode_operations sdcardfs_dir_iops = {
@@ -802,6 +828,7 @@ const struct inode_operations sdcardfs_dir_iops = {
 	.setattr	= sdcardfs_setattr_wrn,
 	.setattr2	= sdcardfs_setattr,
 	.getattr	= sdcardfs_getattr,
+	.symlink	= sdcardfs_symlink,
 };
 
 const struct inode_operations sdcardfs_main_iops = {

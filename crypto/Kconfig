@@ -1460,7 +1460,7 @@ menuconfig CRYPTO_DRBG_MENU
 	  NIST SP800-90A compliant DRBG. In the following submenu, one or
 	  more of the DRBG types must be selected.
 
-if CRYPTO_DRBG_MENU
+
 
 config CRYPTO_DRBG_HMAC
 	bool "Enable HMAC DRBG"
@@ -1481,12 +1481,30 @@ config CRYPTO_DRBG_CTR
 	help
 	  Enable the CTR DRBG variant as defined in NIST SP800-90A.
 
+if CRYPTO_DRBG_MENU
+
+
+
 config CRYPTO_DRBG
 	tristate
 	default CRYPTO_DRBG_MENU if (CRYPTO_DRBG_HMAC || CRYPTO_DRBG_HASH || CRYPTO_DRBG_CTR)
 	select CRYPTO_RNG
 
 endif	# if CRYPTO_DRBG_MENU
+
+config FIPS_RECOMPILE
+	bool "Recompile FIPS140-2 certified binaries"
+	default n
+	depends on FIPS_ENABLE
+	help
+	  This flag is to make current build recompile FIPS140-2
+          certified crypto binary from source. Please select Y here to
+          enable. In default value n, the compiler will use
+          pre-compiled binaries. Note that select Y may invalidate
+          existing FIPS140-2 certification but the recompiled crypto
+          library remains FIPS certifable. The flag is only
+          effective when flag FIPS_ENABLE is enabled.
+
 
 config CRYPTO_USER_API
 	tristate

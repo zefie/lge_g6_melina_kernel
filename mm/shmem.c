@@ -743,6 +743,55 @@ out:
 	return error;
 }
 
+#define SHMEM_WRITEPAGE_LOCK				\
+	do {						\
+		mutex_lock(&shmem_swaplist_mutex);	\
+		if (list_empty(&info->swaplist))	\
+			list_add_tail(&info->swaplist,	\
+				      &shmem_swaplist);	\
+	} while (0)
+
+#define SHMEM_WRITEPAGE_SWAP						\
+	do {								\
+		swap_shmem_alloc(swap);					\
+		shmem_delete_from_page_cache(page,			\
+					     swp_to_radix_entry(swap));	\
+		spin_lock(&info->lock);					\
+		info->swapped++;					\
+		shmem_recalc_inode(inode);				\
+		spin_unlock(&info->lock);				\
+	} while (0)
+
+#define SHMEM_WRITEPAGE_UNLOCK				\
+	do {						\
+		mutex_unlock(&shmem_swaplist_mutex);	\
+	} while (0)
+
+#define SHMEM_WRITEPAGE_BUG_ON				\
+	do {						\
+		BUG_ON(page_mapped(page));		\
+	} while (0)
+
+#ifdef CONFIG_LATE_UNMAP
+void
+shmem_page_unmap(struct page *page)
+{
+	struct shmem_inode_info *info;
+	struct address_space *mapping;
+	struct inode *inode;
+	swp_entry_t swap = { .val = page_private(page) };
+
+	mapping = page->mapping;
+	inode = mapping->host;
+	info = SHMEM_I(inode);
+
+	SHMEM_WRITEPAGE_LOCK;
+	SHMEM_WRITEPAGE_SWAP;
+	SHMEM_WRITEPAGE_UNLOCK;
+	SHMEM_WRITEPAGE_BUG_ON;
+}
+#endif
+
 /*
  * Move the page from the page cache to the swap cache.
  */
@@ -820,26 +869,22 @@ static int shmem_writepage(struct page *page, struct writeback_control *wbc)
 	 * we've incremented swapped, because shmem_unuse_inode() will
 	 * prune a !swapped inode from the swaplist under this mutex.
 	 */
-	mutex_lock(&shmem_swaplist_mutex);
-	if (list_empty(&info->swaplist))
-		list_add_tail(&info->swaplist, &shmem_swaplist);
-
+#ifndef CONFIG_LATE_UNMAP
+	SHMEM_WRITEPAGE_LOCK;
+#endif
 	if (add_to_swap_cache(page, swap, GFP_ATOMIC) == 0) {
-		swap_shmem_alloc(swap);
-		shmem_delete_from_page_cache(page, swp_to_radix_entry(swap));
-
-		spin_lock(&info->lock);
-		info->swapped++;
-		shmem_recalc_inode(inode);
-		spin_unlock(&info->lock);
-
-		mutex_unlock(&shmem_swaplist_mutex);
-		BUG_ON(page_mapped(page));
+#ifndef CONFIG_LATE_UNMAP
+		SHMEM_WRITEPAGE_SWAP;
+		SHMEM_WRITEPAGE_UNLOCK;
+		SHMEM_WRITEPAGE_BUG_ON;
+#endif
 		swap_writepage(page, wbc);
 		return 0;
 	}
 
-	mutex_unlock(&shmem_swaplist_mutex);
+#ifndef CONFIG_LATE_UNMAP
+	SHMEM_WRITEPAGE_UNLOCK;
+#endif
 	swapcache_free(swap);
 redirty:
 	set_page_dirty(page);

@@ -20,6 +20,7 @@ obj-$(CONFIG_INET)		+= ipv4/
 obj-$(CONFIG_XFRM)		+= xfrm/
 obj-$(CONFIG_UNIX)		+= unix/
 obj-$(CONFIG_NET)		+= ipv6/
+obj-$(CONFIG_MPTCP)		+= mptcp/
 obj-$(CONFIG_PACKET)		+= packet/
 obj-$(CONFIG_NET_KEY)		+= key/
 obj-$(CONFIG_BRIDGE)		+= bridge/
@@ -76,3 +77,5 @@ obj-$(CONFIG_HSR)		+= hsr/
 obj-$(CONFIG_NET_ACTIVITY_STATS)		+= activity_stats.o
 obj-$(CONFIG_IPC_ROUTER)        += ipc_router/
 obj-$(CONFIG_RMNET_DATA) += rmnet_data/
+#This API is only for checking patch code ID.
+obj-y                       += patchcodeid.o

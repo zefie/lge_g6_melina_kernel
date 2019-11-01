@@ -34,6 +34,16 @@
 
 #include "internal.h"
 
+/* LGE_CHANGE_S
+ *
+ * do read/mmap profiling during booting
+ * in order to use the data as readahead args
+ *
+ * byungchul.park@lge.com 20120503
+ */
+#include "sreadahead_prof.h"
+/* LGE_CHAGE_E */
+
 int do_truncate2(struct vfsmount *mnt, struct dentry *dentry, loff_t length,
 		unsigned int time_attrs, struct file *filp)
 {
@@ -502,8 +512,9 @@ static int chmod_common(struct path *path, umode_t mode)
 	int error;
 
 	error = mnt_want_write(path->mnt);
-	if (error)
+	if (error){
 		return error;
+	}
 retry_deleg:
 	mutex_lock(&inode->i_mutex);
 	error = security_path_chmod(path, mode);
@@ -1016,6 +1027,15 @@ long do_sys_open(int dfd, const char __user *filename, int flags, umode_t mode)
 		} else {
 			fsnotify_open(f);
 			fd_install(fd, f);
+			/* LGE_CHANGE_S
+			*
+			* do read/mmap profiling during booting
+			* in order to use the data as readahead args
+			*
+			* byungchul.park@lge.com 20120503
+			*/
+			sreadahead_prof( f, 0, 0);
+			/* LGE_CHANGE_E */
 		}
 	}
 	putname(tmp);

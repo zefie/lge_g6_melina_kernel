@@ -20,6 +20,7 @@
  * 02111-1307, USA.
  */
 #include <linux/sched.h>
+#include <linux/uidgid.h>
 #include <linux/slab.h>
 #include <linux/user_namespace.h>
 #include <linux/nsproxy.h>
@@ -117,14 +118,15 @@ int ecryptfs_find_daemon_by_euid(struct ecryptfs_daemon **daemon)
 	int rc;
 
 	hlist_for_each_entry(*daemon,
-			    &ecryptfs_daemon_hash[ecryptfs_current_euid_hash()],
-			    euid_chain) {
+				&ecryptfs_daemon_hash[ecryptfs_current_euid_hash()],
+				euid_chain) {
 		if (uid_eq((*daemon)->file->f_cred->euid, current_euid())) {
 			rc = 0;
 			goto out;
 		}
 	}
 	rc = -EINVAL;
+
 out:
 	return rc;
 }

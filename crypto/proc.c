@@ -23,8 +23,9 @@
 #include <linux/sysctl.h>
 #include "internal.h"
 
-#ifdef CONFIG_CRYPTO_FIPS
+#if defined (CONFIG_CRYPTO_FIPS) || defined (CONFIG_CRYPTO_CCMODE)
 static struct ctl_table crypto_sysctl_table[] = {
+#ifdef CONFIG_CRYPTO_FIPS
 	{
 		.procname       = "fips_enabled",
 		.data           = &fips_enabled,
@@ -32,6 +33,7 @@ static struct ctl_table crypto_sysctl_table[] = {
 		.mode           = 0444,
 		.proc_handler   = proc_dointvec
 	},
+#endif
 	{}
 };
 

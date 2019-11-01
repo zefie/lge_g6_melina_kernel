@@ -32,7 +32,6 @@
 #include <linux/compat.h>
 #include <linux/fs_stack.h>
 #include <linux/aio.h>
-#include <linux/ecryptfs.h>
 #include "ecryptfs_kernel.h"
 
 /**
@@ -203,14 +202,23 @@ static int ecryptfs_open(struct inode *inode, struct file *file)
 {
 	int rc = 0;
 	struct ecryptfs_crypt_stat *crypt_stat = NULL;
+	struct ecryptfs_mount_crypt_stat *mount_crypt_stat;
 	struct dentry *ecryptfs_dentry = file->f_path.dentry;
-	int ret;
-
-
 	/* Private value of ecryptfs_dentry allocated in
 	 * ecryptfs_lookup() */
 	struct ecryptfs_file_info *file_info;
 
+	mount_crypt_stat = &ecryptfs_superblock_to_private(
+		ecryptfs_dentry->d_sb)->mount_crypt_stat;
+	if ((mount_crypt_stat->flags & ECRYPTFS_ENCRYPTED_VIEW_ENABLED)
+	    && ((file->f_flags & O_WRONLY) || (file->f_flags & O_RDWR)
+		|| (file->f_flags & O_CREAT) || (file->f_flags & O_TRUNC)
+		|| (file->f_flags & O_APPEND))) {
+		printk(KERN_WARNING "Mount has encrypted view enabled; "
+		       "files may only be read\n");
+		rc = -EPERM;
+		goto out;
+	}
 	/* Released in ecryptfs_release or end of function if failure */
 	file_info = kmem_cache_zalloc(ecryptfs_file_info_cache, GFP_KERNEL);
 	ecryptfs_set_file_private(file, file_info);
@@ -247,29 +255,12 @@ static int ecryptfs_open(struct inode *inode, struct file *file)
 	ecryptfs_set_file_lower(
 		file, ecryptfs_inode_to_private(inode)->lower_file);
 	rc = read_or_initialize_metadata(ecryptfs_dentry);
+
 	if (rc)
 		goto out_put;
 	ecryptfs_printk(KERN_DEBUG, "inode w/ addr = [0x%p], i_ino = "
 			"[0x%.16lx] size: [0x%.16llx]\n", inode, inode->i_ino,
 			(unsigned long long)i_size_read(inode));
-
-	if (get_events() && get_events()->open_cb) {
-
-		ret = vfs_fsync(file, false);
-
-		if (ret)
-			ecryptfs_printk(KERN_ERR,
-				"failed to sync file ret = %d.\n", ret);
-
-		get_events()->open_cb(ecryptfs_inode_to_lower(inode),
-			crypt_stat);
-
-		if (crypt_stat->flags & ECRYPTFS_METADATA_IN_XATTR) {
-			truncate_inode_pages(inode->i_mapping, 0);
-			truncate_inode_pages(
-				ecryptfs_inode_to_lower(inode)->i_mapping, 0);
-		}
-	}
 	goto out;
 out_put:
 	ecryptfs_put_lower_file(inode);
@@ -323,7 +314,7 @@ static int ecryptfs_flush(struct file *file, fl_owner_t td)
 {
 	struct file *lower_file = ecryptfs_file_to_lower(file);
 
-	if (lower_file->f_op->flush) {
+	if (lower_file->f_op && lower_file->f_op->flush) {
 		filemap_write_and_wait(file->f_mapping);
 		return lower_file->f_op->flush(lower_file, td);
 	}
@@ -371,7 +362,7 @@ static int ecryptfs_fasync(int fd, struct file *file, int flag)
 	struct file *lower_file = NULL;
 
 	lower_file = ecryptfs_file_to_lower(file);
-	if (lower_file->f_op->fasync)
+	if (lower_file->f_op && lower_file->f_op->fasync)    // hoon.shin
 		rc = lower_file->f_op->fasync(fd, lower_file, flag);
 	return rc;
 }

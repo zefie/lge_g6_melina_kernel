@@ -121,10 +121,8 @@ struct sdcardfs_mount_options;
 struct sdcardfs_inode_info;
 struct sdcardfs_inode_data;
 
-/* Do not directly use this function. Use OVERRIDE_CRED() instead. */
 const struct cred *override_fsids(struct sdcardfs_sb_info *sbi,
 			struct sdcardfs_inode_data *data);
-/* Do not directly use this function, use REVERT_CRED() instead. */
 void revert_fsids(const struct cred *old_cred);
 
 /* operations vectors defined in specific files */

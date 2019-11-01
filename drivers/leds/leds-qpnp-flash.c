@@ -261,12 +261,30 @@ struct qpnp_flash_led {
 	bool				strobe_debug;
 	bool				dbg_feature_en;
 	bool				open_fault;
+
+#ifdef CONFIG_MACH_LGE
+	struct device	*dev_fault;
+	u8	last_fault;
+#endif
 };
 
 static u8 qpnp_flash_led_ctrl_dbg_regs[] = {
 	0x40, 0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47, 0x48,
 	0x4A, 0x4B, 0x4C, 0x4F, 0x51, 0x52, 0x54, 0x55, 0x5A, 0x5C, 0x5D,
 };
+
+#ifdef CONFIG_MACH_LGE
+extern struct class* get_camera_class(void);
+
+static ssize_t show_flash_fault_status(struct device *dev,
+	struct device_attribute *attr, char *buf)
+{
+	struct qpnp_flash_led *led = dev_get_drvdata(dev);
+
+	return sprintf(buf, "%x\n", led->last_fault);
+}
+static DEVICE_ATTR(fault_status, S_IRUGO, show_flash_fault_status, NULL);
+#endif
 
 static int flash_led_dbgfs_file_open(struct qpnp_flash_led *led,
 					struct file *file)
@@ -1194,6 +1212,19 @@ static int flash_regulator_setup(struct qpnp_flash_led *led,
 
 error_regulator_setup:
 	while (i--) {
+#if 1 //def CONFIG_MACH_LGE
+		if (IS_ERR_OR_NULL(flash_node->reg_data[i].regs)) {
+			flash_node->reg_data[i].regs =
+				regulator_get(flash_node->cdev.dev,
+						flash_node->reg_data[i].reg_name);
+			if (IS_ERR_OR_NULL(flash_node->reg_data[i].regs)) {
+				rc = PTR_ERR(flash_node->reg_data[i].regs);
+				dev_err(&led->spmi_dev->dev,
+						"Failed to get regulator %d\n", i);
+				continue;
+			}
+		}
+#endif
 		if (regulator_count_voltages(flash_node->reg_data[i].regs)
 									> 0) {
 			regulator_set_voltage(flash_node->reg_data[i].regs,
@@ -1245,7 +1276,7 @@ int qpnp_flash_led_prepare(struct led_trigger *trig, int options,
 	struct led_classdev *led_cdev = trigger_to_lcdev(trig);
 	struct flash_node_data *flash_node;
 	struct qpnp_flash_led *led;
-	int rc;
+	int rc = 0;
 
 	if (!led_cdev) {
 		pr_err("Invalid led_trigger provided\n");
@@ -1318,6 +1349,7 @@ static void qpnp_flash_led_work(struct work_struct *work)
 	if (!brightness)
 		goto turn_off;
 
+#if !defined(CONFIG_MACH_MSM8996_ELSA) && !defined(CONFIG_MACH_MSM8996_ANNA)&& !defined(CONFIG_MACH_MSM8996_FALCON)
 	if (led->open_fault) {
 		if (flash_node->type == FLASH) {
 			dev_dbg(&led->spmi_dev->dev, "Open fault detected\n");
@@ -1344,9 +1376,19 @@ static void qpnp_flash_led_work(struct work_struct *work)
 			goto unlock_mutex;
 		}
 	}
+#else
+	if (led->open_fault) {
+		dev_err(&led->spmi_dev->dev, "Open fault detected\n");
+	}
+#endif
 
 	if (!flash_node->flash_on && flash_node->num_regulators > 0) {
+#if 1 //def CONFIG_MACH_LGE
+		rc = flash_regulator_setup(led, flash_node, true);
+		rc |= flash_regulator_enable(led, flash_node, true);
+#else
 		rc = flash_regulator_enable(led, flash_node, true);
+#endif
 		if (rc)
 			goto unlock_mutex;
 	}
@@ -1782,6 +1824,7 @@ static void qpnp_flash_led_work(struct work_struct *work)
 			goto exit_flash_led_work;
 		}
 
+#if 0 //ndef CONFIG_MACH_LGE
 		if (led->strobe_debug && led->dbg_feature_en) {
 			udelay(2000);
 			rc = spmi_ext_register_readl(led->spmi_dev->ctrl,
@@ -1796,6 +1839,40 @@ static void qpnp_flash_led_work(struct work_struct *work)
 			}
 			led->fault_reg = val;
 		}
+#else
+		udelay(2000);
+		rc = spmi_ext_register_readl(led->spmi_dev->ctrl,
+				led->spmi_dev->sid,
+				FLASH_LED_FAULT_STATUS(led->base),
+				&val, 1);
+		if (rc) {
+			dev_err(&led->spmi_dev->dev,
+			"Unable to read from addr= %x, rc(%d)\n",
+			FLASH_LED_FAULT_STATUS(led->base), rc);
+			goto exit_flash_led_work;
+		}
+		led->fault_reg = val;
+#ifdef CONFIG_MACH_LGE
+		led->last_fault = val;
+#endif
+		pr_err("flash led_status 0x%x\n", val);
+
+		if(val & 0xFF) {
+			pr_err("FLASH1_LED_FAULT_STATUS 0x%x\n", val);
+		}
+
+		rc = spmi_ext_register_readl(led->spmi_dev->ctrl,
+			led->spmi_dev->sid, led->base + 0x10, &val, 1);
+		if (rc) {
+			dev_err(&led->spmi_dev->dev,
+				"Unable to read from addr=%x, rc(%d)\n",
+				led->base + 0x10, rc);
+			goto exit_flash_led_work;
+		}
+		if(val & 0xF0) {
+			pr_err("FLASH1_INT_RT_STS 0x%x\n", val);
+		}
+#endif
 	} else {
 		pr_err("Both Torch and Flash cannot be select at same time\n");
 		for (i = 0; i < led->num_leds; i++)
@@ -1827,6 +1904,17 @@ turn_off:
 		}
 
 		led->open_fault = (val & FLASH_LED_OPEN_FAULT_DETECTED);
+
+#ifdef CONFIG_MACH_LGE
+		dev_err(&led->spmi_dev->dev, "flash led status (0x%x)\n", val);
+		led->last_fault = val;
+#endif
+
+#if 1 //def CONFIG_MACH_LGE
+		if(val){
+			dev_err(&led->spmi_dev->dev, "Fault detected (0x%x)\n", val);
+		}
+#endif
 	}
 
 	rc = qpnp_led_masked_write(led->spmi_dev,
@@ -1878,8 +1966,15 @@ exit_flash_led_work:
 		dev_err(&led->spmi_dev->dev, "Module disable failed\n");
 
 error_enable_gpio:
+#if 1 //def CONFIG_MACH_LGE
+	if (flash_node->flash_on && flash_node->num_regulators > 0) {
+		flash_regulator_enable(led, flash_node, false);
+		flash_regulator_setup(led, flash_node,false);
+	}
+#else
 	if (flash_node->flash_on && flash_node->num_regulators > 0)
 		flash_regulator_enable(led, flash_node, false);
+#endif
 
 	flash_node->flash_on = false;
 	mutex_unlock(&flash_node->cdev.led_access);
@@ -2393,9 +2488,13 @@ static int qpnp_flash_led_parse_common_dt(
 
 	led->pdata->hdrm_sns_ch1_en = of_property_read_bool(node,
 						"qcom,headroom-sense-ch1-enabled");
-
+#if 1 //def CONFIG_MACH_LGE
+	//Disable Current change by power detect enable (G4 deliver)
+	led->pdata->power_detect_en = false;
+#else
 	led->pdata->power_detect_en = of_property_read_bool(node,
 						"qcom,power-detect-enabled");
+#endif
 
 	led->pdata->mask3_en = of_property_read_bool(node,
 						"qcom,otst2-module-enabled");
@@ -2661,8 +2760,13 @@ static int qpnp_flash_led_probe(struct spmi_device *spmi)
 				goto error_led_register;
 			}
 
+#if 1 //def CONFIG_MACH_LGE
+			rc = flash_regulator_setup(led, &led->flash_node[i],
+									false);
+#else
 			rc = flash_regulator_setup(led, &led->flash_node[i],
 									true);
+#endif
 			if (rc) {
 				dev_err(&led->spmi_dev->dev,
 					"Unable to set up regulator\n");
@@ -2715,6 +2819,16 @@ static int qpnp_flash_led_probe(struct spmi_device *spmi)
 	}
 
 	dev_set_drvdata(&spmi->dev, led);
+
+#ifdef CONFIG_MACH_LGE
+	led->last_fault = 0;
+	led->dev_fault = device_create(get_camera_class(), &led->spmi_dev->dev,
+		0, led, "flash_fault_status");
+	rc = sysfs_create_file(&led->dev_fault->kobj,
+			&dev_attr_fault_status.attr);
+	if (rc)
+		pr_err("error creating flash_fault_status\n");
+#endif
 
 	return 0;
 

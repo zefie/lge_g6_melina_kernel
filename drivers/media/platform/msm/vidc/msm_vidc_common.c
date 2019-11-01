@@ -23,6 +23,7 @@
 #include "vidc_hfi_api.h"
 #include "msm_vidc_debug.h"
 #include "msm_vidc_dcvs.h"
+#include "msm_vdec.h"
 
 #define IS_ALREADY_IN_STATE(__p, __d) ({\
 	int __rc = (__p >= __d);\
@@ -1070,7 +1071,7 @@ static void handle_session_init_done(enum hal_command_response cmd, void *data)
 
 static void handle_event_change(enum hal_command_response cmd, void *data)
 {
-	struct msm_vidc_inst *inst;
+	struct msm_vidc_inst *inst = NULL;
 	struct msm_vidc_cb_event *event_notify = data;
 	int event = V4L2_EVENT_SEQ_CHANGED_INSUFFICIENT;
 	struct v4l2_event seq_changed_event = {0};
@@ -1225,9 +1226,14 @@ static void handle_event_change(enum hal_command_response cmd, void *data)
 				"V4L2_EVENT_SEQ_CHANGED_INSUFFICIENT due to bit-depth change\n");
 	}
 
+#ifdef CONFIG_MACH_LGE
+	    if (inst->pic_struct != event_notify->pic_struct && !((inst->flags & VIDC_SECURE) && (inst->fmts[OUTPUT_PORT].fourcc == V4L2_PIX_FMT_MPEG2))){
+//[S][LGDTV][isdbt-fwk@lge.com] Conditions are added to check if instance is secure and mpeg2
+#else
 	if (inst->fmts[CAPTURE_PORT].fourcc == V4L2_PIX_FMT_NV12 &&
 		event_notify->pic_struct != MSM_VIDC_PIC_STRUCT_UNKNOWN &&
 		inst->pic_struct != event_notify->pic_struct) {
+#endif
 		inst->pic_struct = event_notify->pic_struct;
 		event = V4L2_EVENT_SEQ_CHANGED_INSUFFICIENT;
 		ptr[2] |= V4L2_EVENT_PICSTRUCT_FLAG;
@@ -2077,6 +2083,8 @@ static void handle_fbd(enum hal_command_response cmd, void *data)
 			vb->v4l2_buf.flags |= V4L2_QCOM_BUF_FLAG_READONLY;
 		if (fill_buf_done->flags1 & HAL_BUFFERFLAG_EOS)
 			vb->v4l2_buf.flags |= V4L2_QCOM_BUF_FLAG_EOS;
+		if (fill_buf_done->flags1 & HAL_BUFFERFLAG_ENDOFFRAME)
+			vb->v4l2_buf.flags |= V4L2_QCOM_BUF_FLAG_ENDOFFRAME;
 		if (fill_buf_done->flags1 & HAL_BUFFERFLAG_CODECCONFIG)
 			vb->v4l2_buf.flags &= ~V4L2_QCOM_BUF_FLAG_CODECCONFIG;
 		if (fill_buf_done->flags1 & HAL_BUFFERFLAG_SYNCFRAME)
@@ -3689,7 +3697,7 @@ static int request_seq_header(struct msm_vidc_inst *inst,
  */
 int msm_comm_qbuf(struct msm_vidc_inst *inst, struct vb2_buffer *vb)
 {
-	int rc, capture_count, output_count;
+	int rc = 0, capture_count, output_count;
 	struct msm_vidc_core *core;
 	struct hfi_device *hdev;
 	struct {

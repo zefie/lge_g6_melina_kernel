@@ -1,0 +1,5 @@
+include lucye_vzw_common
+include lucye_common-debug
+CONFIG_MEM_SHARE_QMI_SERVICE=y
+CONFIG_VPNCLIENT_SECURITY=m
+CONFIG_LG_VPN_V37=y

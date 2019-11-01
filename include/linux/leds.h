@@ -91,6 +91,10 @@ struct led_classdev {
 
 	/* Ensures consistent access to the LED Flash Class device */
 	struct mutex		led_access;
+
+#if IS_ENABLED(CONFIG_LGE_DISPLAY_USE_FSC)
+	void (*set_fsc)(struct led_classdev *led_cdev, int fsc);
+#endif
 };
 
 extern int led_classdev_register(struct device *parent,

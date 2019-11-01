@@ -345,7 +345,11 @@ static int msm_pcm_playback_prepare(struct snd_pcm_substream *substream)
 	switch (q6core_get_avs_version()) {
 	case (Q6_SUBSYS_AVS2_7):
 		ret = q6asm_open_write_v3(prtd->audio_client,
-					  FORMAT_LINEAR_PCM, bits_per_sample);
+#ifdef CONFIG_MACH_LGE // 24bit ASM patch
+				  FORMAT_LINEAR_PCM, 24);
+#else
+				  FORMAT_LINEAR_PCM, bits_per_sample);
+#endif
 		break;
 	case (Q6_SUBSYS_AVS2_8):
 		ret = q6asm_open_write_v4(prtd->audio_client,
@@ -624,6 +628,7 @@ static int msm_pcm_open(struct snd_pcm_substream *substream)
 	struct snd_pcm_runtime *runtime = substream->runtime;
 	struct snd_soc_pcm_runtime *soc_prtd = substream->private_data;
 	struct msm_audio *prtd;
+	unsigned int be_id = soc_prtd->dai_link->be_id;
 	int ret = 0;
 
 	prtd = kzalloc(sizeof(struct msm_audio), GFP_KERNEL);
@@ -703,6 +708,8 @@ static int msm_pcm_open(struct snd_pcm_substream *substream)
 	prtd->set_channel_map = false;
 	prtd->reset_event = false;
 	runtime->private_data = prtd;
+	if (be_id == MSM_FRONTEND_DAI_MULTIMEDIA3)
+		prtd->ch_mixer = true;
 
 	return 0;
 }

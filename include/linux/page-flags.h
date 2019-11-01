@@ -112,6 +112,9 @@ enum pageflags {
 #ifdef CONFIG_ZCACHE
 	PG_was_active,
 #endif
+#ifdef CONFIG_NON_SWAP
+	PG_non_swap,
+#endif
 	__NR_PAGEFLAGS,
 
 	/* Filesystems */
@@ -129,6 +132,9 @@ enum pageflags {
 
 	/* SLOB */
 	PG_slob_free = PG_private,
+
+	/* non-lru isolated movable page */
+	PG_isolated = PG_reclaim,
 };
 
 #ifndef __GENERATING_BOUNDS_H
@@ -223,6 +229,7 @@ PAGEFLAG(SwapBacked, swapbacked) __CLEARPAGEFLAG(SwapBacked, swapbacked)
 	__SETPAGEFLAG(SwapBacked, swapbacked)
 
 __PAGEFLAG(SlobFree, slob_free)
+__PAGEFLAG(Isolated, isolated)
 #ifdef CONFIG_ZCACHE
 PAGEFLAG(WasActive, was_active)
 #else
@@ -258,6 +265,10 @@ PAGEFLAG(Readahead, reclaim) TESTCLEARFLAG(Readahead, reclaim)
 #define PageHighMem(__p) is_highmem(page_zone(__p))
 #else
 PAGEFLAG_FALSE(HighMem)
+#endif
+
+#ifdef CONFIG_NON_SWAP
+PAGEFLAG(NonSwap, non_swap)	TESTSCFLAG(NonSwap, non_swap)
 #endif
 
 #ifdef CONFIG_SWAP

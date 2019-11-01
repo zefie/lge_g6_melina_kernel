@@ -49,6 +49,11 @@
 #include <linux/compat.h>
 #endif
 
+#include "mts_tty.h"
+#ifdef CONFIG_LGE_DIAG_BYPASS
+#include "lg_diag_bypass.h"
+#endif
+
 MODULE_DESCRIPTION("Diag Char Driver");
 MODULE_LICENSE("GPL v2");
 MODULE_VERSION("1.0");
@@ -329,7 +334,9 @@ static int diagchar_open(struct inode *inode, struct file *file)
 	void *temp;
 
 	if (driver) {
+		DIAG_LOG(DIAG_DEBUG_PERIPHERALS," %d:diagchar_mutex to obtain ", __LINE__);
 		mutex_lock(&driver->diagchar_mutex);
+		DIAG_LOG(DIAG_DEBUG_PERIPHERALS," %d:diagchar_mutex obatined ", __LINE__);
 
 		for (i = 0; i < driver->num_clients; i++)
 			if (driver->client_map[i].pid == 0)
@@ -357,6 +364,7 @@ static int diagchar_open(struct inode *inode, struct file *file)
 				diag_add_client(i, file);
 			} else {
 				mutex_unlock(&driver->diagchar_mutex);
+				DIAG_LOG(DIAG_DEBUG_PERIPHERALS," %d:diagchar_mutex released ", __LINE__);
 				pr_err_ratelimited("diag: Max client limit for DIAG reached\n");
 				pr_err_ratelimited("diag: Cannot open handle %s"
 					   " %d", current->comm, current->tgid);
@@ -384,6 +392,7 @@ static int diagchar_open(struct inode *inode, struct file *file)
 			diag_mempool_init();
 		driver->ref_count++;
 		mutex_unlock(&driver->diagchar_mutex);
+		DIAG_LOG(DIAG_DEBUG_PERIPHERALS," %d:diagchar_mutex released ", __LINE__);
 		return 0;
 	}
 	return -ENOMEM;
@@ -391,6 +400,7 @@ static int diagchar_open(struct inode *inode, struct file *file)
 fail:
 	driver->num_clients--;
 	mutex_unlock(&driver->diagchar_mutex);
+	DIAG_LOG(DIAG_DEBUG_PERIPHERALS," %d:diagchar_mutex released ", __LINE__);
 	pr_err_ratelimited("diag: Insufficient memory for new client");
 	return -ENOMEM;
 }
@@ -471,6 +481,7 @@ static void diag_close_logging_process(const int pid)
 	mutex_unlock(&driver->md_session_lock);
 	diag_switch_logging(&params);
 	mutex_unlock(&driver->diagchar_mutex);
+	DIAG_LOG(DIAG_DEBUG_PERIPHERALS," %d:diagchar_mutex released ", __LINE__);
 }
 
 static int diag_remove_client_entry(struct file *file)
@@ -482,15 +493,19 @@ static int diag_remove_client_entry(struct file *file)
 	if (!driver)
 		return -ENOMEM;
 
+	DIAG_LOG(DIAG_DEBUG_PERIPHERALS," %d:diag_file_mutex to obtain ", __LINE__);	
 	mutex_lock(&driver->diag_file_mutex);
+	DIAG_LOG(DIAG_DEBUG_PERIPHERALS," %d:diag_file_mutex obtained ", __LINE__);	
 	if (!file) {
 		DIAG_LOG(DIAG_DEBUG_USERSPACE, "Invalid file pointer\n");
 		mutex_unlock(&driver->diag_file_mutex);
+		DIAG_LOG(DIAG_DEBUG_PERIPHERALS," %d:diag_file_mutex released ", __LINE__);
 		return -ENOENT;
 	}
 	if (!(file->private_data)) {
 		DIAG_LOG(DIAG_DEBUG_USERSPACE, "Invalid private data\n");
 		mutex_unlock(&driver->diag_file_mutex);
+		DIAG_LOG(DIAG_DEBUG_PERIPHERALS," %d:diag_file_mutex released ", __LINE__);
 		return -EINVAL;
 	}
 
@@ -502,17 +517,22 @@ static int diag_remove_client_entry(struct file *file)
 	 * This call will remove any pending registrations of such client
 	 */
 	mutex_lock(&driver->dci_mutex);
+	DIAG_LOG(DIAG_DEBUG_PERIPHERALS," %d:dci_mutex obtained ", __LINE__);
 	dci_entry = dci_lookup_client_entry_pid(current->tgid);
 	if (dci_entry)
 		diag_dci_deinit_client(dci_entry);
 	mutex_unlock(&driver->dci_mutex);
+	DIAG_LOG(DIAG_DEBUG_PERIPHERALS," %d:dci_mutex released ", __LINE__);
+
 
 	diag_close_logging_process(current->tgid);
 
 	/* Delete the pkt response table entry for the exiting process */
 	diag_cmd_remove_reg_by_pid(current->tgid);
 
+	DIAG_LOG(DIAG_DEBUG_PERIPHERALS," %d:diagchar_mutex to obtain ", __LINE__);	
 	mutex_lock(&driver->diagchar_mutex);
+	DIAG_LOG(DIAG_DEBUG_PERIPHERALS," %d:diagchar_mutex obtained ", __LINE__);
 	driver->ref_count--;
 	if (driver->ref_count == 0)
 		diag_mempool_exit();
@@ -529,6 +549,9 @@ static int diag_remove_client_entry(struct file *file)
 	}
 	mutex_unlock(&driver->diagchar_mutex);
 	mutex_unlock(&driver->diag_file_mutex);
+	DIAG_LOG(DIAG_DEBUG_PERIPHERALS," %d:diagchar_mutex released ", __LINE__);
+	DIAG_LOG(DIAG_DEBUG_PERIPHERALS," %d:diag_file_mutex released ", __LINE__);
+
 	return 0;
 }
 static int diagchar_close(struct inode *inode, struct file *file)
@@ -1502,8 +1525,16 @@ static int diag_md_session_check(int curr_mode, int req_mode,
 		return -EINVAL;
 
 	if (req_mode == DIAG_USB_MODE) {
-		if (curr_mode == DIAG_USB_MODE)
+		if (curr_mode == DIAG_USB_MODE) {
+			if (mts_tty->run) {
+				err = diag_md_session_create(DIAG_MD_PERIPHERAL,
+						param->peripheral_mask, DIAG_LOCAL_PROC);
+				if (err)
+					return err;
+				*change_mode = 1;
+			}
 			return 0;
+		}
 		mutex_lock(&driver->md_session_lock);
 		if (driver->md_session_mode == DIAG_MD_NONE
 		    && driver->md_session_mask == 0 && driver->logging_mask) {
@@ -2232,9 +2263,12 @@ long diagchar_compat_ioctl(struct file *filp,
 				   sizeof(mode_param)))
 			return -EFAULT;
 		diag_switch_logging_clear_mask(&mode_param, current->tgid);
+		DIAG_LOG(DIAG_DEBUG_PERIPHERALS," %d:diagchar_mutex to obtain ", __LINE__);
 		mutex_lock(&driver->diagchar_mutex);
+		DIAG_LOG(DIAG_DEBUG_PERIPHERALS," %d:diagchar_mutex obatined ", __LINE__);
 		result = diag_switch_logging(&mode_param);
 		mutex_unlock(&driver->diagchar_mutex);
+		DIAG_LOG(DIAG_DEBUG_PERIPHERALS," %d:diagchar_mutex released ", __LINE__);
 		break;
 	case DIAG_IOCTL_REMOTE_DEV:
 		remote_dev = diag_get_remote_device_mask();
@@ -2368,9 +2402,12 @@ long diagchar_ioctl(struct file *filp,
 				   sizeof(mode_param)))
 			return -EFAULT;
 		diag_switch_logging_clear_mask(&mode_param, current->tgid);
+		DIAG_LOG(DIAG_DEBUG_PERIPHERALS," %d:diagchar_mutex to obtain ", __LINE__);
 		mutex_lock(&driver->diagchar_mutex);
+		DIAG_LOG(DIAG_DEBUG_PERIPHERALS," %d:diagchar_mutex obtained ", __LINE__);
 		result = diag_switch_logging(&mode_param);
 		mutex_unlock(&driver->diagchar_mutex);
+		DIAG_LOG(DIAG_DEBUG_PERIPHERALS," %d:diagchar_mutex released ", __LINE__);
 		break;
 	case DIAG_IOCTL_REMOTE_DEV:
 		remote_dev = diag_get_remote_device_mask();
@@ -2963,7 +3000,9 @@ static ssize_t diagchar_read(struct file *file, char __user *buf, size_t count,
 	wait_event_interruptible(driver->wait_q,
 			atomic_read(&driver->data_ready_notif[index]) > 0);
 
+	DIAG_LOG(DIAG_DEBUG_PERIPHERALS," %d:diagchar_mutex to obtain ", __LINE__);
 	mutex_lock(&driver->diagchar_mutex);
+	DIAG_LOG(DIAG_DEBUG_PERIPHERALS," %d:diagchar_mutex obtained ", __LINE__);
 
 	if ((driver->data_ready[index] & USER_SPACE_DATA_TYPE) &&
 	    (driver->logging_mode == DIAG_MEMORY_DEVICE_MODE ||
@@ -3016,6 +3055,7 @@ static ssize_t diagchar_read(struct file *file, char __user *buf, size_t count,
 		driver->data_ready[index] ^= DEINIT_TYPE;
 		atomic_dec(&driver->data_ready_notif[index]);
 		mutex_unlock(&driver->diagchar_mutex);
+		DIAG_LOG(DIAG_DEBUG_PERIPHERALS," %d:diagchar_mutex released ", __LINE__);
 		diag_remove_client_entry(file);
 		return ret;
 	}
@@ -3144,6 +3184,7 @@ static ssize_t diagchar_read(struct file *file, char __user *buf, size_t count,
 	}
 
 exit:
+	DIAG_LOG(DIAG_DEBUG_PERIPHERALS," %d:diagchar_mutex released ", __LINE__);
 	if (driver->data_ready[index] & DCI_DATA_TYPE) {
 		data_type = driver->data_ready[index] & DCI_DATA_TYPE;
 		mutex_unlock(&driver->diagchar_mutex);
@@ -3169,10 +3210,13 @@ exit:
 			ret += sizeof(int);
 			copy_dci_data = 1;
 			exit_stat = diag_copy_dci(buf, count, entry, &ret);
+			DIAG_LOG(DIAG_DEBUG_PERIPHERALS," %d:diagchar_mutex to obtain ", __LINE__); 
 			mutex_lock(&driver->diagchar_mutex);
+			DIAG_LOG(DIAG_DEBUG_PERIPHERALS," %d:diagchar_mutex obtained ", __LINE__);
 			driver->data_ready[index] ^= DCI_DATA_TYPE;
 			atomic_dec(&driver->data_ready_notif[index]);
 			mutex_unlock(&driver->diagchar_mutex);
+			DIAG_LOG(DIAG_DEBUG_PERIPHERALS," %d:diagchar_mutex released ", __LINE__);
 			if (exit_stat == 1) {
 				mutex_unlock(&driver->dci_mutex);
 				goto end;
@@ -3201,6 +3245,9 @@ static ssize_t diagchar_write(struct file *file, const char __user *buf,
 	int err = 0;
 	int pkt_type = 0;
 	int payload_len = 0;
+#if 0
+    char *buf_cmp;
+#endif
 	const char __user *payload_buf = NULL;
 
 	/*
@@ -3219,8 +3266,21 @@ static ssize_t diagchar_write(struct file *file, const char __user *buf,
 				   __func__, err);
 		return -EIO;
 	}
+#if 0
+    if (driver->logging_mode == DM_APP_MODE) {
+        /* only diag cmd #250 for supporting testmode tool */
+        buf_cmp = (char *)buf + 4;
+        if (*(buf_cmp) != 0xFA)
+            return 0;
+    }
+#endif
 
+
+#ifdef CONFIG_LGE_DIAG_BYPASS
+	if (driver->logging_mode == DIAG_USB_MODE && !driver->usb_connected && !lge_bypass_status()) {
+#else
 	if (driver->logging_mode == DIAG_USB_MODE && !driver->usb_connected) {
+#endif
 		if (!((pkt_type == DCI_DATA_TYPE) ||
 		    (pkt_type == DCI_PKT_TYPE) ||
 		    (pkt_type & DATA_TYPE_DCI_LOG) ||

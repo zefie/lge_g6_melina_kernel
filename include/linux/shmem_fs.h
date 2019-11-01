@@ -82,4 +82,8 @@ static inline long shmem_fcntl(struct file *f, unsigned int c, unsigned long a)
 
 #endif
 
+#ifdef CONFIG_LATE_UNMAP
+extern void shmem_page_unmap(struct page *page);
+#endif
+
 #endif

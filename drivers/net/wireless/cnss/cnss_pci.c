@@ -307,7 +307,7 @@ static void cnss_put_wlan_enable_gpio(void)
 
 static int cnss_wlan_vreg_on(struct cnss_wlan_vreg_info *vreg_info)
 {
-	int ret;
+	int ret = 0;
 
 	if (vreg_info->wlan_reg_core) {
 		ret = regulator_enable(vreg_info->wlan_reg_core);
@@ -409,7 +409,7 @@ error_enable_reg_core:
 
 static int cnss_wlan_vreg_off(struct cnss_wlan_vreg_info *vreg_info)
 {
-	int ret;
+	int ret = 0;
 
 	if (vreg_info->soc_swreg) {
 		ret = regulator_disable(vreg_info->soc_swreg);
@@ -1438,7 +1438,7 @@ static int cnss_smmu_init(struct device *dev)
 	struct dma_iommu_mapping *mapping;
 	int disable_htw = 1;
 	int atomic_ctx = 1;
-	int ret;
+	int ret = 0;
 
 	mapping = arm_iommu_create_mapping(&platform_bus_type,
 					   penv->smmu_iova_start,
@@ -1930,7 +1930,7 @@ static ssize_t fw_image_setup_store(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t count)
 {
 	int val;
-	int ret;
+	int ret = 0;
 
 	if (!penv)
 		return -ENODEV;
@@ -3539,7 +3539,7 @@ static void __cnss_set_auto_suspend(struct device *dev, int val)
 
 static int __cnss_resume_link(struct device *dev, u32 flags)
 {
-	int ret;
+	int ret = 0;
 	struct pci_dev *pdev = to_pci_dev(dev);
 	u8 bus_num = cnss_get_pci_dev_bus_number(pdev);
 
@@ -3557,7 +3557,7 @@ static int __cnss_suspend_link(struct device *dev, u32 flags)
 {
 	struct pci_dev *pdev = to_pci_dev(dev);
 	u8 bus_num = cnss_get_pci_dev_bus_number(pdev);
-	int ret;
+	int ret = 0;
 
 	if (!penv->pcie_link_state)
 		return 0;
@@ -3575,7 +3575,7 @@ static int __cnss_suspend_link(struct device *dev, u32 flags)
 
 static int __cnss_pcie_recover_config(struct device *dev)
 {
-	int ret;
+	int ret = 0;
 
 	ret = cnss_msm_pcie_recover_config(to_pci_dev(dev));
 	if (ret)
@@ -3586,7 +3586,7 @@ static int __cnss_pcie_recover_config(struct device *dev)
 
 static int __cnss_event_reg(struct device *dev)
 {
-	int ret;
+	int ret = 0;
 	struct msm_pcie_register_event *event_reg;
 
 	event_reg = &penv->event_reg;
@@ -3612,7 +3612,7 @@ static void __cnss_event_dereg(struct device *dev)
 
 static struct pci_dev *__cnss_get_pcie_dev(struct device *dev)
 {
-	int ret;
+	int ret = 0;
 	struct pci_dev *pdev = penv->pdev;
 
 	if (pdev)
@@ -3633,7 +3633,7 @@ static int __cnss_pcie_power_up(struct device *dev)
 {
 	struct cnss_wlan_vreg_info *vreg_info;
 	struct cnss_wlan_gpio_info *gpio_info;
-	int ret;
+	int ret = 0;
 
 	vreg_info = &penv->vreg_info;
 	gpio_info = &penv->gpio_info;
@@ -3659,7 +3659,7 @@ static int __cnss_pcie_power_down(struct device *dev)
 {
 	struct cnss_wlan_vreg_info *vreg_info;
 	struct cnss_wlan_gpio_info *gpio_info;
-	int ret;
+	int ret = 0;
 
 	vreg_info = &penv->vreg_info;
 	gpio_info = &penv->gpio_info;
@@ -3677,7 +3677,7 @@ static int __cnss_pcie_power_down(struct device *dev)
 
 static int __cnss_suspend_link_state(struct device *dev)
 {
-	int ret;
+	int ret = 0;
 	struct pci_dev *pdev = to_pci_dev(dev);
 	int link_ind;
 
@@ -3721,7 +3721,7 @@ static int __cnss_restore_pci_config_space(struct device *dev)
 
 static int __cnss_resume_link_state(struct device *dev)
 {
-	int ret;
+	int ret = 0;
 	int link_ind;
 
 	if (penv->pcie_link_state) {
@@ -3758,7 +3758,7 @@ static int __cnss_resume_link_state(struct device *dev)
 
 int cnss_pcie_power_up(struct device *dev)
 {
-	int ret;
+	int ret = 0;
 	struct pci_dev *pdev;
 
 	if (!penv) {
@@ -3810,7 +3810,7 @@ static void __cnss_vote_bus_width(struct device *dev, uint32_t option)
 
 int cnss_pcie_power_down(struct device *dev)
 {
-	int ret;
+	int ret = 0;
 	struct pci_dev *pdev = to_pci_dev(dev);
 
 	if (!penv) {
@@ -3844,7 +3844,7 @@ int cnss_pcie_power_down(struct device *dev)
 	return ret;
 }
 
-module_init(cnss_initialize);
+fs_initcall(cnss_initialize);
 module_exit(cnss_exit);
 
 MODULE_LICENSE("GPL v2");

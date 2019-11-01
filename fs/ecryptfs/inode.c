@@ -137,7 +137,6 @@ static int ecryptfs_interpose(struct dentry *lower_dentry,
 	if (IS_ERR(inode))
 		return PTR_ERR(inode);
 	d_instantiate(dentry, inode);
-
 	return 0;
 }
 
@@ -223,6 +222,11 @@ int ecryptfs_initialize_file(struct dentry *ecryptfs_dentry,
 {
 	struct ecryptfs_crypt_stat *crypt_stat =
 		&ecryptfs_inode_to_private(ecryptfs_inode)->crypt_stat;
+#ifdef FEATURE_SDCARD_ENCRYPTION
+	struct ecryptfs_mount_sd_crypt_stat *mount_sd_crypt_stat =
+		&ecryptfs_superblock_to_private(
+			ecryptfs_dentry->d_sb)->mount_sd_crypt_stat;
+#endif
 	int rc = 0;
 
 	if (S_ISDIR(ecryptfs_inode->i_mode)) {
@@ -230,6 +234,25 @@ int ecryptfs_initialize_file(struct dentry *ecryptfs_dentry,
 		crypt_stat->flags &= ~(ECRYPTFS_ENCRYPTED);
 		goto out;
 	}
+#ifdef FEATURE_SDCARD_ENCRYPTION
+	if (mount_sd_crypt_stat && (mount_sd_crypt_stat->flags & ECRYPTFS_MEDIA_EXCEPTION)) {
+		if (ecryptfs_media_file_search(ecryptfs_dentry->d_name.name)) {
+			crypt_stat->flags &= ~(ECRYPTFS_ENCRYPTED);
+			goto out;
+		}
+	}
+
+	if (ecryptfs_asec_file_search(ecryptfs_dentry->d_name.name)) {
+		crypt_stat->flags &= ~(ECRYPTFS_ENCRYPTED);
+		goto out;
+	}
+
+	if (mount_sd_crypt_stat && (mount_sd_crypt_stat->flags
+			& ECRYPTFS_DECRYPTION_ONLY)) {
+		crypt_stat->flags &= ~(ECRYPTFS_ENCRYPTED);
+		goto out;
+	}
+#endif
 	ecryptfs_printk(KERN_DEBUG, "Initializing crypto context\n");
 	rc = ecryptfs_new_file_context(ecryptfs_inode);
 	if (rc) {
@@ -246,8 +269,9 @@ int ecryptfs_initialize_file(struct dentry *ecryptfs_dentry,
 		goto out;
 	}
 	rc = ecryptfs_write_metadata(ecryptfs_dentry, ecryptfs_inode);
-	if (rc)
+	if (rc) {
 		printk(KERN_ERR "Error writing headers; rc = [%d]\n", rc);
+	}
 	ecryptfs_put_lower_file(ecryptfs_inode);
 out:
 	return rc;
@@ -263,15 +287,12 @@ out:
  *
  * Returns zero on success; non-zero on error condition
  */
-
-
 static int
 ecryptfs_create(struct inode *directory_inode, struct dentry *ecryptfs_dentry,
 		umode_t mode, bool excl)
 {
 	struct inode *ecryptfs_inode;
 	int rc;
-	struct ecryptfs_crypt_stat *crypt_stat;
 
 	ecryptfs_inode = ecryptfs_do_create(directory_inode, ecryptfs_dentry,
 					    mode);
@@ -293,11 +314,6 @@ ecryptfs_create(struct inode *directory_inode, struct dentry *ecryptfs_dentry,
 		iput(ecryptfs_inode);
 		goto out;
 	}
-	crypt_stat = &ecryptfs_inode_to_private(ecryptfs_inode)->crypt_stat;
-	if (get_events() && get_events()->open_cb)
-			get_events()->open_cb(
-				ecryptfs_inode_to_lower(ecryptfs_inode),
-					crypt_stat);
 
 	d_instantiate_new(ecryptfs_dentry, ecryptfs_inode);
 out:

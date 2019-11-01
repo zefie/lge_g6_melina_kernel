@@ -1416,6 +1416,11 @@ static int f2fs_remount(struct super_block *sb, int *flags, char *data)
 #ifdef CONFIG_QUOTA
 	int i, j;
 #endif
+#ifdef CONFIG_QUOTA
+	int s_jquota_fmt;
+	char *s_qf_names[F2FS_MAXQUOTAS];
+	int i, j;
+#endif
 
 	/*
 	 * Save the old mount options in case we
@@ -1438,6 +1443,23 @@ static int f2fs_remount(struct super_block *sb, int *flags, char *data)
 			}
 		} else {
 			org_mount_opt.s_qf_names[i] = NULL;
+		}
+	}
+#endif
+
+#ifdef CONFIG_QUOTA
+	s_jquota_fmt = sbi->s_jquota_fmt;
+	for (i = 0; i < F2FS_MAXQUOTAS; i++) {
+		if (sbi->s_qf_names[i]) {
+			s_qf_names[i] = kstrdup(sbi->s_qf_names[i],
+							 GFP_KERNEL);
+			if (!s_qf_names[i]) {
+				for (j = 0; j < i; j++)
+					kfree(s_qf_names[j]);
+				return -ENOMEM;
+			}
+		} else {
+			s_qf_names[i] = NULL;
 		}
 	}
 #endif
@@ -2213,6 +2235,14 @@ static int sanity_check_raw_super(struct f2fs_sb_info *sbi,
 		f2fs_msg(sb, KERN_INFO,
 			"Invalid blocksize (%u), supports only 4KB\n",
 			blocksize);
+		return 1;
+	}
+
+	/* check log blocks per segment */
+	if (le32_to_cpu(raw_super->log_blocks_per_seg) != 9) {
+		f2fs_msg(sb, KERN_INFO,
+			"Invalid log blocks per segment (%u)\n",
+			le32_to_cpu(raw_super->log_blocks_per_seg));
 		return 1;
 	}
 

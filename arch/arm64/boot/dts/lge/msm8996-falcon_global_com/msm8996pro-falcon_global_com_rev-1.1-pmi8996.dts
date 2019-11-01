@@ -1,0 +1,51 @@
+/* Copyright (c) 2015, The Linux Foundation. All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 and
+ * only version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+
+
+/dts-v1/;
+
+#include "../../qcom/msm8996pro-v1.1.dtsi"
+#include "../../qcom/msm-pmi8996.dtsi"
+#include "msm8996-falcon_global_com.dtsi"
+#include "msm8996-falcon_global_com-touch.dtsi"
+#include "../msm8996-camera/msm8996-falcon-camera_rev-1.0.dtsi"
+#include "../msm8996-falcon_storage_type/current_storage_type.dtsi"
+#include "../msm8996-sound/msm8996-falcon-sound_rev-a.dtsi"
+#include "msm8996-falcon_global_com-sound.dtsi"
+#include "../msm8996-falcon-common/msm8996-falcon-common-usb-rev-1.0.dtsi"
+
+
+/ {
+	model = "Qualcomm Technologies, Inc. MSM 8996pro v1.1 + PMI8996 MTP";
+	compatible = "qcom,msm8996-mtp", "qcom,msm8996", "qcom,mtp";
+	qcom,board-id = <0xD08 0>;
+};
+
+&i2c_12 {
+	status = "disabled";
+};
+
+
+&pmi8994_charger {
+    lge,lge_otp_enable;
+};
+
+&soc {
+	qcom,msm-thermal {
+		qcom,freq-mitigation-value = <1056000>;
+	};
+	qcom,bcl {
+		qcom,ibat-monitor {
+			qcom,big-mitigation-freq-khz = <1056000>;
+		};
+	};
+};

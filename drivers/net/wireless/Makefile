@@ -62,9 +62,17 @@ obj-$(CONFIG_CW1200)	+= cw1200/
 obj-$(CONFIG_RSI_91X)	+= rsi/
 
 obj-$(CONFIG_WCNSS_CORE)	+= wcnss/
+$(warning CONFIG_CNSS is'$(CONFIG_CNSS)')
+$(warning CONFIG_WCNSS_MEM_PRE_ALLOC is'$(CONFIG_WCNSS_MEM_PRE_ALLOC)')
+$(warning CONFIG_CNSS_CRYPTO is'$(CONFIG_CNSS_CRYPTO)')
+$(warning CONFIG_CNSS_UTILS is'$(CONFIG_CNSS_UTILS)')
+$(warning CONFIG_CNSS2 is'$(CONFIG_CNSS2)')
+$(warning CONFIG_CNSS2 is'$(CONFIG_CNSS2)')
 
 obj-$(CONFIG_CNSS)	+= cnss/
 obj-$(CONFIG_CNSS2)	+= cnss2/
 obj-$(CONFIG_WCNSS_MEM_PRE_ALLOC) += cnss_prealloc/
+obj-$(CONFIG_BCMDHD_LEGACY)	+= bcmdhd/
+obj-$(CONFIG_BCMDHD_EXT)	+= bcmdhd_ext/
 obj-$(CONFIG_CNSS_CRYPTO)	+= cnss_crypto/
 obj-$(CONFIG_CNSS_UTILS) += cnss_utils/

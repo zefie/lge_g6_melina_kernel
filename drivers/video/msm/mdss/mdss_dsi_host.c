@@ -1,4 +1,4 @@
-/* Copyright (c) 2012-2017, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2012-2018, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -33,6 +33,11 @@
 #define VSYNC_PERIOD 17
 #define DMA_TX_TIMEOUT 200
 #define DMA_TPG_FIFO_LEN 64
+
+#if defined(CONFIG_LGE_DISPLAY_COMMON)
+extern int panel_not_connected;
+extern int skip_lcd_error_check;
+#endif
 
 #define FIFO_STATUS	0x0C
 #define LANE_STATUS	0xA8
@@ -2104,7 +2109,7 @@ static int mdss_dsi_cmd_dma_tx(struct mdss_dsi_ctrl_pdata *ctrl,
 			/* clear CMD DMA and BTA_DONE isr only */
 			reg_val |= (DSI_INTR_CMD_DMA_DONE | DSI_INTR_BTA_DONE);
 			MIPI_OUTP(ctrl->ctrl_base + 0x0110, reg_val);
-			mdss_dsi_disable_irq_nosync(ctrl, DSI_CMD_TERM);
+			mdss_dsi_disable_irq(ctrl, DSI_CMD_TERM);
 			complete(&ctrl->dma_comp);
 
 			pr_warn("%s: dma tx done but irq not triggered\n",
@@ -3017,6 +3022,19 @@ static bool mdss_dsi_fifo_status(struct mdss_dsi_ctrl_pdata *ctrl)
 		MIPI_OUTP(base + 0x000c, status);
 
 		pr_err("%s: status=%x\n", __func__, status);
+
+#if defined(CONFIG_LGE_DISPLAY_COMMON)
+		if(skip_lcd_error_check){
+			ctrl->err_cont.fifo_err_cnt++;
+			return false;
+		}
+#endif
+		/*
+		 * if DSI FIFO overflow is masked,
+		 * do not report overflow error
+		 */
+		if (MIPI_INP(base + 0x10c) & 0xf0000)
+			status = status & 0xaaaaffff;
 
 		/*
 		 * if DSI FIFO overflow is masked,

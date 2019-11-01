@@ -330,8 +330,22 @@ static void __save_error_info(struct super_block *sb, const char *func,
 static void save_error_info(struct super_block *sb, const char *func,
 			    unsigned int line)
 {
+#ifdef CONFIG_MACH_LGE
+	struct ext4_super_block *es = EXT4_SB(sb)->s_es;
+#endif
+
 	__save_error_info(sb, func, line);
+
+#ifdef CONFIG_MACH_LGE
+	if (!strncmp(es->s_volume_name, "system", 6) &&
+			sb->s_flags & MS_RDONLY) {
+		printk("EXT4-fs error from Read only system partiton, so skip ext4_commit_super\n");
+	} else {
+		ext4_commit_super(sb, 1);
+	}
+#else
 	ext4_commit_super(sb, 1);
+#endif
 }
 
 /*
@@ -405,6 +419,12 @@ static void ext4_handle_error(struct super_block *sb)
 		 */
 		smp_wmb();
 		sb->s_flags |= MS_RDONLY;
+#ifdef CONFIG_MACH_LGE
+		if(!strcmp(EXT4_SB(sb)->s_es->s_volume_name,"data") &&
+			system_state != SYSTEM_RESTART &&
+			system_state != SYSTEM_POWER_OFF)
+			printk(KERN_CRIT "EXT4-fs data remounted as RO in ext4_handle_error\n");
+#endif
 	}
 	if (test_opt(sb, ERRORS_PANIC)) {
 		if (EXT4_SB(sb)->s_journal &&
@@ -600,6 +620,16 @@ void __ext4_abort(struct super_block *sb, const char *function,
 		if (EXT4_SB(sb)->s_journal)
 			jbd2_journal_abort(EXT4_SB(sb)->s_journal, -EIO);
 		save_error_info(sb, function, line);
+#ifdef CONFIG_MACH_LGE
+		/* LGE_CHANGE, 2015-10-26, H1-BSP-FS@lge.com
+		 * put panic when ext4 partition(data partition) is remounted as Read Only
+		 */
+		if(!strcmp(EXT4_SB(sb)->s_es->s_volume_name,"data") &&
+			system_state != SYSTEM_RESTART &&
+			system_state != SYSTEM_POWER_OFF &&
+			!test_opt(sb, ERRORS_RO))
+			panic("EXT4-fs panic from previous error. remounted as RO \n");
+#endif
 	}
 	if (test_opt(sb, ERRORS_PANIC)) {
 		if (EXT4_SB(sb)->s_journal &&
@@ -1165,6 +1195,9 @@ enum {
 	Opt_dioread_nolock, Opt_dioread_lock,
 	Opt_discard, Opt_nodiscard, Opt_init_itable, Opt_noinit_itable,
 	Opt_max_dir_size_kb,
+#ifdef CONFIG_MACH_LGE
+	Opt_acceptRO,
+#endif
 };
 
 static const match_table_t tokens = {
@@ -1246,6 +1279,9 @@ static const match_table_t tokens = {
 	{Opt_removed, "reservation"},	/* mount option from ext2/3 */
 	{Opt_removed, "noreservation"}, /* mount option from ext2/3 */
 	{Opt_removed, "journal=%u"},	/* mount option from ext2/3 */
+#ifdef CONFIG_MACH_LGE
+	{Opt_acceptRO, "acceptRO"},	/* mount option to accept RO remount on data before e2fsck */
+#endif
 	{Opt_err, NULL},
 };
 
@@ -1440,6 +1476,9 @@ static const struct mount_opts {
 	{Opt_jqfmt_vfsv1, QFMT_VFS_V1, MOPT_QFMT},
 	{Opt_max_dir_size_kb, 0, MOPT_GTE0},
 	{Opt_test_dummy_encryption, 0, MOPT_GTE0},
+#ifdef CONFIG_MACH_LGE
+	{Opt_acceptRO, EXT4_MOUNT_ACCEPT_RO,MOPT_SET},	/* mount option for e2fsck */
+#endif
 	{Opt_err, 0, 0}
 };
 
@@ -3153,13 +3192,22 @@ static ext4_group_t ext4_has_uninit_itable(struct super_block *sb)
 	ext4_group_t group, ngroups = EXT4_SB(sb)->s_groups_count;
 	struct ext4_group_desc *gdp = NULL;
 
+	if (!ext4_has_group_desc_csum(sb))
+		return ngroups;
+
 	for (group = 0; group < ngroups; group++) {
 		gdp = ext4_get_group_desc(sb, group, NULL);
 		if (!gdp)
 			continue;
 
-		if (!(gdp->bg_flags & cpu_to_le16(EXT4_BG_INODE_ZEROED)))
+		if (gdp->bg_flags & cpu_to_le16(EXT4_BG_INODE_ZEROED))
+			continue;
+		if (group != 0)
 			break;
+		ext4_error(sb, "Inode table for bg 0 marked as "
+			   "needing zeroing");
+		if (sb->s_flags & MS_RDONLY)
+			return ngroups;
 	}
 
 	return group;
@@ -3826,6 +3874,11 @@ static int ext4_fill_super(struct super_block *sb, void *data, int silent)
 	} else {
 		sbi->s_inode_size = le16_to_cpu(es->s_inode_size);
 		sbi->s_first_ino = le32_to_cpu(es->s_first_ino);
+		if (sbi->s_first_ino < EXT4_GOOD_OLD_FIRST_INO) {
+			ext4_msg(sb, KERN_ERR, "invalid first ino: %u",
+				 sbi->s_first_ino);
+			goto failed_mount;
+		}
 		if ((sbi->s_inode_size < EXT4_GOOD_OLD_INODE_SIZE) ||
 		    (!is_power_of_2(sbi->s_inode_size)) ||
 		    (sbi->s_inode_size > blocksize)) {
@@ -4285,7 +4338,7 @@ no_journal:
 	}
 
 	block = ext4_count_free_clusters(sb);
-	ext4_free_blocks_count_set(sbi->s_es, 
+	ext4_free_blocks_count_set(sbi->s_es,
 				   EXT4_C2B(sbi, block));
 	err = percpu_counter_init(&sbi->s_freeclusters_counter, block,
 				  GFP_KERNEL);
@@ -4378,6 +4431,12 @@ no_journal:
 cantfind_ext4:
 	if (!silent)
 		ext4_msg(sb, KERN_ERR, "VFS: Can't find ext4 filesystem");
+#ifdef CONFIG_MACH_LGE
+	/* LGE_CHANGE, 2015-10-26, H1-BSP-FS@lge.com
+	   add return code if ext4 superblock is damaged
+	*/
+	ret=-ESUPER;
+#endif
 	goto failed_mount;
 
 #ifdef CONFIG_QUOTA

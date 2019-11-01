@@ -124,6 +124,10 @@ struct acc_dev {
 
 	/* list of dead HID devices to unregister */
 	struct list_head	dead_hid_list;
+
+#ifdef CONFIG_LGE_USB_G_ANDROID
+	wait_queue_head_t release_wq;
+#endif
 };
 
 static struct usb_interface_descriptor acc_interface_desc = {
@@ -820,6 +824,10 @@ static int acc_release(struct inode *ip, struct file *fp)
 
 	WARN_ON(!atomic_xchg(&_acc_dev->open_excl, 0));
 	_acc_dev->disconnected = 0;
+#ifdef CONFIG_LGE_USB_G_ANDROID
+	wake_up(&_acc_dev->release_wq);
+#endif
+
 	return 0;
 }
 
@@ -895,7 +903,11 @@ int acc_ctrlrequest(struct usb_composite_dev *cdev,
 		if (b_request == ACCESSORY_START) {
 			dev->start_requested = 1;
 			schedule_delayed_work(
-				&dev->start_work, msecs_to_jiffies(10));
+#ifdef CONFIG_LGE_USB_G_ANDROID
+				&dev->start_work, msecs_to_jiffies(50));
+#else
+                                &dev->start_work, msecs_to_jiffies(10));
+#endif
 			value = 0;
 		} else if (b_request == ACCESSORY_SEND_STRING) {
 			dev->string_index = w_index;
@@ -953,8 +965,10 @@ int acc_ctrlrequest(struct usb_composite_dev *cdev,
 			memset(dev->serial, 0, sizeof(dev->serial));
 			dev->start_requested = 0;
 			dev->audio_mode = 0;
+#ifndef	CONFIG_LGE_USB_G_ANDROID
 			strlcpy(dev->manufacturer, "Android", ACC_STRING_SIZE);
 			strlcpy(dev->model, "Android", ACC_STRING_SIZE);
+#endif
 		}
 	}
 
@@ -977,6 +991,19 @@ err:
 	return value;
 }
 EXPORT_SYMBOL_GPL(acc_ctrlrequest);
+
+#ifdef CONFIG_LGE_USB_G_ANDROID
+void acc_wait_event(void)
+{
+	struct acc_dev  *dev = _acc_dev;
+
+	printk(KERN_INFO "acc_wait_event: enter\n");
+	wait_event_timeout(dev->release_wq,
+			!atomic_read(&dev->open_excl), msecs_to_jiffies(2000));
+	printk(KERN_INFO "acc_wait_event: exit\n");
+}
+EXPORT_SYMBOL_GPL(acc_wait_event);
+#endif
 
 static int
 __acc_function_bind(struct usb_configuration *c,
@@ -1298,6 +1325,9 @@ static int acc_setup(void)
 	spin_lock_init(&dev->lock);
 	init_waitqueue_head(&dev->read_wq);
 	init_waitqueue_head(&dev->write_wq);
+#ifdef CONFIG_LGE_USB_G_ANDROID
+	init_waitqueue_head(&dev->release_wq);
+#endif
 	atomic_set(&dev->open_excl, 0);
 	INIT_LIST_HEAD(&dev->tx_idle);
 	INIT_LIST_HEAD(&dev->hid_list);

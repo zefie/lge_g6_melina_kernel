@@ -1,5 +1,6 @@
 ccflags-y += -I$(src)
 
+obj-$(CONFIG_LGE_DISPLAY_COMMON) += lge/
 obj-$(CONFIG_FB_MSM_MDSS_MHL3) += mhl3/
 
 mdss-mdp3-objs = mdp3.o mdp3_layer.o mdp3_dma.o mdp3_ctrl.o dsi_status_v2.o
@@ -74,3 +75,6 @@ obj-$(CONFIG_FB_MSM_QPIC_ILI_QVGA_PANEL) += qpic_panel_ili_qvga.o
 
 obj-$(CONFIG_FB_MSM_MDSS) += mdss_fb.o mdss_util.o
 obj-$(CONFIG_COMPAT) += mdss_compat_utils.o
+
+obj-$(CONFIG_LGE_INTERVAL_MONITOR) += lge/lge_interval_monitor.o
+obj-$(CONFIG_LGE_FBCN) += lge/lge_fbcn.o

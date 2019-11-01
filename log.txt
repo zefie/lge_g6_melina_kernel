@@ -1,0 +1,333 @@
+number of tags to check: 299
+IOT.LE.1.0-11400-8x96.0 has 3558667 lines changed
+IOT.LE.1.0-11400-8x96.0 is the new best match with 3558667 lines changed
+IOT.LE.1.0-17100-8x96.0 has 3488276 lines changed
+IOT.LE.1.0-17100-8x96.0 is the new best match with 3488276 lines changed
+LA.HB.0.3.1-02000-8x96.0 has 4139632 lines changed
+LA.HB.1.1.1-01410-8x96.0 has 8537043 lines changed
+LA.HB.1.1.1-01840-8x96.0 has 4137086 lines changed
+LA.HB.1.1.1-02040-8x96.0 has 4133607 lines changed
+LA.HB.1.1.1-02140-8x96.0 has 4132868 lines changed
+LA.HB.1.1.1-02210-8x96.0 has 8484453 lines changed
+LA.HB.1.1.1-02240-8x96.0 has 4132212 lines changed
+LA.HB.1.1.1-02310-8x96.0 has 8482924 lines changed
+LA.HB.1.1.1-02340-8x96.0 has 4132205 lines changed
+LA.HB.1.1.1-02440-8x96.0 has 4132150 lines changed
+LA.HB.1.1.1-02510-8x96.0 has 8482924 lines changed
+LA.HB.1.1.1-02640-8x96.0 has 4129354 lines changed
+LA.HB.1.1.1-02740-8x96.0 has 4129348 lines changed
+LA.HB.1.1.1-02840-8x96.0 has 4128686 lines changed
+LA.HB.1.1.1-02940-8x96.0 has 4128684 lines changed
+LA.HB.1.1.1-03340-8x96.0 has 4128050 lines changed
+LA.HB.1.1.1.c2-00400-8x96.0 has 4133600 lines changed
+LA.HB.1.1.1.c2-00700-8x96.0 has 4133567 lines changed
+LA.HB.1.1.1.c2-01100-8x96.0 has 4133538 lines changed
+LA.HB.1.1.1.c2-01700-8x96.0 has 4133535 lines changed
+LA.HB.1.1.1.c2-02100-8x96.0 has 4133472 lines changed
+LA.HB.1.1.1.c2-02600-8x96.0 has 4133472 lines changed
+LA.HB.1.1.1.c2-03400-8x96.0 has 4133396 lines changed
+LA.HB.1.1.1.c2-03800-8x96.0 has 4133270 lines changed
+LA.HB.1.1.1.c2-04400-8x96.0 has 4132543 lines changed
+LA.HB.1.1.1.c2-04900-8x96.0 has 4132283 lines changed
+LA.HB.1.1.1.c2-05900-8x96.0 has 4131082 lines changed
+LA.HB.1.1.1.c2-06000-8x96.0 has 4129041 lines changed
+LA.HB.1.1.1.c2-06100-8x96.0 has 4128824 lines changed
+LA.HB.1.1.1.c2-06500-8x96.0 has 4128078 lines changed
+LA.HB.1.1.1.c2-07500-8x96.0 has 4127048 lines changed
+LA.HB.1.1.2-01710-8x96.0 has 4093327 lines changed
+LA.HB.1.1.2-02610-8x96.0 has 4025726 lines changed
+LA.HB.1.1.2-04710-8x96.0 has 3981282 lines changed
+LA.HB.1.1.2-06310-8x96.0 has 3920233 lines changed
+LA.HB.1.1.2-07510-8x96.0 has 3828752 lines changed
+LA.HB.1.1.2-09310-8x96.0 has 3687135 lines changed
+LA.HB.1.1.2-09610-8x96.0 has 3687108 lines changed
+LA.HB.1.1.2-11410-8x96.0 has 3576992 lines changed
+LA.HB.1.1.2-11610-8x96.0 has 3576992 lines changed
+LA.HB.1.1.2-11710-8x96.0 has 3576992 lines changed
+LA.HB.1.1.2-14910-8x96.0 has 3480504 lines changed
+LA.HB.1.1.2-14910-8x96.0 is the new best match with 3480504 lines changed
+LA.HB.1.1.2-16110-8x96.0 has 2594347 lines changed
+LA.HB.1.1.2-16110-8x96.0 is the new best match with 2594347 lines changed
+LA.HB.1.1.2-16210-8x96.0 has 2594347 lines changed
+LA.HB.1.1.2-43000-8x96.0 has 3501168 lines changed
+LA.HB.1.1.5-01410-8x96.0 has 2268040 lines changed
+LA.HB.1.1.5-01410-8x96.0 is the new best match with 2268040 lines changed
+LA.HB.1.1.5-01610-8x96.0 has 2225060 lines changed
+LA.HB.1.1.5-01610-8x96.0 is the new best match with 2225060 lines changed
+LA.HB.1.1.5-01910-8x96.0 has 2225060 lines changed
+LA.HB.1.1.5-02110-8x96.0 has 2225060 lines changed
+LA.HB.1.1.5-02310-8x96.0 has 2225060 lines changed
+LA.HB.1.1.5-02510-8x96.0 has 2225060 lines changed
+LA.HB.1.1.5-02610-8x96.0 has 2225060 lines changed
+LA.HB.1.1.5-03110-8x96.0 has 2225060 lines changed
+LA.HB.1.3.1-00210-8x96.0 has 4108798 lines changed
+LA.HB.1.3.1-00310-8x96.0 has 4035169 lines changed
+LA.HB.1.3.1-00510-8x96.0 has 4015719 lines changed
+LA.HB.1.3.1-00610-8x96.0 has 4015664 lines changed
+LA.HB.1.3.1-00810-8x96.0 has 3991720 lines changed
+LA.HB.1.3.1-01010-8x96.0 has 3981859 lines changed
+LA.HB.1.3.1-01110-8x96.0 has 3956409 lines changed
+LA.HB.1.3.1-01210-8x96.0 has 3956273 lines changed
+LA.HB.1.3.1-01510-8x96.0 has 3951908 lines changed
+LA.HB.1.3.1-01610-8x96.0 has 3951861 lines changed
+LA.HB.1.3.1-01810-8x96.0 has 3948713 lines changed
+LA.HB.1.3.1-01910-8x96.0 has 3945684 lines changed
+LA.HB.1.3.1-02010-8x96.0 has 3945684 lines changed
+LA.HB.1.3.1-02310-8x96.0 has 3944677 lines changed
+LA.HB.1.3.1.c1-00200-8x96.0 has 3941812 lines changed
+LA.HB.1.3.1.c1-00700-8x96.0 has 3940251 lines changed
+LA.HB.1.3.1.c1-01600-8x96.0 has 3940223 lines changed
+LA.HB.1.3.1.c1-01800-8x96.0 has 3940034 lines changed
+LA.HB.1.3.1.c1-02200-8x96.0 has 3939890 lines changed
+LA.HB.1.3.1.c1-02900-8x96.0 has 3936321 lines changed
+LA.HB.1.3.1.c1-03500-8x96.0 has 3935184 lines changed
+LA.HB.1.3.1.c1-04100-8x96.0 has 3934939 lines changed
+LA.HB.1.3.1.c1-04500-8x96.0 has 3934636 lines changed
+LA.HB.1.3.1.c1-05300-8x96.0 has 3933697 lines changed
+LA.HB.1.3.1.c1-06100-8x96.0 has 3932600 lines changed
+LA.HB.1.3.1.c1-07000-8x96.0 has 3932115 lines changed
+LA.HB.1.3.1.c1-07500-8x96.0 has 3932100 lines changed
+LA.HB.1.3.1.c1-08900-8x96.0 has 3931772 lines changed
+LA.HB.1.3.1.c1-09600-8x96.0 has 3931894 lines changed
+LA.HB.1.3.1.c1-10100-8x96.0 has 3931842 lines changed
+LA.HB.1.3.1.c1-11500-8x96.0 has 3931577 lines changed
+LA.HB.1.3.1.c1-12700-8x96.0 has 3931092 lines changed
+LA.HB.1.3.1.c1-13300-8x96.0 has 3931031 lines changed
+LA.HB.1.3.1.c1-16400-8x96.0 has 3929840 lines changed
+LA.HB.1.3.1.c1-18200-8x96.0 has 3928700 lines changed
+LA.HB.1.3.1.c1-18500-8x96.0 has 3928357 lines changed
+LA.HB.1.3.1.c1-19500-8x96.0 has 3927692 lines changed
+LA.HB.1.3.1.c1-20100-8x96.0 has 3926783 lines changed
+LA.HB.1.3.1.c1-20600-8x96.0 has 3926770 lines changed
+LA.HB.1.3.1.c1-22000-8x96.0 has 3922252 lines changed
+LA.HB.1.3.1.c1-23100-8x96.0 has 3918641 lines changed
+LA.HB.1.3.1.c1-23800-8x96.0 has 3918427 lines changed
+LA.HB.1.3.2-00300-8x96.0 has 3954222 lines changed
+LA.HB.1.3.2-03800-8x96.0 has 3944686 lines changed
+LA.HB.1.3.2-06000-8x96.0 has 3933154 lines changed
+LA.HB.1.3.2-06600-8x96.0 has 3929871 lines changed
+LA.HB.1.3.2-07200-8x96.0 has 3925911 lines changed
+LA.HB.1.3.2-08400-8x96.0 has 3922701 lines changed
+LA.HB.1.3.2-09200-8x96.0 has 3921078 lines changed
+LA.HB.1.3.2-10700-8x96.0 has 3914876 lines changed
+LA.HB.1.3.2-11300-8x96.0 has 3913953 lines changed
+LA.HB.1.3.2-11600-8x96.0 has 3913723 lines changed
+LA.HB.1.3.2-12000-8x96.0 has 3913723 lines changed
+LA.HB.1.3.2-13000-8x96.0 has 3913130 lines changed
+LA.HB.1.3.2-13700-8x96.0 has 3911430 lines changed
+LA.HB.1.3.2-14500-8x96.0 has 3910729 lines changed
+LA.HB.1.3.2-15400-8x96.0 has 3909782 lines changed
+LA.HB.1.3.2-16800-8x96.0 has 3909181 lines changed
+LA.HB.1.3.2-17200-8x96.0 has 3909137 lines changed
+LA.HB.1.3.2-19000-8x96.0 has 3907340 lines changed
+LA.HB.1.3.2-19600-8x96.0 has 3907450 lines changed
+LA.HB.1.3.2-20700-8x96.0 has 3907236 lines changed
+LA.HB.1.3.2-22100-8x96.0 has 3905551 lines changed
+LA.HB.1.3.2-23200-8x96.0 has 3905393 lines changed
+LA.HB.1.3.2-24000-8x96.0 has 3905079 lines changed
+LA.HB.1.3.2-24600-8x96.0 has 3905079 lines changed
+LA.HB.1.3.2-25000-8x96.0 has 3904276 lines changed
+LA.HB.1.3.2-26100-8x96.0 has 3903953 lines changed
+LA.HB.1.3.2-26600-8x96.0 has 3903929 lines changed
+LA.HB.1.3.2-27300-8x96.0 has 3903529 lines changed
+LA.HB.1.3.2-27800-8x96.0 has 3903502 lines changed
+LA.HB.1.3.2-28400-8x96.0 has 3903081 lines changed
+LA.HB.1.3.2-29100-8x96.0 has 3903010 lines changed
+LA.HB.1.3.2-30700-8x96.0 has 3903059 lines changed
+LA.HB.1.3.2-31200-8x96.0 has 3902695 lines changed
+LA.HB.1.3.2-31300-8x96.0 has 3902089 lines changed
+LA.HB.1.3.2-31800-8x96.0 has 3901736 lines changed
+LA.HB.1.3.2-32600-8x96.0 has 3901123 lines changed
+LA.HB.1.3.2-33100-8x96.0 has 3900873 lines changed
+LA.HB.1.3.2-33900-8x96.0 has 3900290 lines changed
+LA.HB.1.3.2-34600-8x96.0 has 3899412 lines changed
+LA.HB.1.3.2-35300-8x96.0 has 3898920 lines changed
+LA.HB.1.3.2-36200-8x96.0 has 3898049 lines changed
+LA.HB.1.3.2-37900-8x96.0 has 3894711 lines changed
+LA.HB.1.3.2-40600-8x96.0 has 3890550 lines changed
+LA.UM.5.5.c1-00600-8x96.0 has 3491600 lines changed
+LA.UM.5.5.c1-01600-8x96.0 has 3488344 lines changed
+LA.UM.5.5.c1-02900-8x96.0 has 3485255 lines changed
+LA.UM.5.5.c1-06000-8x96.0 has 3481845 lines changed
+LA.UM.5.5.c1-07000-8x96.0 has 3480630 lines changed
+LA.UM.5.5.c1-08900-8x96.0 has 3476493 lines changed
+LA.UM.5.5.c1-13900-8x96.0 has 3472869 lines changed
+LA.UM.5.5.c25-01800-8x96.0 has 3443303 lines changed
+LA.UM.5.5.c25-03100-8x96.0 has 3442929 lines changed
+LA.UM.5.5.c25-03500-8x96.0 has 3443074 lines changed
+LA.UM.5.5.r1-00100-8x96.0 has 3503211 lines changed
+LA.UM.5.5.r1-00300-8x96.0 has 3502505 lines changed
+LA.UM.5.5.r1-00500-8x96.0 has 3494814 lines changed
+LA.UM.5.5.r1-00800-8x96.0 has 3493217 lines changed
+LA.UM.5.5.r1-00900-8x96.0 has 3493217 lines changed
+LA.UM.5.5.r1-01300-8x96.0 has 3492444 lines changed
+LA.UM.5.5.r1-01600-8x96.0 has 3491212 lines changed
+LA.UM.5.5.r1-01800-8x96.0 has 3489046 lines changed
+LA.UM.5.5.r1-02200-8x96.0 has 3485044 lines changed
+LA.UM.5.5.r1-02300-8x96.0 has 3483642 lines changed
+LA.UM.5.5.r1-02500-8x96.0 has 3482351 lines changed
+LA.UM.5.5.r1-02800-8x96.0 has 3480808 lines changed
+LA.UM.5.5.r1-03400-8x96.0 has 3476637 lines changed
+LA.UM.5.5.r1-03600-8x96.0 has 3476265 lines changed
+LA.UM.5.5.r1-03800-8x96.0 has 3473849 lines changed
+LA.UM.5.5.r1-04000-8x96.0 has 3473079 lines changed
+LA.UM.5.5.r1-04300-8x96.0 has 3472824 lines changed
+LA.UM.5.5.r1-04600-8x96.0 has 3468735 lines changed
+LA.UM.5.5.r1-04700-8x96.0 has 3467745 lines changed
+LA.UM.5.5.r1-04900-8x96.0 has 3467504 lines changed
+LA.UM.5.5.r1-05100-8x96.0 has 3463944 lines changed
+LA.UM.5.5.r1-05300-8x96.0 has 3463340 lines changed
+LA.UM.5.5.r1-05400-8x96.0 has 3462181 lines changed
+LA.UM.5.5.r1-05700-8x96.0 has 3460104 lines changed
+LA.UM.5.5.r1-05800-8x96.0 has 3459458 lines changed
+LA.UM.5.5.r1-06100-8x96.0 has 3458270 lines changed
+LA.UM.5.5.r1-06300-8x96.0 has 3457825 lines changed
+LA.UM.5.5.r1-06400-8x96.0 has 3457230 lines changed
+LA.UM.5.5.r1-06700-8x96.0 has 3456454 lines changed
+LA.UM.5.5.r1-07100-8x96.0 has 3448905 lines changed
+LA.UM.5.5.r1-08000-8x96.0 has 3447341 lines changed
+LA.UM.5.5.r1-09000-8x96.0 has 3446958 lines changed
+LA.UM.6.5.r1-02500-8x96.0 has 2228849 lines changed
+LA.UM.6.5.r1-03000-8x96.0 has 2222439 lines changed
+LA.UM.6.5.r1-03000-8x96.0 is the new best match with 2222439 lines changed
+LA.UM.6.5.r1-03400-8x96.0 has 2221172 lines changed
+LA.UM.6.5.r1-03400-8x96.0 is the new best match with 2221172 lines changed
+LA.UM.6.5.r1-04000-8x96.0 has 2218178 lines changed
+LA.UM.6.5.r1-04000-8x96.0 is the new best match with 2218178 lines changed
+LA.UM.6.5.r1-04100-8x96.0 has 2218148 lines changed
+LA.UM.6.5.r1-04100-8x96.0 is the new best match with 2218148 lines changed
+LA.UM.6.5.r1-04300-8x96.0 has 2211413 lines changed
+LA.UM.6.5.r1-04300-8x96.0 is the new best match with 2211413 lines changed
+LA.UM.6.5.r1-05300-8x96.0 has 2195432 lines changed
+LA.UM.6.5.r1-05300-8x96.0 is the new best match with 2195432 lines changed
+LA.UM.6.5.r1-06000-8x96.0 has 2189347 lines changed
+LA.UM.6.5.r1-06000-8x96.0 is the new best match with 2189347 lines changed
+LA.UM.6.5.r1-06300-8x96.0 has 2188964 lines changed
+LA.UM.6.5.r1-06300-8x96.0 is the new best match with 2188964 lines changed
+LA.UM.6.5.r1-06600-8x96.0 has 2187485 lines changed
+LA.UM.6.5.r1-06600-8x96.0 is the new best match with 2187485 lines changed
+LA.UM.6.5.r1-06700-8x96.0 has 2187049 lines changed
+LA.UM.6.5.r1-06700-8x96.0 is the new best match with 2187049 lines changed
+LA.UM.6.5.r1-07400-8x96.0 has 2183586 lines changed
+LA.UM.6.5.r1-07400-8x96.0 is the new best match with 2183586 lines changed
+LA.UM.6.5.r1-08500-8x96.0 has 2181404 lines changed
+LA.UM.6.5.r1-08500-8x96.0 is the new best match with 2181404 lines changed
+LA.UM.6.5.r1-08900-8x96.0 has 2179656 lines changed
+LA.UM.6.5.r1-08900-8x96.0 is the new best match with 2179656 lines changed
+LA.UM.6.5.r1-09300-8x96.0 has 2177019 lines changed
+LA.UM.6.5.r1-09300-8x96.0 is the new best match with 2177019 lines changed
+LA.UM.6.5.r1-09600-8x96.0 has 2163277 lines changed
+LA.UM.6.5.r1-09600-8x96.0 is the new best match with 2163277 lines changed
+LA.UM.6.5.r1-09800-8x96.0 has 2168394 lines changed
+LA.UM.6.5.r1-10600-8x96.0 has 2167151 lines changed
+LA.UM.6.5.r1-10900-8x96.0 has 2166586 lines changed
+LA.UM.6.5.r1-11500-8x96.0 has 2230038 lines changed
+LA.UM.6.5.r1-11700-8x96.0 has 2230061 lines changed
+LA.UM.7.5.r1-02200-8x96.0 has 2033244 lines changed
+LA.UM.7.5.r1-02200-8x96.0 is the new best match with 2033244 lines changed
+LA.UM.7.5.r1-02500-8x96.0 has 1994380 lines changed
+LA.UM.7.5.r1-02500-8x96.0 is the new best match with 1994380 lines changed
+LA.UM.7.5.r1-03100-8x96.0 has 1986422 lines changed
+LA.UM.7.5.r1-03100-8x96.0 is the new best match with 1986422 lines changed
+LA.UM.7.5.r1-03700-8x96.0 has 1982535 lines changed
+LA.UM.7.5.r1-03700-8x96.0 is the new best match with 1982535 lines changed
+LA.UM.7.5.r1-04000-8x96.0 has 1982187 lines changed
+LA.UM.7.5.r1-04000-8x96.0 is the new best match with 1982187 lines changed
+LA.UM.7.5.r1-04100-8x96.0 has 1981702 lines changed
+LA.UM.7.5.r1-04100-8x96.0 is the new best match with 1981702 lines changed
+LA.UM.7.5.r1-04300-8x96.0 has 1980700 lines changed
+LA.UM.7.5.r1-04300-8x96.0 is the new best match with 1980700 lines changed
+LA.UM.7.5.r1-04500-8x96.0 has 1980031 lines changed
+LA.UM.7.5.r1-04500-8x96.0 is the new best match with 1980031 lines changed
+LA.UM.7.5.r1-04800-8x96.0 has 1979833 lines changed
+LA.UM.7.5.r1-04800-8x96.0 is the new best match with 1979833 lines changed
+LA.UM.7.5.r1-05300-8x96.0 has 1980192 lines changed
+LE.UM.1.0.6-00710-8x96.0 has 2572318 lines changed
+LE.UM.1.0.6-01110-8x96.0 has 2572290 lines changed
+LE.UM.1.0.6-03010-8x96.0 has 2572064 lines changed
+LE.UM.1.0.6-03710-8x96.0 has 2570762 lines changed
+LE.UM.1.0.6-22000-8x96.0 has 3470586 lines changed
+LE.UM.1.0.6-25500-8x96.0 has 2586995 lines changed
+LE.UM.1.0.6-25501-8x96.0 has 2586995 lines changed
+LE.UM.1.0.6-28300-8x96.0 has 2579210 lines changed
+LE.UM.1.0.6-30500-8x96.0 has 2574366 lines changed
+LE.UM.1.0.6-32400-8x96.0 has 2572345 lines changed
+LE.UM.1.1.6-02510-8x96.0 has 2541661 lines changed
+LE.UM.1.1.6-02610-8x96.0 has 2541661 lines changed
+LE.UM.1.1.6-37400-8x96.0 has 2546031 lines changed
+LE.UM.1.1.r1-01700-8x96.0 has 2475793 lines changed
+LE.UM.1.1.r1-02100-8x96.0 has 2475793 lines changed
+LE.UM.1.1.r1-02300-8x96.0 has 2475793 lines changed
+LE.UM.1.1.r1-02500-8x96.0 has 2475793 lines changed
+LE.UM.1.1.r1-03300-8x96.0 has 2475488 lines changed
+LE.UM.1.1.r1-03500-8x96.0 has 2475453 lines changed
+LE.UM.1.1.r1-03600-8x96.0 has 2475453 lines changed
+LE.UM.1.1.r1-04500-8x96.0 has 2465196 lines changed
+LE.UM.1.1.r1-04600-8x96.0 has 2465196 lines changed
+LE.UM.1.1.r1-04800-8x96.0 has 2465196 lines changed
+LE.UM.1.1.r1-05300-8x96.0 has 2465103 lines changed
+LE.UM.1.1.r1-05400-8x96.0 has 2465103 lines changed
+LE.UM.1.1.r1-07000-8x96.0 has 2458995 lines changed
+LE.UM.1.1.r1-07200-8x96.0 has 2458995 lines changed
+LE.UM.1.3.r4-00300-8x96.0 has 2317253 lines changed
+LE.UM.1.3.r4-00400-8x96.0 has 2317253 lines changed
+LE.UM.1.3.r4-00700-8x96.0 has 2338771 lines changed
+LE.UM.1.3.r4-00800-8x96.0 has 2338771 lines changed
+LE.UM.1.3.r4-00801-8x96.0 has 2317253 lines changed
+LE.UM.1.3.r4-00900-8x96.0 has 2338771 lines changed
+LE.UM.1.3.r4-01000-8x96.0 has 2317253 lines changed
+LE.UM.1.3.r4-01100-8x96.0 has 2338771 lines changed
+LE.UM.1.3.r4-01102-8x96.0 has 2317253 lines changed
+LE.UM.1.3.r4-01200-8x96.0 has 2338771 lines changed
+LE.UM.1.3.r4-01202-8x96.0 has 2317253 lines changed
+LE.UM.1.3.r4-01500-8x96.0 has 2281367 lines changed
+LE.UM.1.3.r4-01600-8x96.0 has 2281367 lines changed
+LE.UM.1.3.r4-01900-8x96.0 has 2281367 lines changed
+LE.UM.1.3.r4-02200-8x96.0 has 2281363 lines changed
+LE.UM.1.3.r4-02500-8x96.0 has 2224058 lines changed
+LE.UM.1.3.r4-02900-8x96.0 has 2224058 lines changed
+LE.UM.1.3.r4-03200-8x96.0 has 2221401 lines changed
+LE.UM.1.3.r4-03800-8x96.0 has 2221395 lines changed
+LE.UM.1.3.r4-04200-8x96.0 has 2196326 lines changed
+LE.UM.1.3.r4-04500-8x96.0 has 2196326 lines changed
+LE.UM.1.3.r4-04900-8x96.0 has 2196326 lines changed
+LE.UM.1.3.r4-06300-8x96.0 has 2195142 lines changed
+LV.HB.1.1.1-01210-8x96.0 has 3603924 lines changed
+LV.HB.1.1.1-01900-8x96.0 has 3639999 lines changed
+LV.HB.1.1.1-02710-8x96.0 has 3566577 lines changed
+LV.HB.1.1.1-03410-8x96.0 has 3506729 lines changed
+LV.HB.1.1.1-04210-8x96.0 has 3503443 lines changed
+LV.HB.1.1.1-04610-8x96.0 has 3480312 lines changed
+LV.HB.1.1.1-04710-8x96.0 has 3480312 lines changed
+LV.HB.1.1.1-06510-8x96.0 has 2594347 lines changed
+LV.HB.1.1.1-06710-8x96.0 has 2594347 lines changed
+LV.HB.1.1.1-07110-8x96.0 has 2594350 lines changed
+LV.HB.1.1.1-07810-8x96.0 has 2581373 lines changed
+LV.HB.1.1.1-08310-8x96.0 has 2581373 lines changed
+LV.HB.1.1.1-09110-8x96.0 has 2576427 lines changed
+LV.HB.1.1.1-11510-8x96.0 has 2554371 lines changed
+LV.HB.1.1.1-13110-8x96.0 has 2546023 lines changed
+LV.HB.1.1.1-15410-8x96.0 has 2471905 lines changed
+LV.HB.1.1.1-15510-8x96.0 has 2471905 lines changed
+LV.HB.1.1.1-15610-8x96.0 has 2471905 lines changed
+LV.HB.1.1.1-40300-8x96.0 has 2554521 lines changed
+LV.HB.1.1.2-01610-8x96.0 has 2532558 lines changed
+LV.HB.1.1.2-02210-8x96.0 has 2474990 lines changed
+LV.HB.1.1.2-02710-8x96.0 has 2474990 lines changed
+LV.HB.1.1.2-04110-8x96.0 has 2372632 lines changed
+LV.HB.1.1.2-04210-8x96.0 has 2372601 lines changed
+LV.HB.1.1.2-05010-8x96.0 has 3472529 lines changed
+LV.HB.1.1.2-06210-8x96.0 has 2594549 lines changed
+LV.HB.1.1.2-06510-8x96.0 has 2594347 lines changed
+LV.HB.1.1.2-06710-8x96.0 has 2594347 lines changed
+LV.HB.1.1.2-07110-8x96.0 has 2594350 lines changed
+LV.HB.1.1.2-09110-8x96.0 has 2576427 lines changed
+LV.HB.1.1.2-10210-8x96.0 has 2572343 lines changed
+LV.HB.1.1.2-10310-8x96.0 has 2572343 lines changed
+LV.HB.1.1.2-13110-8x96.0 has 2546023 lines changed
+LV.HB.1.1.2-13410-8x96.0 has 2545952 lines changed
+LV.HB.1.1.2-24000-8x96.0 has 3473256 lines changed
+LV.HB.1.1.2-24200-8x96.0 has 3473256 lines changed
+Best match
+TAG: LA.UM.7.5.r1-04800-8x96.0
+Lines changed: 1979833

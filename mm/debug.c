@@ -51,6 +51,9 @@ static const struct trace_print_flags pageflag_names[] = {
 #ifdef CONFIG_ZCACHE
 	{1UL << PG_was_active,		"was_active"	},
 #endif
+#ifdef CONFIG_NON_SWAP
+	{1UL << PG_non_swap,	"non_swap"	},
+#endif
 };
 
 static void dump_flags(unsigned long flags,

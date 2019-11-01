@@ -365,6 +365,16 @@ enum mhi_dev_transfer_type {
 	MHI_DEV_DMA_ASYNC,
 };
 
+enum mhi_dev_tr_compl_evt_type {
+	SEND_EVENT_BUFFER,
+	SEND_EVENT_RD_OFFSET,
+};
+
+enum mhi_dev_transfer_type {
+	MHI_DEV_DMA_SYNC,
+	MHI_DEV_DMA_ASYNC,
+};
+
 struct mhi_dev_channel;
 
 struct mhi_dev_ring {
@@ -426,6 +436,24 @@ struct event_req {
 	struct list_head	list;
 };
 
+struct ring_cache_req {
+	struct completion	*done;
+	void			*context;
+};
+
+struct event_req {
+	union mhi_dev_ring_element_type *tr_events;
+	u32			num_events;
+	dma_addr_t		dma;
+	u32			dma_len;
+	dma_addr_t		event_rd_dma;
+	void			*context;
+	enum mhi_dev_tr_compl_evt_type event_type;
+	u32			event_ring;
+	void			(*client_cb)(void *req);
+	struct list_head	list;
+};
+
 struct mhi_dev_channel {
 	struct list_head		list;
 	struct list_head		clients;
@@ -447,6 +475,9 @@ struct mhi_dev_channel {
 	struct event_req		*ereqs;
 	/* Pointer to completion event buffers */
 	union mhi_dev_ring_element_type *tr_events;
+	struct list_head		event_req_buffers;
+	struct event_req		*curr_ereq;
+
 	struct list_head		event_req_buffers;
 	struct event_req		*curr_ereq;
 

@@ -25,6 +25,8 @@
 #include <linux/syscalls.h>
 #include <linux/compat.h>
 #include <linux/rcupdate.h>
+#include <linux/printk.h>
+
 
 struct timerfd_ctx {
 	union {
@@ -437,7 +439,6 @@ static int do_timerfd_settime(int ufd, int flags,
 	    !timespec_valid(&new->it_value) ||
 	    !timespec_valid(&new->it_interval))
 		return -EINVAL;
-
 	ret = timerfd_fget(ufd, &f);
 	if (ret)
 		return ret;
@@ -485,6 +486,7 @@ static int do_timerfd_settime(int ufd, int flags,
 	ret = timerfd_setup(ctx, flags, new);
 
 	spin_unlock_irq(&ctx->wqh.lock);
+
 	fdput(f);
 	return ret;
 }

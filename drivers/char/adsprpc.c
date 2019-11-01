@@ -451,7 +451,7 @@ static int fastrpc_mmap_remove(struct fastrpc_file *fl, uintptr_t va,
 			       size_t len, struct fastrpc_mmap **ppmap)
 {
 	struct fastrpc_mmap *match = NULL, *map = NULL;
-	struct hlist_node *n;
+	struct hlist_node *n = NULL;
 	struct fastrpc_apps *me = &gfa;
 
 	spin_lock(&me->hlock);
@@ -669,7 +669,7 @@ static int fastrpc_buf_alloc(struct fastrpc_file *fl, size_t size,
 {
 	int err = 0, vmid;
 	struct fastrpc_buf *buf = NULL, *fr = NULL;
-	struct hlist_node *n;
+	struct hlist_node *n = NULL;
 
 	VERIFY(err, size > 0);
 	if (err)
@@ -755,7 +755,7 @@ static int context_restore_interrupted(struct fastrpc_file *fl,
 {
 	int err = 0;
 	struct smq_invoke_ctx *ctx = NULL, *ictx = NULL;
-	struct hlist_node *n;
+	struct hlist_node *n = NULL;
 	struct fastrpc_ioctl_invoke *invoke = &invokefd->inv;
 
 	spin_lock(&fl->hlock);
@@ -2309,6 +2309,7 @@ static int fastrpc_device_open(struct inode *inode, struct file *filp)
 	INIT_HLIST_HEAD(&fl->cached_bufs);
 	INIT_HLIST_HEAD(&fl->remote_bufs);
 	INIT_HLIST_NODE(&fl->hn);
+	mutex_init(&fl->map_mutex);
 	fl->tgid = current->tgid;
 	fl->apps = me;
 	fl->cid = cid;
@@ -2351,7 +2352,7 @@ static int fastrpc_device_open(struct inode *inode, struct file *filp)
 						me->channel[cid].ssrcount;
 		}
 	}
-	mutex_init(&fl->map_mutex);
+
 	spin_lock(&me->hlock);
 	hlist_add_head(&fl->hn, &me->drivers);
 	spin_unlock(&me->hlock);
@@ -2522,6 +2523,10 @@ static long fastrpc_device_ioctl(struct file *file, unsigned int ioctl_num,
 	case FASTRPC_IOCTL_INIT:
 		VERIFY(err, 0 == copy_from_user(&p.init, param,
 						sizeof(p.init)));
+		if (err)
+			goto bail;
+		VERIFY(err, p.init.filelen >= 0 &&
+			p.init.memlen >= 0);
 		if (err)
 			goto bail;
 		VERIFY(err, 0 == fastrpc_init_process(fl, &p.init));
