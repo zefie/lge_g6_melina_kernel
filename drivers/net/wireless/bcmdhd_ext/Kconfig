@@ -38,7 +38,7 @@ config BCMDHD_OEM_HEADER_PATH
 config BCMDHD_FW_PATH
 	depends on BCMDHD
 	string "Firmware path"
-	default "/vendor/etc/firmware/fw_bcmdhd.bin"
+	default "/vendor/firmware/fw_bcmdhd.bin"
 	---help---
 	  Path to the firmware file.
 
@@ -49,6 +49,14 @@ config BCMDHD_NVRAM_PATH
 	---help---
 	  Path to the calibration file.
 
+config BCMDHD_WEXT
+	bool "Enable WEXT support"
+	depends on BCMDHD && CFG80211 = n
+	select WIRELESS_EXT
+	select WEXT_PRIV
+	---help---
+	  Enables WEXT support
+
 config LGE_BCM433X_PATCH
 	bool "BCM433X Patch by LGE"
 	default y
@@ -57,7 +65,7 @@ config LGE_BCM433X_PATCH
 config BCMDHD_CONFIG_PATH
 	depends on LGE_BCM433X_PATCH
 	string "Config path"
-	default "/mnt/vendor/persist-lg/wifi/brcm/config"
+	default "/data/misc/wifi/config"
 	---help---
 	  Path to the config file.
 
@@ -158,13 +166,6 @@ config BCMDHD_CLM_PATH
 	default "/vendor/etc/wifi/4359_lg.clm_blob"
 	---help---
 	  Path to the clm blob file.
-
-config BCMDHD_DYNAMIC_MUMIMO_CONTROL
-	bool "control dynamic mumimo"
-	depends on BCM4359
-	default n
-	---help---
-	  enable dynamic mumimo.
 
 config BCMDHD_FOLLOW_AP_DTIM_PERIOD
 	bool "DTIM Listen interval in suspend mode"
