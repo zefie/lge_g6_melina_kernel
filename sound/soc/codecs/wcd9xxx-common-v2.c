@@ -410,7 +410,16 @@ static void wcd_clsh_flyback_ctrl(struct snd_soc_codec *codec,
 					    0x10, 0x00);
 			wcd_clsh_set_flyback_mode(codec, mode);
 		}
-
+#ifdef CONFIG_MACH_LGE
+		else if(!enable && TASHA_IS_2_0(wcd9xxx->version)) {
+			dev_dbg(codec->dev, "%s(LGE): enable %d, clsh_d->flyback_users: %d",
+				__func__, enable, clsh_d->flyback_users);
+			snd_soc_update_bits(codec, WCD9XXX_HPH_L_EN, 0xC0, 0x00);
+			snd_soc_update_bits(codec, WCD9XXX_HPH_R_EN, 0xC0, 0x00);
+			snd_soc_update_bits(codec, WCD9XXX_RX_BIAS_FLYB_BUFF, 0x0F, 0x00);
+			snd_soc_update_bits(codec, WCD9XXX_RX_BIAS_FLYB_BUFF, 0xF0, 0x00);
+		}
+#endif
 	}
 	dev_dbg(codec->dev, "%s: flyback_users %d, enable %d, mode: %s",
 		__func__, clsh_d->flyback_users, enable, mode_to_str(mode));
@@ -451,8 +460,8 @@ static void wcd_clsh_set_gain_path(struct snd_soc_codec *codec,
 static void wcd_clsh_set_hph_mode(struct snd_soc_codec *codec,
 				  int mode)
 {
-	u8 val;
-	u8 gain;
+	u8 val = 0;
+	u8 gain = 0;
 	u8 res_val = VREF_FILT_R_0OHM;
 	u8 ipeak = DELTA_I_50MA;
 

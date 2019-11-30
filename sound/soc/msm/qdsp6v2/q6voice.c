@@ -48,6 +48,7 @@ struct cvd_version_table cvd_version_table_mapping[CVD_INT_VERSION_MAX] = {
 		{CVD_VERSION_0_0, CVD_INT_VERSION_0_0},
 		{CVD_VERSION_2_1, CVD_INT_VERSION_2_1},
 		{CVD_VERSION_2_2, CVD_INT_VERSION_2_2},
+		{CVD_VERSION_2_3, CVD_INT_VERSION_2_3},
 };
 
 static struct common_data common;
@@ -5344,6 +5345,8 @@ static int voice_cvs_stop_playback(struct voice_data *v)
 				v->async_err));
 			ret = adsp_err_get_lnx_err_code(
 					v->async_err);
+		v->music_info.playing = 0;
+		v->music_info.force = 0;
 			goto fail;
 		}
 

@@ -2440,6 +2440,11 @@ int adm_open(int port_id, int path, int rate, int channel_mode, int topology,
 		bit_width = 24;
 	}
 #endif
+#ifdef CONFIG_SND_SOC_TFA9872
+	if (port_id == AFE_PORT_ID_TERTIARY_MI2S_RX) {
+		bit_width = 24;
+	}
+#endif
 
 	port_id = q6audio_convert_virtual_to_portid(port_id);
 	port_idx = adm_validate_and_get_port_index(port_id);

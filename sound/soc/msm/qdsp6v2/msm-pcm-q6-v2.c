@@ -344,13 +344,13 @@ static int msm_pcm_playback_prepare(struct snd_pcm_substream *substream)
 	}
 	switch (q6core_get_avs_version()) {
 	case (Q6_SUBSYS_AVS2_7):
-	ret = q6asm_open_write_v3(prtd->audio_client,
+		ret = q6asm_open_write_v3(prtd->audio_client,
 #ifdef CONFIG_MACH_LGE // 24bit ASM patch
 				  FORMAT_LINEAR_PCM, 24);
 #else
 				  FORMAT_LINEAR_PCM, bits_per_sample);
 #endif
-			break;
+		break;
 	case (Q6_SUBSYS_AVS2_8):
 		ret = q6asm_open_write_v4(prtd->audio_client,
 					  FORMAT_LINEAR_PCM, bits_per_sample);

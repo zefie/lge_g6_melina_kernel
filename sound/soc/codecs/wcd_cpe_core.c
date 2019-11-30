@@ -3567,9 +3567,10 @@ static int wcd_cpe_lsm_lab_control(
 	struct cpe_param_data *param_d = &lab_enable->param;
 	struct cpe_lsm_ids ids;
 
-	memset(&cpe_lab_enable, 0, sizeof (cpe_lab_enable));
 	pr_debug("%s: enter payload_size = %d Enable %d\n",
 		 __func__, pld_size, enable);
+
+	memset(&cpe_lab_enable, 0, sizeof(cpe_lab_enable));
 
 	if (fill_lsm_cmd_header_v0_inband(&cpe_lab_enable.hdr, session->id,
 		(u8) pld_size, CPE_LSM_SESSION_CMD_SET_PARAMS_V2)) {

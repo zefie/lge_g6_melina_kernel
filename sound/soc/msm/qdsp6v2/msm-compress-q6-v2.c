@@ -1181,7 +1181,7 @@ static int msm_compr_configure_dsp_for_playback
 
 		switch (q6core_get_avs_version()) {
 		case (Q6_SUBSYS_AVS2_7):
-		ret = q6asm_stream_open_write_v3(ac,
+			ret = q6asm_stream_open_write_v3(ac,
 #ifdef CONFIG_MACH_LGE // 24bit ASM patch
 				prtd->codec, 24,
 #else
@@ -2986,6 +2986,10 @@ static int lge_dsp_sound_offload_playback_number_put(struct snd_kcontrol *kcontr
 	struct snd_soc_component *comp = snd_kcontrol_chip(kcontrol);
 	int pcm_device_id = (int)ucontrol->value.integer.value[0];
 
+	if(pcm_device_id < 0 || pcm_device_id >= comp->card->num_links){
+		pr_err("%s: Invalid value\n",__func__ );
+		return -EINVAL;
+	}
 	lgesound_current_be_id = comp->card->dai_link[pcm_device_id].be_id;
 	if (lgesoundeffect_enable == 1)
 		lgesound_lge_effect_be_id = lgesound_current_be_id;
@@ -3187,6 +3191,11 @@ static int lge_dsp_sound_effect_geq_put(struct snd_kcontrol *kcontrol,
 	struct msm_compr_audio *prtd = NULL;
 	int rc;
 
+	if ((0 > (int)ucontrol->value.integer.value[0]) || ((int)ucontrol->value.integer.value[0] > 7 )){
+		pr_err("%s: Invalid value\n",__func__ );
+		return -EINVAL;
+	}
+
 	lgesoundeffect_geq_gain[(int)ucontrol->value.integer.value[0]] = (int)ucontrol->value.integer.value[1];
 	if (!cstream || cstream->runtime == NULL) {
 		pr_err("%s: compress stream is not open status, so ignore this cmd\n", __func__);
@@ -3328,6 +3337,10 @@ static int lge_dsp_sound_normalizer_devicespeaker_put(struct snd_kcontrol *kcont
 	struct msm_compr_audio *prtd = NULL;
 	int rc;
 
+	if(lgesound_current_be_id >= MSM_FRONTEND_DAI_MAX || lgesound_current_be_id < 0){
+		pr_err("%s : Invalid value\n", __func__);
+		return -EINVAL;
+	}
 	lgesoundnormalizer_devicespeaker = (int)ucontrol->value.integer.value[0];
 
 	if (!cstream || cstream->runtime == NULL) {
@@ -4593,6 +4606,7 @@ static int msm_compr_probe(struct snd_soc_platform *platform)
 	snd_soc_add_platform_controls(platform,msm_compr_lge_effect_controls,
 				      ARRAY_SIZE(msm_compr_lge_effect_controls));	
 #endif
+
 
 	/*
 	 * use_dsp_gapless_mode part of platform data(pdata) is updated from HAL

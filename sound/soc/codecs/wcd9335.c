@@ -847,7 +847,7 @@ static const struct tasha_reg_mask_val tasha_spkr_default[] = {
 	{WCD9335_CDC_COMPANDER8_CTL3, 0x80, 0x80},
 	{WCD9335_CDC_COMPANDER7_CTL7, 0x01, 0x01},
 	{WCD9335_CDC_COMPANDER8_CTL7, 0x01, 0x01},
-#ifdef CONFIG_MACH_MSM8996_H1
+#ifdef CONFIG_MACH_LGE
 	{WCD9335_CDC_BOOST0_BOOST_CTL, 0x7C, 0x58},
 #else
 	{WCD9335_CDC_BOOST0_BOOST_CTL, 0x7C, 0x50},
@@ -872,7 +872,6 @@ static const struct tasha_reg_mask_val tasha_high_impedance[] = {
 	{WCD9335_TEST_DEBUG_PIN_CTL_OE_1, 0xE0, 0xE0},
 	{WCD9335_TEST_DEBUG_PIN_CTL_OE_2, 0x01, 0x01},
 };
-
 #if defined(CONFIG_SND_SOC_ES9218P)
 extern bool enable_es9218p;
 #endif
@@ -4110,19 +4109,13 @@ static void tasha_codec_bridge_mclk_enable(struct snd_soc_codec *codec,
 		 */
 		snd_soc_update_bits(codec,
 				    WCD9335_DATA_HUB_DATA_HUB_I2S_CLK,
-				    0x02, 0x02);
-		snd_soc_update_bits(codec,
-				    WCD9335_DATA_HUB_DATA_HUB_I2S_CLK,
-				    0x1, 0x0);
+				    0x03, 0x02);
 	} else {
 		snd_soc_update_bits(codec,
 				    WCD9335_DATA_HUB_DATA_HUB_I2S_CLK,
-				    0x02, 0x00);
-		snd_soc_update_bits(codec,
-				    WCD9335_DATA_HUB_DATA_HUB_I2S_CLK,
-				    0x1, 0x1);
-	};
-};
+				    0x03, 0x01);
+	}
+}
 
 static int tasha_codec_bridge_tx_mclk_supply(struct snd_soc_dapm_widget *w,
 					   struct snd_kcontrol *kcontrol,
@@ -5066,9 +5059,6 @@ static int tasha_codec_enable_prim_interpolator(
 	u16 ind = 0;
 
 	prim_int_reg = tasha_interp_get_primary_reg(reg, &ind);
-	if (!prim_int_reg) {
-		return -EINVAL;
-	}
 
 	switch (event) {
 	case SND_SOC_DAPM_PRE_PMU:
@@ -5578,7 +5568,7 @@ static int tasha_codec_enable_interpolator(struct snd_soc_dapm_widget *w,
 	struct tasha_priv *tasha = snd_soc_codec_get_drvdata(codec);
 	u16 gain_reg;
 	u16 reg;
-	int val, ret;
+	int val;
 	int offset_val = 0;
 
 	dev_dbg(codec->dev, "%s %d %s\n", __func__, event, w->name);
@@ -5623,12 +5613,7 @@ static int tasha_codec_enable_interpolator(struct snd_soc_dapm_widget *w,
 			set_bit(SB_CLK_GEAR, &tasha->status_mask);
 		}
 		/* Reset if needed */
-		ret = tasha_codec_enable_prim_interpolator(codec, reg, event);
-		if (ret) {
-			dev_err(codec->dev, "%s: enable_prim_interpolator fail\n",
-				__func__);
-			return ret;
-		}
+		tasha_codec_enable_prim_interpolator(codec, reg, event);
 		break;
 	case SND_SOC_DAPM_POST_PMU:
 		tasha_config_compander(codec, w->shift, event);
@@ -5656,12 +5641,7 @@ static int tasha_codec_enable_interpolator(struct snd_soc_dapm_widget *w,
 		break;
 	case SND_SOC_DAPM_POST_PMD:
 		tasha_config_compander(codec, w->shift, event);
-		ret = tasha_codec_enable_prim_interpolator(codec, reg, event);
-		if (ret) {
-			dev_err(codec->dev, "%s: enable_prim_interpolator fail\n",
-				__func__);
-			return ret;
-		}
+		tasha_codec_enable_prim_interpolator(codec, reg, event);
 		if ((tasha->spkr_gain_offset == RX_GAIN_OFFSET_M1P5_DB) &&
 		    (tasha->comp_enabled[COMPANDER_7] ||
 		     tasha->comp_enabled[COMPANDER_8]) &&
@@ -8769,7 +8749,7 @@ static int tasha_codec_vbat_enable_event(struct snd_soc_dapm_widget *w,
 	int ret = 0;
 	struct snd_soc_codec *codec = w->codec;
 	struct tasha_priv *tasha = snd_soc_codec_get_drvdata(codec);
-	u16 vbat_path_ctl, vbat_cfg, vbat_path_cfg = 0;
+	u16 vbat_path_ctl, vbat_cfg, vbat_path_cfg;
 
 	vbat_path_ctl = WCD9335_CDC_VBAT_VBAT_PATH_CTL;
 	vbat_cfg = WCD9335_CDC_VBAT_VBAT_CFG;
@@ -13761,7 +13741,7 @@ static void tasha_cdc_change_cpe_clk(void *data,
 {
 	struct snd_soc_codec *codec = data;
 	struct tasha_priv *tasha;
-	u32 cpe_clk_khz, req_freq;
+	u32 cpe_clk_khz, req_freq = 0;
 
 	if (!codec) {
 		pr_err("%s: Invalid codec handle\n",
@@ -14560,7 +14540,7 @@ static int tasha_swrm_clock(void *handle, bool enable)
 					0x10, 0x10);
 		}
 	}
-	dev_dbg(tasha->dev, "%s: swrm clock users %d\n",
+	dev_info(tasha->dev, "%s: swrm clock users %d\n",
 		__func__, tasha->swr_clk_users);
 	mutex_unlock(&tasha->swr_clk_lock);
 	return 0;
