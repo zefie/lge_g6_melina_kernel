@@ -23,6 +23,9 @@ obj-$(CONFIG_MSM_BT_POWER)	+= bluetooth-power.o
 obj-$(CONFIG_BTFM_SLIM)				+= btfm_slim.o
 obj-$(CONFIG_BTFM_SLIM)				+= btfm_slim_codec.o
 obj-$(CONFIG_BTFM_SLIM_WCN3990)		+= btfm_slim_wcn3990.o
+obj-$(CONFIG_BT_BCM43XX)	+= bcm43xx.o
+obj-$(CONFIG_BT_MSM_SLEEP)	+= msm_bt_sleep.o
+msm_bt_sleep-objs		:= bluesleep.o
 
 #[H1_BT_BRINGUP_S] 
 obj-$(CONFIG_LGE_BLUETOOTH_PM)	+= bluetooth-pm.o

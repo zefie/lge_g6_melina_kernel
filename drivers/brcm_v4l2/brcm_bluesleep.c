@@ -32,6 +32,7 @@
     extern void bluetooth_pm_outgoing_data(void);
     extern int bluetooth_pm_sleep_start(void);
     extern void bluetooth_pm_sleep_stop(void);
+#undef LPM_BLUESLEEP
 #endif
 
 /**
