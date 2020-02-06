@@ -19,7 +19,6 @@ only compile them and let you try them. Keep that in mind.
  * Optimize for performance rather than size
  * Binary releases built with ubertc aarch64-linux-android-6.x
  * DriveDroid CD-ROM Emulation Support
- * Flash Friendly FS (F2FS) Support
  * Open source compatible replacement for Tuxera exFAT driver
  * zzmove and elementalx governors
  * Higher performance with lower battery usage
