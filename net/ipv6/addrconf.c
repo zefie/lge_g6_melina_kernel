@@ -91,7 +91,6 @@
 #include <linux/seq_file.h>
 #include <linux/export.h>
 
-#include <net/patchcodeid.h>
 /* Set to 3 to get tracing... */
 // LGE_CHANGE_S, [LGE_DATA][LGP_DATA_TCPIP_SLAAC_IPV6_ALLOCATION_BOOSTER], heeyeon.nah@lge.com, 2013-05-21
 //#define ACONF_DEBUG 2 // The original value.
@@ -3392,7 +3391,6 @@ static void addrconf_dad_kick(struct inet6_ifaddr *ifp)
 #ifdef CONFIG_IPV6_OPTIMISTIC_DAD
 /* 2017-11-24 samuel.seo@lge.com LGP_DATA_IMPROVE_QCT_EPDG_CONNECTION_TIME2 [START] */
 #ifdef CONFIG_LGP_DATA_IMPROVE_QCT_EPDG_CONNECTION_TIME
-		patch_code_id("LPCP-2334@y@c@vmlinux@addrconf.c@1");
 		if (idev->dev != NULL && strlen(idev->dev->name)>5 && !strncmp(idev->dev->name,"rmnet",5)) {
 			printk("addrconf_dad_kick it's rmnet!\n");
 			if (ifp && !dev_net(idev->dev)->ipv6.devconf_all->forwarding){
