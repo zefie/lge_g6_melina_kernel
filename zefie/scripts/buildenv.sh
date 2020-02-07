@@ -27,7 +27,7 @@ export KERNEL_NAME="MelinaReborn" # please change from Melina for custom builds
 export KERNEL_DEVNAME="${USER}" # can be normal name, defaults to linux username ;)
 
 export ANDROID_TARGET="AOSP" # Could be Lineage-14.0, or whatever. Just for zip name.
-export KERNEL_BUILDDIR="build" # A subdirectory in this repo that is in .gitignore and doesn't already exist. Best just leave it be.
+export KERNEL_BUILD_DIR="build" # A subdirectory in this repo that is in .gitignore and doesn't already exist. Best just leave it be.
 
 # These can be overridden by the env, using vars that replace DEFAULT_ with KERNEL_, ex: KERNEL_DEVMODEL
 export DEFAULT_MANU="LG" # for zip filename
@@ -42,7 +42,9 @@ export PATH="${PWD}/zefie/lz4demo:${PATH}"
 export ARCH="arm64"
 export DEFCONFIG_DIR="arch/${ARCH}/configs"
 KERNEL_NAME_LOWER="$(echo "${KERNEL_NAME}" | tr '[:upper:]' '[:lower:]')"
-export KERNEL_NAME_LOWER
+TC_VER=$("${TOOLCHAIN}gcc" --version | awk '/gcc /{print $0;exit 0;}')
+export KERNEL_NAME_LOWER TC_VER
+
 
 # Allow env override
 if [ -z "${TC_NAME}" ]; then export TC_NAME="${ZEFIE_TC_NAME}"; fi
@@ -53,6 +55,11 @@ if [ -z "${KERNEL_MODEL}" ]; then export KERNEL_MODEL="${DEFAULT_MODEL}"; fi
 if [ -z "${KERNEL_DEVMODEL}" ]; then export KERNEL_DEVMODEL="${DEFAULT_DEVMODEL}"; fi
 KERNEL_DEVMODEL_LOWER="$(echo "${KERNEL_DEVMODEL}" | tr '[:upper:]' '[:lower:]')"
 export KERNEL_DEVMODEL_LOWER
+
+if [ ! -z "${USE_CCACHE}" ]; then
+	export TOOLCHAIN="ccache ${TOOLCHAIN}"
+	export TOOLCHAIN32="ccache ${TOOLCHAIN32}"
+fi
 
 export CROSS_COMPILE="${TOOLCHAIN}"
 export CROSS_COMPILE_ARM32="${TOOLCHAIN32}"

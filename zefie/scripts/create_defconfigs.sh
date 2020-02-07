@@ -16,6 +16,7 @@ ORIG_DEFCONFIG_H872="lucye_tmo_us-perf_defconfig"
 read -r -d '' CUSTOM_CONFIG << EOM
 # Add custom config below here, above EOM line
 
+"${@}"
 EOM
 
 ### Do not edit below this line ###

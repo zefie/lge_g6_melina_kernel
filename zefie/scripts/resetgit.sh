@@ -6,7 +6,7 @@ source "${SCRIPTDIR}/buildenv.sh"
 function z_reset_git {
 	echo "Resetting source tree..."
 	rm -f .config .config.old
-	rm -rf "${KERNEL_BUILDDIR:?}/"*
+	rm -rf "${KERNEL_BUILD_DIR:?}/"*
 	git reset --hard
 	exit $?
 }
