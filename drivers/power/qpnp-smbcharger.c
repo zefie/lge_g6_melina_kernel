@@ -2315,8 +2315,10 @@ static int smbchg_set_usb_current_max(struct smbchg_chip *chip,
 	 * order to avoid browning out the device during a hotswap.
 	 */
 	if (!chip->batt_present && current_ma < chip->usb_max_current_ma) {
+#ifndef CONFIG_SILENCE_SMBCHG_LOG
 		pr_info_ratelimited("Ignoring usb current->%d, battery is absent\n",
 				current_ma);
+#endif
 		return 0;
 	}
 	pr_smb(PR_STATUS, "USB current_ma = %d\n", current_ma);
@@ -4816,11 +4818,13 @@ static int smbchg_config_chg_battery_type(struct smbchg_chip *chip)
 		ret = rc;
 	} else {
 		if (chip->vfloat_mv != (max_voltage_uv / 1000)) {
+#ifndef CONFIG_SILENCE_SMBCHG_LOG
 			pr_info("Vfloat changed from %dmV to %dmV for battery-type %s\n",
 				chip->vfloat_mv, (max_voltage_uv / 1000),
 				chip->battery_type);
 			rc = smbchg_float_voltage_set(chip,
 						(max_voltage_uv / 1000));
+#endif
 			if (rc < 0) {
 				dev_err(chip->dev,
 				"Couldn't set float voltage rc = %d\n", rc);
@@ -4838,9 +4842,11 @@ static int smbchg_config_chg_battery_type(struct smbchg_chip *chip)
 	} else if (!rc) {
 		if (chip->iterm_ma != (iterm_ua / 1000)
 				&& !chip->iterm_disabled) {
+#ifndef CONFIG_SILENCE_SMBCHG_LOG
 			pr_info("Term current changed from %dmA to %dmA for battery-type %s\n",
 				chip->iterm_ma, (iterm_ua / 1000),
 				chip->battery_type);
+#endif
 			rc = smbchg_iterm_set(chip,
 						(iterm_ua / 1000));
 			if (rc < 0) {
@@ -5132,9 +5138,10 @@ skip_current_config1:
 
 		chip->otp_ibat_current = lge_val.intval;
 
+#ifndef CONFIG_SILENCE_SMBCHG_LOG
 		pr_info("[LGE-CC] fcc %d, otp set %d\n", fcc_ma,
 				chip->otp_ibat_current);
-
+#endif
 		rc = chip->lge_cc_lpc->get_property(chip->lge_cc_lpc,
 				LGE_POWER_PROP_CHARGING_ENABLED, &lge_val);
 		if (lge_val.intval == -1)
@@ -5592,11 +5599,15 @@ static ssize_t at_chg_status_show(struct device *dev,
 	if (chg_type != POWER_SUPPLY_CHARGE_TYPE_NONE) {
 		b_chg_ok = true;
 		r = snprintf(buf, 3, "%d\n", b_chg_ok);
+#ifndef CONFIG_SILENCE_SMBCHG_LOG
 		pr_info("[Diag] true ! buf = %s, charging = 1\n", buf);
+#endif
 	} else {
 		b_chg_ok = false;
 		r = snprintf(buf, 3, "%d\n", b_chg_ok);
+#ifndef CONFIG_SILENCE_SMBCHG_LOG
 		pr_info("[Diag] false ! buf = %s, charging = 0\n", buf);
+#endif
 	}
 
 	return r;
@@ -5622,12 +5633,16 @@ static ssize_t at_chg_status_store(struct device *dev,
 
 	if (strncmp(buf, "0", 1) == 0) {
 		/* stop charging */
+#ifndef CONFIG_SILENCE_SMBCHG_LOG
 		pr_info("[Diag] stop charging\n");
+#endif
 		vote(chip->battchg_suspend_votable,
 			BATTCHG_ATCMD_EN_VOTER, true, 0);
 	} else if (strncmp(buf, "1", 1) == 0) {
 		/* start charging */
+#ifndef CONFIG_SILENCE_SMBCHG_LOG
 		pr_info("[Diag] start charging\n");
+#endif
 		vote(chip->battchg_suspend_votable,
 			BATTCHG_ATCMD_EN_VOTER, false, 0);
 	}
@@ -5686,12 +5701,16 @@ static ssize_t at_chg_complete_store(struct device *dev,
 
 	if (strncmp(buf, "0", 1) == 0) {
 		/* charging not complete */
+#ifndef CONFIG_SILENCE_SMBCHG_LOG
 		pr_info("[Diag] charging not complete start\n");
+#endif
 		vote(chip->battchg_suspend_votable,
 			BATTCHG_ATCMD_EN_VOTER, true, 0);
 	} else if (strncmp(buf, "1", 1) == 0) {
 		/* charging complete */
+#ifndef CONFIG_SILENCE_SMBCHG_LOG
 		pr_info("[Diag] charging complete start\n");
+#endif
 		vote(chip->battchg_suspend_votable,
 			BATTCHG_ATCMD_EN_VOTER, false, 0);
 	}
@@ -7365,7 +7384,9 @@ static void lge_cc_work_enable_check(struct work_struct *work)
 			chip->lge_sm_lpc = lge_power_get_by_name("lge_sm");
 #endif
 
+#ifndef CONFIG_SILENCE_SMBCHG_LOG
 		pr_info("Start lge_cc_work_enable\n");
+#endif
 		schedule_delayed_work(&chip->lge_cc_enable_work,
 				round_jiffies_relative(
 					msecs_to_jiffies(LGE_CC_WORK_ENABLE_DELAY)));
@@ -8513,7 +8534,9 @@ static void smbchg_external_power_changed(struct power_supply *psy)
 	if (chip->lge_cd_lpc){
 		rc = chip->lge_cd_lpc->get_property(chip->lge_cd_lpc,
 				LGE_POWER_PROP_CURRENT_MAX, &lge_val);
+#ifndef CONFIG_SILENCE_SMBCHG_LOG
 		pr_info("current_limit from cd : %d\n", lge_val.intval);
+#endif
 		if (rc == 0)
 			chip->cd_current_limit = lge_val.intval / 1000;
 		else
@@ -8735,12 +8758,16 @@ skip_current_for_non_sdp:
 			}
 			rc = chip->typec_psy->get_property(chip->typec_psy,
 					POWER_SUPPLY_PROP_TYPE, &prop);
+#ifndef CONFIG_SILENCE_SMBCHG_LOG
 			pr_info("usbc_type : %d, usb_supply_type : %d\n",
 					prop.intval, usb_supply_type);
+#endif
 			if (rc == 0) {
 				if ((prop.intval != 0) && (usb_supply_type !=
 							POWER_SUPPLY_TYPE_USB)) {
+#ifndef CONFIG_SILENCE_SMBCHG_LOG
 					pr_info ("cd_current_limit is %d\n", chip->cd_current_limit);
+#endif
 					if (chip->cd_current_limit != 0){
 						rc = vote(chip->usb_icl_votable, PSY_ICL_VOTER, true,
 								chip->cd_current_limit);
@@ -10255,7 +10282,9 @@ static void lgcc_charger_reginfo(struct work_struct *work) {
 		usb_ctype_name = "Type-c PD";
 	else
 		usb_ctype_name = "NONE";
+#ifndef CONFIG_SILENCE_SMBCHG_LOG
 	pr_info("usb ctype is %d\n", ret.intval);
+#endif
 #endif
 	min_vote = get_effective_result_locked(chip->fcc_votable);
 	total_ibat = chip->otp_ibat_current;
@@ -10411,6 +10440,7 @@ static void lgcc_charger_reginfo(struct work_struct *work) {
 		pr_err("fail to read CMD_IL, %d\n", rc);
 #endif
 
+#ifndef CONFIG_SILENCE_SMBCHG_LOG
 	pr_info ("[STATUS] USB_PRESENT[%d], PARALLEL_STATUS[%d], USB_TYPE[%s]\n",
 			usb_present, parallel_status, usb_type_name);
 	if (usb_present) {
@@ -10438,6 +10468,8 @@ static void lgcc_charger_reginfo(struct work_struct *work) {
 	pr_info("[STATS] ICL_STS_1[0x%02x] ICL_STS_2[0x%02x] CHGPTH_CMDIL[0x%02x]\n",
 			reg_icl_sts_1, reg_icl_sts_2, reg_chgpth_cmd_il);
 #endif
+#endif // CONFIG_SILENCE_SMBCHG_LOG
+
 	if (chip->usb_present) {
 		delay_time = CHARGING_INFORM_NORMAL_TIME / 2;
 	}
