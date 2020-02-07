@@ -18,7 +18,10 @@
 #include "mdss_rotator_internal.h"
 #include "mdss_panel.h"
 #include "mdss_mdp_trace.h"
+
+#ifdef CONFIG_DEBUG_FS
 #include "mdss_debug.h"
+#endif
 
 /*
  * if BWC enabled and format is H1V2 or 420, do not use site C or I.
@@ -150,7 +153,9 @@ static int mdss_mdp_writeback_addr_setup(struct mdss_mdp_writeback_ctx *ctx,
 	mdp_wb_write(ctx, MDSS_MDP_REG_WB_DST1_ADDR, data.p[1].addr);
 	mdp_wb_write(ctx, MDSS_MDP_REG_WB_DST2_ADDR, data.p[2].addr);
 	mdp_wb_write(ctx, MDSS_MDP_REG_WB_DST3_ADDR, data.p[3].addr);
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(ctx->wb_num, data.p[0].addr, data.p[1].addr, data.p[2].addr, data.p[3].addr); //QCT debug patch for SMMU fault issue
+#endif
 	return 0;
 }
 
@@ -501,7 +506,9 @@ static int mdss_mdp_writeback_stop(struct mdss_mdp_ctl *ctl,
 	struct mdss_mdp_vsync_handler *t, *handle;
 
 	pr_debug("stop ctl=%d\n", ctl->num);
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(ctl->num); //QCT debug patch for SMMU fault issue
+#endif
 
 	ctx = (struct mdss_mdp_writeback_ctx *) ctl->priv_data;
 	if (ctx) {
@@ -548,7 +555,9 @@ static void mdss_mdp_writeback_intr_done(void *arg)
 	spin_unlock(&ctx->wb_lock);
 
 	complete_all(&ctx->wb_comp);
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(ctx->wb_num, ctx->type, ctx->xin_id, ctx->intf_num);
+#endif
 }
 
 static bool mdss_mdp_traffic_shaper_helper(struct mdss_mdp_ctl *ctl,
@@ -787,7 +796,9 @@ static int mdss_mdp_writeback_display(struct mdss_mdp_ctl *ctl, void *arg)
 	flush_bits |= BIT(16); /* WB */
 	mdp_wb_write(ctx, MDSS_MDP_REG_WB_DST_ADDR_SW_STATUS, ctl->is_secure);
 	mdss_mdp_ctl_write(ctl, MDSS_MDP_REG_CTL_FLUSH, flush_bits);
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(ctl->intf_num, flush_bits);
+#endif
 
 	reinit_completion(&ctx->wb_comp);
 	mdss_mdp_irq_enable(ctx->intr_type, ctx->intf_num);
@@ -803,8 +814,10 @@ static int mdss_mdp_writeback_display(struct mdss_mdp_ctl *ctl, void *arg)
 	mdss_mdp_ctl_write(ctl, MDSS_MDP_REG_CTL_START, 1);
 	wmb();
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(ctx->wb_num, ctx->type, ctx->xin_id, ctx->intf_num,
 		ctx->dst_rect.w, ctx->dst_rect.h);
+#endif
 	pr_debug("ctx%d type:%d xin_id:%d intf_num:%d start\n",
 		ctx->wb_num, ctx->type, ctx->xin_id, ctx->intf_num);
 

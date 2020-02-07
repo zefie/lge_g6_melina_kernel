@@ -26,7 +26,9 @@
 #include "mdss_fb.h"
 #include "mdss_mdp.h"
 #include "mdss_mdp_formats.h"
+#ifdef CONFIG_DEBUG_FS
 #include "mdss_debug.h"
+#endif
 #include "mdss_smmu.h"
 #include "mdss_panel.h"
 
@@ -939,7 +941,9 @@ static int mdss_mdp_put_img(struct mdss_mdp_img_data *data, bool rotator,
 	} else if (!IS_ERR_OR_NULL(data->srcp_dma_buf)) {
 		pr_debug("ion hdl=%pK buf=0x%pa\n", data->srcp_dma_buf,
 							&data->addr);
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 		MDSS_XLOG(data->srcp_dma_buf, &data->addr, data->mapped); //QCT debug patch for SMMU fault issue
+#endif
 		if (!iclient) {
 			pr_err("invalid ion client\n");
 			return -ENOMEM;
@@ -1106,7 +1110,9 @@ static int mdss_mdp_get_img(struct msmfb_data *img,
 		pr_debug("mem=%d ihdl=%pK buf=0x%pa len=0x%lx\n",
 			 img->memory_id, data->srcp_dma_buf, &data->addr,
 			 data->len);
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 		MDSS_XLOG(img->memory_id, data->srcp_dma_buf, &data->addr, data->len); //QCT debug patch for SMMU fault issue
+#endif
 	} else {
 		mdss_mdp_put_img(data, rotator, dir);
 		return ret ? : -EOVERFLOW;

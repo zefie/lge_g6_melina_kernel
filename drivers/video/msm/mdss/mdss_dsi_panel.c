@@ -26,7 +26,10 @@
 #include <linux/display_state.h>
 
 #include "mdss_dsi.h"
+#ifdef CONFIG_DEBUG_FS
 #include "mdss_debug.h"
+#endif
+
 #ifdef TARGET_HW_MDSS_HDMI
 #include "mdss_dba_utils.h"
 #endif
@@ -632,7 +635,9 @@ static void mdss_dsi_panel_set_idle_mode(struct mdss_panel_data *pdata,
 	if (ctrl->idle == enable)
 		return;
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(ctrl->idle, enable);
+#endif
 	if (enable) {
 		if (ctrl->idle_on_cmds.cmd_cnt) {
 			mdss_dsi_panel_cmds_send(ctrl, &ctrl->idle_on_cmds,

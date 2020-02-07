@@ -412,7 +412,8 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -fno-strict-aliasing -fno-common \
 		   -Werror-implicit-function-declaration \
 		   -std=gnu89 \
-		   -mcpu=cortex-a57 -mtune=cortex-a57 -fdiagnostics-color=always
+		   -fdiagnostics-color=always
+
 
 ifneq ($(KBUILD_SRC),)
        ifeq ($(shell test $(shell $(KBUILD_SRC)/scripts/gcc-version.sh $(CC)) -ge 600; echo $$?),0)
@@ -650,6 +651,27 @@ endif
 
 # Tell gcc to never replace conditional load with a non-conditional one
 KBUILD_CFLAGS	+= $(call cc-option,--param=allow-store-data-races=0)
+
+ifdef CONFIG_MELINA_WARN_AS_ERR
+KBUILD_CFLAGS 	+= -Werror
+endif
+
+ifdef CONFIG_MELINA_OPTIMIZE_CORTEX_A53
+KBUILD_CFLAGS 	+= -mcpu=cortex-a53 -mtune=cortex-a53
+endif
+
+ifdef CONFIG_MELINA_OPTIMIZE_CORTEX_A57
+KBUILD_CFLAGS 	+= -mcpu=cortex-a57 -mtune=cortex-a57
+endif
+
+ifdef CONFIG_MELINA_OPTIMIZE_CORTEX_A72
+KBUILD_CFLAGS 	+= -mcpu=cortex-a72 -mtune=cortex-a72
+endif
+
+ifdef CONFIG_MELINA_OPTIMIZE_CORTEX_A72_A53
+KBUILD_CFLAGS 	+= -mcpu=cortex-a72.cortex-a53 -mtune=cortex-a72.cortex-a53
+endif
+
 
 ifdef CONFIG_READABLE_ASM
 # Disable optimizations that make assembler listings hard to read.

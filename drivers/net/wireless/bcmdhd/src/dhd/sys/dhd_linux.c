@@ -1022,14 +1022,17 @@ void dhd_select_cpu_candidacy(dhd_info_t *dhd)
 			compl_cpu = 0;
 	}
 
+#ifndef CONFIG_MELINA_QUIET_DHD
 	DHD_INFO(("%s After primary CPU check napi_cpu %d compl_cpu %d\n",
 		__FUNCTION__, napi_cpu, compl_cpu));
-
+#endif
 	/* -- Now check for the CPUs from the secondary mask -- */
 	available_cpus = cpumask_weight(dhd->cpumask_secondary_new);
 
+#ifndef CONFIG_MELINA_QUIET_DHD
 	DHD_INFO(("%s Available secondary cpus %d nr_cpu_ids %d\n",
 		__FUNCTION__, available_cpus, nr_cpu_ids));
+#endif
 
 	if (available_cpus > 0) {
 		/* At this point if napi_cpu is unassigned it means no CPU
@@ -1051,8 +1054,10 @@ void dhd_select_cpu_candidacy(dhd_info_t *dhd)
 		compl_cpu = 0;
 	}
 
+#ifndef CONFIG_MELINA_QUIET_DHD
 	DHD_INFO(("%s After secondary CPU check napi_cpu %d compl_cpu %d\n",
 		__FUNCTION__, napi_cpu, compl_cpu));
+#endif
 	ASSERT(napi_cpu < nr_cpu_ids);
 	ASSERT(compl_cpu < nr_cpu_ids);
 
@@ -2282,9 +2287,10 @@ dhd_napi_poll(struct napi_struct *napi, int budget)
 	struct sk_buff_head rx_process_queue;
 
 	dhd = container_of(napi, struct dhd_info, rx_napi_struct);
+#ifndef CONFIG_MELINA_QUIET_DHD
 	DHD_INFO(("%s napi_queue<%d> budget<%d>\n",
 		__FUNCTION__, skb_queue_len(&dhd->rx_napi_queue), budget));
-
+#endif
 	__skb_queue_head_init(&rx_process_queue);
 
 	/* extract the entire rx_napi_queue into local rx_process_queue */
@@ -2297,8 +2303,10 @@ dhd_napi_poll(struct napi_struct *napi, int budget)
 
 		ifid = DHD_PKTTAG_IFID((dhd_pkttag_fr_t *)PKTTAG(skb));
 
+#ifndef CONFIG_MELINA_QUIET_DHD
 		DHD_INFO(("%s dhd_rx_frame pkt<%p> ifid<%d>\n",
 			__FUNCTION__, skb, ifid));
+#endif
 
 		dhd_rx_frame(&dhd->pub, ifid, skb, pkt_count, chan);
 		processed++;
@@ -2306,7 +2314,9 @@ dhd_napi_poll(struct napi_struct *napi, int budget)
 
 	DHD_LB_STATS_UPDATE_NAPI_HISTO(&dhd->pub, processed);
 
+#ifndef CONFIG_MELINA_QUIET_DHD
 	DHD_INFO(("%s processed %d\n", __FUNCTION__, processed));
+#endif
 	napi_complete(napi);
 
 	return budget - 1;
@@ -2327,8 +2337,10 @@ dhd_napi_schedule(void *info)
 {
 	dhd_info_t *dhd = (dhd_info_t *)info;
 
+#ifndef CONFIG_MELINA_QUIET_DHD
 	DHD_INFO(("%s rx_napi_struct<%p> on cpu<%d>\n",
 		__FUNCTION__, &dhd->rx_napi_struct, atomic_read(&dhd->rx_napi_cpu)));
+#endif
 
 	/* add napi_struct to softnet data poll list and raise NET_RX_SOFTIRQ */
 	if (napi_schedule_prep(&dhd->rx_napi_struct)) {
@@ -2356,8 +2368,10 @@ dhd_napi_schedule_on(dhd_info_t *dhd, int on_cpu)
 {
 	int wait = 0; /* asynchronous IPI */
 
+#ifndef CONFIG_MELINA_QUIET_DHD
 	DHD_INFO(("%s dhd<%p> napi<%p> on_cpu<%d>\n",
 		__FUNCTION__, dhd, &dhd->rx_napi_struct, on_cpu));
+#endif
 
 	if (smp_call_function_single(on_cpu, dhd_napi_schedule, dhd, wait)) {
 		DHD_ERROR(("%s smp_call_function_single on_cpu<%d> failed\n",
@@ -2430,8 +2444,10 @@ dhd_lb_rx_napi_dispatch(dhd_pub_t *dhdp)
 		return;
 	}
 
+#ifndef CONFIG_MELINA_QUIET_DHD
 	DHD_INFO(("%s append napi_queue<%d> pend_queue<%d>\n", __FUNCTION__,
 		skb_queue_len(&dhd->rx_napi_queue), skb_queue_len(&dhd->rx_pend_queue)));
+#endif
 
 	/* append the producer's queue of packets to the napi's rx process queue */
 	spin_lock_irqsave(&dhd->rx_napi_queue.lock, flags);
@@ -2462,8 +2478,10 @@ dhd_lb_rx_pkt_enqueue(dhd_pub_t *dhdp, void *pkt, int ifidx)
 {
 	dhd_info_t *dhd = dhdp->info;
 
+#ifndef CONFIG_MELINA_QUIET_DHD
 	DHD_INFO(("%s enqueue pkt<%p> ifidx<%d> pend_queue<%d>\n", __FUNCTION__,
 		pkt, ifidx, skb_queue_len(&dhd->rx_pend_queue)));
+#endif
 	DHD_PKTTAG_SET_IFID((dhd_pkttag_fr_t *)PKTTAG(pkt), ifidx);
 	__skb_queue_tail(&dhd->rx_pend_queue, pkt);
 }
@@ -2772,9 +2790,11 @@ static int dhd_set_suspend(int value, dhd_pub_t *dhd)
 							DHD_ERROR(("%s: failed to enable NDO\n",
 								__FUNCTION__));
 						}
+#ifndef CONFIG_MELINA_QUIET_DHD
 					} else {
 						DHD_INFO(("%s: NDO disabled on suspend due to"
 								"HW capacity\n", __FUNCTION__));
+#endif
 					}
 				}
 #endif /* NDO_CONFIG_SUPPORT */
@@ -3496,10 +3516,12 @@ dhd_set_mac_addr_handler(void *handle, void *event_info, u8 event)
 
 	DHD_ERROR(("%s: MACID is overwritten\n", __FUNCTION__));
 	ifp->set_macaddress = FALSE;
-	if (_dhd_set_mac_address(dhd, ifp->idx, ifp->mac_addr) == 0)
-		DHD_INFO(("%s: MACID is overwritten\n",	__FUNCTION__));
-	else
+	if (_dhd_set_mac_address(dhd, ifp->idx, ifp->mac_addr) != 0)
 		DHD_ERROR(("%s: _dhd_set_mac_address() failed\n", __FUNCTION__));
+#ifndef CONFIG_MELINA_QUIET_DHD
+	else
+		DHD_INFO(("%s: MACID is overwritten\n",	__FUNCTION__));
+#endif
 
 done:
 	DHD_PERIM_UNLOCK(&dhd->pub);
@@ -3563,7 +3585,9 @@ dhd_set_mcast_list_handler(void *handle, void *event_info, u8 event)
 #endif /* MCAST_LIST_ACCUMULATION */
 
 	_dhd_set_multicast_list(dhd, ifidx);
+#ifndef CONFIG_MELINA_QUIET_DHD
 	DHD_INFO(("%s: set multicast list for if %d\n", __FUNCTION__, ifidx));
+#endif
 
 done:
 	DHD_PERIM_UNLOCK(&dhd->pub);
@@ -4082,8 +4106,10 @@ dhd_start_xmit(struct sk_buff *skb, struct net_device *net)
 	if (skb_headroom(skb) < dhd->pub.hdrlen + htsfdlystat_sz) {
 		struct sk_buff *skb2;
 
+#ifndef CONFIG_MELINA_QUIET_DHD
 		DHD_INFO(("%s: insufficient headroom\n",
 		          dhd_ifname(&dhd->pub, ifidx)));
+#endif
 		dhd->pub.tx_realloc++;
 
 		bcm_object_trace_opr(skb, BCM_OBJDBG_REMOVE, __FUNCTION__, __LINE__);
@@ -5093,9 +5119,11 @@ dhd_dpc_thread(void *data)
 #if defined(CUSTOMER_HW4)
 					resched_cnt++;
 					if (resched_cnt > MAX_RESCHED_CNT) {
+#ifndef CONFIG_MELINA_QUIET_DHD
 						DHD_INFO(("%s Calling msleep to"
 							"let other processes run. \n",
 							__FUNCTION__));
+#endif
 						dhd->pub.dhd_bug_on = true;
 						resched_cnt = 0;
 						OSL_SLEEP(1);
@@ -5391,7 +5419,9 @@ dhd_toe_get(dhd_info_t *dhd, int ifidx, uint32 *toe_ol)
 			return -EOPNOTSUPP;
 		}
 
+#ifndef CONFIG_MELINA_QUIET_DHD
 		DHD_INFO(("%s: could not get toe_ol: ret=%d\n", dhd_ifname(&dhd->pub, ifidx), ret));
+#endif
 		return ret;
 	}
 
@@ -6054,8 +6084,10 @@ dhd_stop(struct net_device *net)
 
 #if defined(DHD_LB) && defined(DHD_LB_RXP)
 		if (ifp->net == dhd->rx_napi_netdev) {
+#ifndef CONFIG_MELINA_QUIET_DHD
 			DHD_INFO(("%s napi<%p> disabled ifp->net<%p,%s>\n",
 				__FUNCTION__, &dhd->rx_napi_struct, net, net->name));
+#endif
 			skb_queue_purge(&dhd->rx_napi_queue);
 			napi_disable(&dhd->rx_napi_struct);
 			netif_napi_del(&dhd->rx_napi_struct);
@@ -6372,10 +6404,14 @@ dhd_open(struct net_device *net)
 			memset(&dhd->rx_napi_struct, 0, sizeof(struct napi_struct));
 			netif_napi_add(dhd->rx_napi_netdev, &dhd->rx_napi_struct,
 					dhd_napi_poll, dhd_napi_weight);
+#ifndef CONFIG_MELINA_QUIET_DHD
 			DHD_INFO(("%s napi<%p> enabled ifp->net<%p,%s>\n",
 					__FUNCTION__, &dhd->rx_napi_struct, net, net->name));
+#endif
 			napi_enable(&dhd->rx_napi_struct);
+#ifndef CONFIG_MELINA_QUIET_DHD
 			DHD_INFO(("%s load balance init rx_napi_struct\n", __FUNCTION__));
+#endif
 			skb_queue_head_init(&dhd->rx_napi_queue);
 		}
 #endif /* DHD_LB && DHD_LB_RXP */
@@ -7252,14 +7288,18 @@ dhd_attach(osl_t *osh, struct dhd_bus *bus, uint bus_hdrlen)
 	tasklet_init(&dhd->tx_compl_tasklet,
 		dhd_lb_tx_compl_handler, (ulong)(&dhd->pub));
 	INIT_WORK(&dhd->tx_compl_dispatcher_work, dhd_tx_compl_dispatcher_fn);
+#ifndef CONFIG_MELINA_QUIET_DHD
 	DHD_INFO(("%s load balance init tx_compl_tasklet\n", __FUNCTION__));
+#endif
 #endif /* DHD_LB_TXC */
 
 #if defined(DHD_LB_RXC)
 	tasklet_init(&dhd->rx_compl_tasklet,
 		dhd_lb_rx_compl_handler, (ulong)(&dhd->pub));
 	INIT_WORK(&dhd->rx_compl_dispatcher_work, dhd_rx_compl_dispatcher_fn);
+#ifndef CONFIG_MELINA_QUIET_DHD
 	DHD_INFO(("%s load balance init rx_compl_tasklet\n", __FUNCTION__));
+#endif
 #endif /* DHD_LB_RXC */
 
 #if defined(DHD_LB_RXP)
@@ -7268,7 +7308,9 @@ dhd_attach(osl_t *osh, struct dhd_bus *bus, uint bus_hdrlen)
 
 	/* Initialize the work that dispatches NAPI job to a given core */
 	INIT_WORK(&dhd->rx_napi_dispatcher_work, dhd_rx_napi_dispatcher_fn);
+#ifndef CONFIG_MELINA_QUIET_DHD
 	DHD_INFO(("%s load balance init rx_napi_queue\n", __FUNCTION__));
+#endif
 #endif /* DHD_LB_RXP */
 
 #endif /* DHD_LB */
@@ -7481,7 +7523,9 @@ dhd_bus_start(dhd_pub_t *dhdp)
 
 	/* try to download image and nvram to the dongle */
 	if  (dhd->pub.busstate == DHD_BUS_DOWN && dhd_update_fw_nv_path(dhd)) {
+#ifndef CONFIG_MELINA_QUIET_DHD
 		DHD_INFO(("%s download fw %s, nv %s\n", __FUNCTION__, dhd->fw_path, dhd->nv_path));
+#endif
 		ret = dhd_bus_download_firmware(dhd->pub.bus, dhd->pub.osh,
 		                                dhd->fw_path, dhd->nv_path);
 		if (ret < 0) {
@@ -8088,7 +8132,9 @@ static int dhd_preinit_proc(dhd_pub_t *dhd, int ifidx, char *name, char *value)
 		}
 		/* Setup timeout bcm_timeout from dhd driver 4.217.48 */
 
+#ifndef CONFIG_MELINA_QUIET_DHD
 		DHD_INFO(("%s:[%s]=[%d]\n", __FUNCTION__, name, var_int));
+#endif
 
 		if ((ret = dhd_iovar(dhd, 0, name, (char *)&var_int, sizeof(var_int),
 			NULL, 0, TRUE)) < 0) {
@@ -8364,7 +8410,9 @@ dhd_preinit_ioctls(dhd_pub_t *dhd)
 			__FUNCTION__));
 	} else {
 		dhd_os_set_ioctl_resp_timeout(IOCTL_RESP_TIMEOUT);
+#ifndef CONFIG_MELINA_QUIET_DHD
 		DHD_INFO(("%s : Set IOCTL response time.\n", __FUNCTION__));
+#endif
 	}
 #ifdef GET_CUSTOM_MAC_ENABLE
 	ret = wifi_platform_get_mac_addr(dhd->info->adapter, ea_addr.octet);
@@ -8523,8 +8571,10 @@ dhd_preinit_ioctls(dhd_pub_t *dhd)
 					NULL, 0, TRUE);
 			if (ret < 0)
 				DHD_ERROR(("%s p2p_da_override ret= %d\n", __FUNCTION__, ret));
+#ifndef CONFIG_MELINA_QUIET_DHD
 			else
 				DHD_INFO(("dhd_preinit_ioctls: p2p_da_override succeeded\n"));
+#endif
 		}
 #else
 	(void)concurrent_mode;
@@ -8651,7 +8701,9 @@ dhd_preinit_ioctls(dhd_pub_t *dhd)
 	}
 #endif /* CUSTOMER_HW4 && USE_WFA_CERT_CONF */
 	if (glom != DEFAULT_GLOM_VALUE) {
+#ifndef CONFIG_MELINA_QUIET_DHD
 		DHD_INFO(("%s set glom=0x%X\n", __FUNCTION__, glom));
+#endif
 		dhd_iovar(dhd, 0, "bus:txglom", (char *)&glom, sizeof(glom), NULL, 0, TRUE);
 	}
 #endif /* defined(BCMSDIO) */
@@ -8718,7 +8770,9 @@ dhd_preinit_ioctls(dhd_pub_t *dhd)
 /* Set frameburst to value */
 	if ((ret = dhd_wl_ioctl_cmd(dhd, WLC_SET_FAKEFRAG, (char *)&frameburst,
 		sizeof(frameburst), TRUE, 0)) < 0) {
+#ifndef CONFIG_MELINA_QUIET_DHD
 		DHD_INFO(("%s frameburst not supported  %d\n", __FUNCTION__, ret));
+#endif
 	}
 #ifdef DHD_SET_FW_HIGHSPEED
 	/* Set ack_ratio */
@@ -9198,7 +9252,9 @@ dhd_preinit_ioctls(dhd_pub_t *dhd)
 	/* ND offload version supported */
 	dhd->ndo_version = dhd_ndo_get_version(dhd);
 	if (dhd->ndo_version > 0) {
+#ifndef CONFIG_MELINA_QUIET_DHD
 		DHD_INFO(("%s: ndo version %d\n", __FUNCTION__, dhd->ndo_version));
+#endif
 
 #ifdef NDO_CONFIG_SUPPORT
 		/* enable Unsolicited NA filter */
@@ -9267,8 +9323,10 @@ dhd_iovar(dhd_pub_t *pub, int ifidx, char *name, char *param_buf, uint param_len
 		}
 
 		if (res_len < input_len) {
+#ifndef CONFIG_MELINA_QUIET_DHD
 			DHD_INFO(("%s: res_len(%d) < input_len(%d)\n", __FUNCTION__,
 					res_len, input_len));
+#endif
 			buf = kzalloc(input_len, GFP_KERNEL);
 			if (!buf) {
 				DHD_ERROR(("%s: mem alloc failed\n", __FUNCTION__));
@@ -11408,7 +11466,9 @@ dhd_dev_ndo_update_inet6addr(struct net_device *dev)
 		ifa = list_entry(p, struct inet6_ifaddr, if_list);
 		if (ifa->flags & IFA_F_DADFAILED) {
 			/* Remove DAD failed address */
+#ifndef CONFIG_MELINA_QUIET_DHD
 			DHD_INFO(("%s: Remove DAD failed addr\n", __FUNCTION__));
+#endif
 			ret = dhd_ndo_remove_ip_by_addr(&dhd->pub, (char *)&ifa->addr, 0);
 			if (ret < 0) {
 				return ret;
@@ -11457,7 +11517,9 @@ dhd_dev_ndo_update_inet6addr(struct net_device *dev)
 
 		if (dhd->pub.in_suspend) {
 			/* drvier is in (early) suspend state, need to enable NDO in FW */
+#ifndef CONFIG_MELINA_QUIET_DHD
 			DHD_INFO(("%s: enable NDO\n", __FUNCTION__));
+#endif
 			ret = dhd_ndo_enable(&dhd->pub, 1);
 		}
 	}
@@ -12079,7 +12141,9 @@ dhd_dev_stop_mkeep_alive(dhd_pub_t *dhd_pub, u8 mkeep_alive_id)
 	wl_mkeep_alive_pkt_t	mkeep_alive_pkt;
 	wl_mkeep_alive_pkt_t	*mkeep_alive_pktp;
 	int			res = BCME_ERROR;
+#ifndef CONFIG_MELINA_QUIET_DHD
 	int			i;
+#endif
 
 	/*
 	 * The mkeep_alive packet is for STA interface only; if the bss is configured as AP,
@@ -12106,6 +12170,7 @@ dhd_dev_stop_mkeep_alive(dhd_pub_t *dhd_pub, u8 mkeep_alive_id)
 	} else {
 		/* Check occupied ID */
 		mkeep_alive_pktp = (wl_mkeep_alive_pkt_t *) pbuf;
+#ifndef CONFIG_MELINA_QUIET_DHD
 		DHD_INFO(("%s: mkeep_alive\n", __FUNCTION__));
 		DHD_INFO(("   Id    : %d\n"
 			"   Period: %d msec\n"
@@ -12119,11 +12184,14 @@ dhd_dev_stop_mkeep_alive(dhd_pub_t *dhd_pub, u8 mkeep_alive_id)
 			DHD_INFO(("%02x", mkeep_alive_pktp->data[i]));
 		}
 		DHD_INFO(("\n"));
+#endif
 	}
 
 	/* Make it stop if available */
 	if (dtoh32(mkeep_alive_pktp->period_msec != 0)) {
+#ifndef CONFIG_MELINA_QUIET_DHD
 		DHD_INFO(("stop mkeep_alive on ID %d\n", mkeep_alive_id));
+#endif
 		memset(&mkeep_alive_pkt, 0, sizeof(wl_mkeep_alive_pkt_t));
 
 		mkeep_alive_pkt.period_msec = 0;
@@ -12580,7 +12648,9 @@ int net_os_send_hang_message_reason(struct net_device *dev, const char *string_n
 	}
 
 	reason = bcm_strtoul(string_num, NULL, 0);
+#ifndef CONFIG_MELINA_QUIET_DHD
 	DHD_INFO(("%s: Enter, reason=0x%x\n", __FUNCTION__, reason));
+#endif
 
 	if ((reason <= HANG_REASON_MASK) || (reason >= HANG_REASON_MAX)) {
 		reason = 0;
@@ -12651,10 +12721,14 @@ int dhd_net_set_fw_path(struct net_device *dev, char *fw)
 
 #if defined(SOFTAP)
 	if (strstr(fw, "apsta") != NULL) {
+#ifndef CONFIG_MELINA_QUIET_DHD
 		DHD_INFO(("GOT APSTA FIRMWARE\n"));
+#endif
 		ap_fw_loaded = TRUE;
 	} else {
+#ifndef CONFIG_MELINA_QUIET_DHD
 		DHD_INFO(("GOT STA FIRMWARE\n"));
+#endif
 		ap_fw_loaded = FALSE;
 	}
 #endif 
@@ -14184,18 +14258,24 @@ void htsf_update(dhd_info_t *dhd, void *data)
 	memcpy(&cur_tsf, data, sizeof(tsf_t));
 
 	if (cur_tsf.low == 0) {
+#ifndef CONFIG_MELINA_QUIET_DHD
 		DHD_INFO((" ---- 0 TSF, do not update, return\n"));
+#endif
 		return;
 	}
 
 	if (cur_tsf.low > prev_tsf.low)
 		tsf_delta = (cur_tsf.low - prev_tsf.low);
 	else {
+#ifndef CONFIG_MELINA_QUIET_DHD
 		DHD_INFO((" ---- tsf low is smaller cur_tsf= %08X, prev_tsf=%08X, \n",
+#endif
 		 cur_tsf.low, prev_tsf.low));
 		if (cur_tsf.high > prev_tsf.high) {
 			tsf_delta = cur_tsf.low + (0xFFFFFFFF - prev_tsf.low);
+#ifndef CONFIG_MELINA_QUIET_DHD
 			DHD_INFO((" ---- Wrap around tsf coutner  adjusted TSF=%08X\n", tsf_delta));
+#endif
 		} else {
 			return; /* do not update */
 		}
@@ -14681,14 +14761,20 @@ int dhd_rps_cpus_enable(struct net_device *net, int enable)
 
 	if (ifidx == PRIMARY_INF) {
 		if (dhd->pub.op_mode == DHD_FLAG_IBSS_MODE) {
+#ifndef CONFIG_MELINA_QUIET_DHD
 			DHD_INFO(("%s : set for IBSS.\n", __FUNCTION__));
+#endif
 			RPS_CPU_SETBUF = RPS_CPUS_MASK_IBSS;
 		} else {
+#ifndef CONFIG_MELINA_QUIET_DHD
 			DHD_INFO(("%s : set for BSS.\n", __FUNCTION__));
+#endif
 			RPS_CPU_SETBUF = RPS_CPUS_MASK;
 		}
 	} else if (ifidx == VIRTUAL_INF) {
+#ifndef CONFIG_MELINA_QUIET_DHD
 		DHD_INFO(("%s : set for P2P.\n", __FUNCTION__));
+#endif
 		RPS_CPU_SETBUF = RPS_CPUS_MASK_P2P;
 	} else {
 		DHD_ERROR(("%s : Invalid index : %d.\n", __FUNCTION__, ifidx));
@@ -14698,7 +14784,9 @@ int dhd_rps_cpus_enable(struct net_device *net, int enable)
 	ifp = dhd->iflist[ifidx];
 	if (ifp) {
 		if (enable) {
+#ifndef CONFIG_MELINA_QUIET_DHD
 			DHD_INFO(("%s : set rps_cpus as [%s]\n", __FUNCTION__, RPS_CPU_SETBUF));
+#endif
 			custom_rps_map_set(ifp->net->_rx, RPS_CPU_SETBUF, strlen(RPS_CPU_SETBUF));
 #if (defined(DHDTCPACK_SUPPRESS) && defined(BCMPCIE))
 			DHD_TRACE(("%s : set ack suppress. TCPACK_SUP_HOLD.\n", __FUNCTION__));
@@ -14725,7 +14813,9 @@ int custom_rps_map_set(struct netdev_rx_queue *queue, char *buf, size_t len)
 	int err, cpu, i;
 	static DEFINE_SPINLOCK(rps_map_lock);
 
+#ifndef CONFIG_MELINA_QUIET_DHD
 	DHD_INFO(("%s : Entered.\n", __FUNCTION__));
+#endif
 
 	if (!alloc_cpumask_var(&mask, GFP_KERNEL)) {
 		DHD_ERROR(("%s : alloc_cpumask_var fail.\n", __FUNCTION__));
@@ -14778,7 +14868,9 @@ int custom_rps_map_set(struct netdev_rx_queue *queue, char *buf, size_t len)
 	}
 	free_cpumask_var(mask);
 
+#ifndef CONFIG_MELINA_QUIET_DHD
 	DHD_INFO(("%s : Done. mapping cpu nummber : %d\n", __FUNCTION__, map->len));
+#endif
 	return map->len;
 }
 
@@ -14786,13 +14878,17 @@ void custom_rps_map_clear(struct netdev_rx_queue *queue)
 {
 	struct rps_map *map;
 
+#ifndef CONFIG_MELINA_QUIET_DHD
 	DHD_INFO(("%s : Entered.\n", __FUNCTION__));
+#endif
 
 	map = rcu_dereference_protected(queue->rps_map, 1);
 	if (map) {
 		RCU_INIT_POINTER(queue->rps_map, NULL);
 		kfree_rcu(map, rcu);
+#ifndef CONFIG_MELINA_QUIET_DHD
 		DHD_INFO(("%s : rps_cpus map clear.\n", __FUNCTION__));
+#endif
 	}
 }
 #endif 

@@ -20,7 +20,9 @@
 
 #include "mdss.h"
 #include "mdss_mdp.h"
+#ifdef CONFIG_DEBUG_FS
 #include "mdss_debug.h"
+#endif
 
 #define MDSS_SMMU_COMPATIBLE "qcom,smmu"
 #define SMMU_CBN_FSYNR1		0x6c
@@ -120,7 +122,9 @@ static inline int mdss_smmu_attach(struct mdss_data_type *mdata)
 	int rc;
 
 	mdata->mdss_util->iommu_lock();
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(mdata->iommu_attached);
+#endif
 
 	if (mdata->iommu_attached) {
 		pr_debug("mdp iommu already attached\n");
@@ -147,7 +151,9 @@ static inline int mdss_smmu_detach(struct mdss_data_type *mdata)
 	int rc;
 
 	mdata->mdss_util->iommu_lock();
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(mdata->iommu_attached);
+#endif
 
 	if (!mdata->iommu_attached) {
 		pr_debug("mdp iommu already dettached\n");

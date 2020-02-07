@@ -30,7 +30,7 @@
  */
 
 #define pr_fmt(fmt) "CHARGING-TIME: %s: " fmt, __func__
-#ifndef CONFIG_SILENCE_SMBCHG_LOG
+#ifndef CONFIG_MELINA_QUIET_SMBCHG
 #define pr_chgtime(reason, fmt, ...)			\
 do {							\
 	if (debug_mask & (reason))			\

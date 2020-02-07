@@ -560,7 +560,9 @@ static int dhdpcie_device_scan(struct device *dev, void *data)
 	if (pcidev->vendor != 0x14e4)
 		return 0;
 
+#ifndef CONFIG_MELINA_QUIET_DHD
 	DHD_INFO(("Found Broadcom PCI device 0x%04x\n", pcidev->device));
+#endif
 	*cnt += 1;
 	if (pcidev->driver && strcmp(pcidev->driver->name, dhdpcie_driver.name))
 		DHD_ERROR(("Broadcom PCI Device 0x%04x has allocated with driver %s\n",
@@ -992,8 +994,10 @@ int dhdpcie_init(struct pci_dev *pdev)
 			}
 		} else {
 			bus->pollrate = 1;
+#ifndef CONFIG_MELINA_QUIET_DHD
 			DHD_INFO(("%s: PCIe interrupt function is NOT registered "
 				"due to polling mode\n", __FUNCTION__));
+#endif
 		}
 
 #if defined(BCM_REQUEST_FW)
@@ -1597,7 +1601,9 @@ bool dhd_runtimepm_state(dhd_pub_t *dhd)
 	DHD_GENERAL_LOCK(dhd, flags);
 	if (bus->suspended == TRUE) {
 		DHD_GENERAL_UNLOCK(dhd, flags);
+#ifndef CONFIG_MELINA_QUIET_DHD
 		DHD_INFO(("Bus is already suspended system PM: %d\n", bus->suspended));
+#endif
 		return FALSE;
 	}
 
@@ -1614,11 +1620,15 @@ bool dhd_runtimepm_state(dhd_pub_t *dhd)
 			/* stop all interface network queue. */
 			dhd_bus_stop_queue(bus);
 			DHD_GENERAL_UNLOCK(dhd, flags);
+#ifndef CONFIG_MELINA_QUIET_DHD
 			DHD_INFO(("%s: DHD Idle state!! -  idletime :%d, wdtick :%d \n",
 					__FUNCTION__, bus->idletime, dhd_runtimepm_ms));
+#endif
 			/* RPM suspend is failed, return FALSE then re-trying */
 			if (dhdpcie_set_suspend_resume(bus->dev, TRUE)) {
+#ifndef CONFIG_MELINA_QUIET_DHD
 				DHD_INFO(("%s: runtime suspend failed \n", __FUNCTION__));
+#endif
 				DHD_GENERAL_LOCK(dhd, flags);
 				dhd->dhd_bus_busy_state &= ~DHD_BUS_BUSY_RPM_SUSPEND_IN_PROGRESS;
 				bus->runtime_resume_done = TRUE;
@@ -1666,7 +1676,9 @@ bool dhd_runtimepm_state(dhd_pub_t *dhd)
 
 			smp_wmb();
 			wake_up_interruptible(&bus->rpm_queue);
+#ifndef CONFIG_MELINA_QUIET_DHD
 			DHD_INFO(("%s : runtime resume ended\n", __FUNCTION__));
+#endif
 			return TRUE;
 		} else {
 			DHD_GENERAL_UNLOCK(dhd, flags);
@@ -1694,7 +1706,9 @@ bool dhd_runtime_bus_wake(dhd_bus_t *bus, bool wait, void *func_addr)
 	bus->idlecount = 0;
 	DHD_TRACE(("%s : enter\n", __FUNCTION__));
 	if (bus->dhd->up == FALSE) {
+#ifndef CONFIG_MELINA_QUIET_DHD
 		DHD_INFO(("%s : dhd is not up\n", __FUNCTION__));
+#endif
 		return FALSE;
 	}
 
@@ -1736,8 +1750,10 @@ bool dhd_runtime_bus_wake(dhd_bus_t *bus, bool wait, void *func_addr)
 					try_limit--;
 				}
 			}
+#ifndef CONFIG_MELINA_QUIET_DHD
 		} else {
 			DHD_INFO(("%s: bus wakeup but no wait until resume done\n", __FUNCTION__));
+#endif
 		}
 		/* If it is called from RPM context, it returns TRUE */
 		return TRUE;

@@ -19,7 +19,10 @@
 #include "mdss_fb.h"
 #include "mdss_mdp.h"
 #include "mdss_mdp_trace.h"
+
+#ifdef CONFIG_DEBUG_FS
 #include "mdss_debug.h"
+#endif
 
 static u32 cdm_cdwn2_cosite_h_coeff[] = {0x00000016, 0x000001cc, 0x0100009e};
 static u32 cdm_cdwn2_offsite_h_coeff[] = {0x000b0005, 0x01db01eb, 0x00e40046};

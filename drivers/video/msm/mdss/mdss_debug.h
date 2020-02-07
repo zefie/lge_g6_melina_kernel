@@ -22,9 +22,6 @@
 #include "mdss.h"
 #include "mdss_mdp_trace.h"
 
-#define MISR_POLL_SLEEP		2000
-#define MISR_POLL_TIMEOUT	32000
-#define MISR_CRC_BATCH_CFG	0x101
 #define DATA_LIMITER (-1)
 #define XLOG_TOUT_DATA_LIMITER (NULL)
 #define XLOG_FUNC_ENTRY	0x1111
@@ -58,6 +55,7 @@ struct vbif_debug_bus {
 	u32 test_pnt_cnt;
 };
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 #define MDSS_XLOG(...) mdss_xlog(__func__, __LINE__, MDSS_XLOG_DEFAULT, \
 		##__VA_ARGS__, DATA_LIMITER)
 
@@ -84,6 +82,8 @@ struct vbif_debug_bus {
 
 #define ATRACE_INT(name, value) \
 	trace_mdp_trace_counter(current->tgid, name, value)
+
+#endif // CONFIG_MELINA_QUIET_MSMVIDEO
 
 #if defined(CONFIG_DEBUG_FS) && defined(CONFIG_FB_MSM_MDSS)
 
@@ -147,19 +147,6 @@ void mdss_debug_register_dump_range(struct platform_device *pdev,
 	const char *name_prop, const char *xin_prop);
 int panel_debug_register_base(const char *name, void __iomem *base,
 				    size_t max_offset);
-int mdss_misr_set(struct mdss_data_type *mdata,
-			struct mdp_misr *req,
-			struct mdss_mdp_ctl *ctl);
-int mdss_misr_get(struct mdss_data_type *mdata,
-			struct mdp_misr *resp,
-			struct mdss_mdp_ctl *ctl,
-			bool is_video_mode);
-void mdss_misr_disable(struct mdss_data_type *mdata,
-			struct mdp_misr *req,
-			struct mdss_mdp_ctl *ctl);
-void mdss_misr_crc_collect(struct mdss_data_type *mdata, int block_id,
-	bool is_video_mode);
-
 int mdss_create_xlog_debug(struct mdss_debug_data *mdd);
 #if defined(CONFIG_FB_MSM_MDSS_FRC_DEBUG)
 int mdss_create_frc_debug(struct mdss_debug_data *mdd);
