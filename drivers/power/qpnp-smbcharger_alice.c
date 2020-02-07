@@ -2263,8 +2263,10 @@ static int smbchg_set_usb_current_max(struct smbchg_chip *chip,
 	 * order to avoid browning out the device during a hotswap.
 	 */
 	if (!chip->batt_present && current_ma < chip->usb_max_current_ma) {
+#ifndef CONFIG_SILENCE_SMBCHG_LOG
 		pr_info_ratelimited("Ignoring usb current->%d, battery is absent\n",
 				current_ma);
+#endif
 		return 0;
 	}
 	pr_smb(PR_STATUS, "USB current_ma = %d\n", current_ma);
@@ -4388,9 +4390,11 @@ static int smbchg_config_chg_battery_type(struct smbchg_chip *chip)
 		ret = rc;
 	} else {
 		if (chip->vfloat_mv != (max_voltage_uv / 1000)) {
+#ifndef CONFIG_SILENCE_SMBCHG_LOG
 			pr_info("Vfloat changed from %dmV to %dmV for battery-type %s\n",
 				chip->vfloat_mv, (max_voltage_uv / 1000),
 				chip->battery_type);
+#endif
 			rc = smbchg_float_voltage_set(chip,
 						(max_voltage_uv / 1000));
 			if (rc < 0) {
@@ -4410,9 +4414,11 @@ static int smbchg_config_chg_battery_type(struct smbchg_chip *chip)
 	} else if (!rc) {
 		if (chip->iterm_ma != (iterm_ua / 1000)
 				&& !chip->iterm_disabled) {
+#ifndef CONFIG_SILENCE_SMBCHG_LOG
 			pr_info("Term current changed from %dmA to %dmA for battery-type %s\n",
 				chip->iterm_ma, (iterm_ua / 1000),
 				chip->battery_type);
+#endif
 			rc = smbchg_iterm_set(chip,
 						(iterm_ua / 1000));
 			if (rc < 0) {
@@ -5066,11 +5072,15 @@ static ssize_t at_chg_status_show(struct device *dev,
 	if (chg_type != POWER_SUPPLY_CHARGE_TYPE_NONE) {
 		b_chg_ok = true;
 		r = snprintf(buf, 3, "%d\n", b_chg_ok);
+#ifndef CONFIG_SILENCE_SMBCHG_LOG
 		pr_info("[Diag] true ! buf = %s, charging = 1\n", buf);
+#endif
 	} else {
 		b_chg_ok = false;
 		r = snprintf(buf, 3, "%d\n", b_chg_ok);
+#ifndef CONFIG_SILENCE_SMBCHG_LOG
 		pr_info("[Diag] false ! buf = %s, charging = 0\n", buf);
+#endif
 	}
 
 	return r;
@@ -5096,12 +5106,16 @@ static ssize_t at_chg_status_store(struct device *dev,
 
 	if (strncmp(buf, "0", 1) == 0) {
 		/* stop charging */
+#ifndef CONFIG_SILENCE_SMBCHG_LOG
 		pr_info("[Diag] stop charging\n");
+#endif
 		vote(chip->battchg_suspend_votable,
 			BATTCHG_USER_EN_VOTER, true, 0);
 	} else if (strncmp(buf, "1", 1) == 0) {
 		/* start charging */
+#ifndef CONFIG_SILENCE_SMBCHG_LOG
 		pr_info("[Diag] start charging\n");
+#endif
 		vote(chip->battchg_suspend_votable,
 			BATTCHG_USER_EN_VOTER, false, 0);
 	}
@@ -5160,12 +5174,16 @@ static ssize_t at_chg_complete_store(struct device *dev,
 
 	if (strncmp(buf, "0", 1) == 0) {
 		/* charging not complete */
+#ifndef CONFIG_SILENCE_SMBCHG_LOG
 		pr_info("[Diag] charging not complete start\n");
+#endif
 		vote(chip->battchg_suspend_votable,
 			BATTCHG_USER_EN_VOTER, true, 0);
 	} else if (strncmp(buf, "1", 1) == 0) {
 		/* charging complete */
+#ifndef CONFIG_SILENCE_SMBCHG_LOG
 		pr_info("[Diag] charging complete start\n");
+#endif
 		vote(chip->battchg_suspend_votable,
 			BATTCHG_USER_EN_VOTER, false, 0);
 	}
