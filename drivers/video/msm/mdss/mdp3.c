@@ -56,7 +56,9 @@
 #include "mdp3_hwio.h"
 #include "mdp3_ctrl.h"
 #include "mdp3_ppp.h"
+#ifdef CONFIG_DEBUG_FS
 #include "mdss_debug.h"
+#endif
 #include "mdss_smmu.h"
 #include "mdss.h"
 #include "mdss_spi_panel.h"
@@ -472,16 +474,20 @@ static int mdp3_clk_update(u32 clk_idx, u32 enable)
 			mdp3_res->clock_ref_count[clk_idx]--;
 			return ret;
 		}
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 		if (clk_idx == MDP3_CLK_MDP_CORE)
 			MDSS_XLOG(enable);
+#endif
 		ret = clk_enable(clk);
 		if (ret)
 			pr_err("%s: clock enable failed %d\n", __func__,
 					clk_idx);
 	} else if (count == 0) {
 		pr_debug("clk=%d disable\n", clk_idx);
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 		if (clk_idx == MDP3_CLK_MDP_CORE)
 			MDSS_XLOG(enable);
+#endif
 		clk_disable(clk);
 		clk_unprepare(clk);
 		ret = 0;
@@ -2575,7 +2581,9 @@ static void mdp3_dma_underrun_intr_handler(int type, void *arg)
 	mdp3_res->underrun_cnt++;
 	pr_err_ratelimited("display underrun detected count=%d\n",
 			mdp3_res->underrun_cnt);
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	ATRACE_INT("mdp3_dma_underrun_intr_handler", mdp3_res->underrun_cnt);
+#endif
 
 	if (dma->ccs_config.ccs_enable && !dma->ccs_config.ccs_dirty) {
 		dma->ccs_config.ccs_dirty = true;
@@ -2894,7 +2902,9 @@ int mdp3_footswitch_ctrl(int enable)
 	int active_cnt = 0;
 
 	mutex_lock(&mdp3_res->fs_idle_pc_lock);
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(enable);
+#endif
 	if (!mdp3_res->fs_ena && enable) {
 		rc = regulator_enable(mdp3_res->fs);
 		if (rc) {
@@ -3145,7 +3155,9 @@ static  int mdp3_resume_sub(void)
 static int mdp3_pm_suspend(struct device *dev)
 {
 	dev_dbg(dev, "Display pm suspend\n");
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(XLOG_FUNC_ENTRY);
+#endif
 	return mdp3_suspend_sub();
 }
 
@@ -3162,7 +3174,9 @@ static int mdp3_pm_resume(struct device *dev)
 	pm_runtime_set_suspended(dev);
 	pm_runtime_enable(dev);
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(XLOG_FUNC_ENTRY);
+#endif
 	return mdp3_resume_sub();
 }
 #endif
@@ -3172,7 +3186,9 @@ static int mdp3_suspend(struct platform_device *pdev, pm_message_t state)
 {
 	pr_debug("Display suspend\n");
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(XLOG_FUNC_ENTRY);
+#endif
 	return mdp3_suspend_sub();
 }
 
@@ -3180,7 +3196,9 @@ static int mdp3_resume(struct platform_device *pdev)
 {
 	pr_debug("Display resume\n");
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(XLOG_FUNC_ENTRY);
+#endif
 	return mdp3_resume_sub();
 }
 #else
@@ -3201,7 +3219,9 @@ static int mdp3_runtime_resume(struct device *dev)
 	if (!mdp3_is_idle_pc())
 		device_for_each_child(dev, &device_on, mdss_fb_suspres_panel);
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(XLOG_FUNC_ENTRY);
+#endif
 	mdp3_footswitch_ctrl(1);
 
 	return 0;
@@ -3226,7 +3246,9 @@ static int mdp3_runtime_suspend(struct device *dev)
 		return -EBUSY;
 	}
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(XLOG_FUNC_ENTRY);
+#endif
 	mdp3_footswitch_ctrl(0);
 
 	/* do not suspend panels when going in to idle power collapse */

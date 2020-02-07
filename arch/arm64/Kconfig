@@ -1196,3 +1196,5 @@ endif
 source "lib/Kconfig"
 
 source "arch/arm64/mm/Kconfig"
+
+source "zefie/Kconfig"

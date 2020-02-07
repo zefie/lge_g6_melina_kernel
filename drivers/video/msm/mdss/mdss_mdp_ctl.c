@@ -26,7 +26,9 @@
 #include "mdss_fb.h"
 #include "mdss_mdp.h"
 #include "mdss_mdp_trace.h"
+#ifdef CONFIG_DEBUG_FS
 #include "mdss_debug.h"
+#endif
 
 #if defined(CONFIG_LGE_DISPLAY_AOD_SUPPORTED)
 #include "lge/lge_mdss_aod.h"
@@ -2093,7 +2095,9 @@ static void mdss_mdp_ctl_update_client_vote(struct mdss_data_type *mdata,
 			&mdata->per_pipe_ib_factor);
 
 	bus_ab_quota = apply_fudge_factor(bus_ab_quota, &mdss_res->ab_factor);
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	ATRACE_INT("bus_quota", bus_ib_quota);
+#endif
 
 	mdss_bus_scale_set_quota(nrt_client ? MDSS_MDP_NRT : MDSS_MDP_RT,
 		bus_ab_quota, bus_ib_quota);
@@ -2107,7 +2111,9 @@ static void mdss_mdp_ctl_perf_update_bus(struct mdss_data_type *mdata,
 	u64 bw_sum_of_rt_intfs = 0, bw_sum_of_nrt_intfs = 0;
 	struct mdss_mdp_perf_params perf = {0};
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	ATRACE_BEGIN(__func__);
+#endif
 
 	/*
 	 * non-real time client
@@ -2136,7 +2142,9 @@ static void mdss_mdp_ctl_perf_update_bus(struct mdss_data_type *mdata,
 			bw_sum_of_rt_intfs);
 	}
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	ATRACE_END(__func__);
+#endif
 }
 
 /**
@@ -2264,7 +2272,9 @@ static void mdss_mdp_ctl_perf_update(struct mdss_mdp_ctl *ctl,
 
 	if (!ctl || !ctl->mdata)
 		return;
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	ATRACE_BEGIN(__func__);
+#endif
 	mutex_lock(&mdss_mdp_ctl_lock);
 
 	mdata = ctl->mdata;
@@ -2355,14 +2365,18 @@ static void mdss_mdp_ctl_perf_update(struct mdss_mdp_ctl *ctl,
 	 * bandwidth is available before clock rate is increased.
 	 */
 	if (update_clk) {
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 		ATRACE_INT("mdp_clk", clk_rate);
+#endif
 		mdss_mdp_set_clk_rate(clk_rate);
 		pr_debug("update clk rate = %d HZ\n", clk_rate);
 	}
 
 end:
 	mutex_unlock(&mdss_mdp_ctl_lock);
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	ATRACE_END(__func__);
+#endif
 }
 
 struct mdss_mdp_ctl *mdss_mdp_ctl_alloc(struct mdss_data_type *mdata,
@@ -2927,8 +2941,10 @@ static void __dsc_config(struct mdss_mdp_mixer *mixer,
 	pr_debug("mix%d pic_w=%d pic_h=%d, slice_w=%d slice_h=%d, chunk=%d\n",
 		mixer->num, dsc->pic_width, dsc->pic_height,
 		dsc->slice_width, dsc->slice_height, dsc->chunk_size);
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(mixer->num, dsc->pic_width, dsc->pic_height,
 		dsc->slice_width, dsc->slice_height, dsc->chunk_size);
+#endif
 
 	data = dsc->initial_dec_delay << 16;
 	data |= dsc->initial_xmit_delay;
@@ -3208,9 +3224,11 @@ static void __dsc_setup_dual_lm_single_display(struct mdss_mdp_ctl *ctl,
 		common_mode, pic_width, pic_height,
 		mux_3d, intf_ip_w, enc_ip_w, ich_reset_override);
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(mixer_l->num, valid_l, mixer_r->num, valid_r,
 		  common_mode, pic_width, pic_height,
 		  mux_3d, intf_ip_w, enc_ip_w, ich_reset_override);
+#endif
 }
 
 static void __dsc_setup_dual_lm_dual_display(
@@ -3304,9 +3322,11 @@ static void __dsc_setup_dual_lm_dual_display(
 		common_mode, pic_width, pic_height,
 		intf_ip_w, enc_ip_w, ich_reset_override);
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(mixer_l->num, valid_l, mixer_r->num, valid_r,
 		  common_mode, pic_width, pic_height,
 		  intf_ip_w, enc_ip_w, ich_reset_override);
+#endif
 }
 
 static void __dsc_setup_single_lm_single_display(struct mdss_mdp_ctl *ctl,
@@ -3356,8 +3376,10 @@ static void __dsc_setup_single_lm_single_display(struct mdss_mdp_ctl *ctl,
 		mixer->num, valid, common_mode, pic_width, pic_height,
 		intf_ip_w, enc_ip_w, ich_reset_override);
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(mixer->num, valid, common_mode, pic_width, pic_height,
 		  intf_ip_w, enc_ip_w, ich_reset_override);
+#endif
 }
 
 void mdss_mdp_ctl_dsc_setup(struct mdss_mdp_ctl *ctl,
@@ -4346,8 +4368,10 @@ void mdss_mdp_check_ctl_reset_status(struct mdss_mdp_ctl *ctl)
 	if (status) {
 		pr_err("hw recovery is not complete for ctl:%d status:0x%x\n",
 			ctl->num, status);
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 		MDSS_XLOG_TOUT_HANDLER("mdp", "vbif", "vbif_nrt", "dbg_bus",
 			"vbif_dbg_bus", "panic");
+#endif
 	}
 }
 
@@ -4424,8 +4448,10 @@ static void mdss_mdp_set_mixer_roi(struct mdss_mdp_mixer *mixer,
 	pr_debug("mixer%d ROI %s: [%d, %d, %d, %d]\n",
 		mixer->num, mixer->roi_changed ? "changed" : "not changed",
 		mixer->roi.x, mixer->roi.y, mixer->roi.w, mixer->roi.h);
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(mixer->num, mixer->roi_changed, mixer->valid_roi,
 		mixer->roi.x, mixer->roi.y, mixer->roi.w, mixer->roi.h);
+#endif
 }
 
 /* only call from master ctl */
@@ -4599,7 +4625,9 @@ static void __mdss_mdp_mixer_write_cfg(struct mdss_mdp_mixer *mixer,
 
 	pr_debug("mixer=%d cfg=0%08x cfg_extn=0x%08x cfg_extn2=0x%08x\n",
 		mixer->num, vals[0], vals[1], vals[2]);
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(mixer->num, vals[0], vals[1], vals[2]);
+#endif
 }
 
 void mdss_mdp_reset_mixercfg(struct mdss_mdp_ctl *ctl)
@@ -4639,7 +4667,9 @@ bool mdss_mdp_mixer_reg_has_pipe(struct mdss_mdp_mixer *mixer,
 			&mixercfg);
 	for (i = 0; i < NUM_MIXERCFG_REGS; i++) {
 		if (cfgs[i] & mixercfg.config_masks[i]) {
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 			MDSS_XLOG(mixer->num, cfgs[0], cfgs[1]);
+#endif
 			return true;
 		}
 	}
@@ -4712,7 +4742,9 @@ static void mdss_mdp_mixer_setup(struct mdss_mdp_ctl *master_ctl,
 		 */
 		__mdss_mdp_mixer_write_cfg(mixer_hw, NULL);
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 		MDSS_XLOG(mixer->num, mixer_hw->num, XLOG_FUNC_EXIT);
+#endif
 		return;
 	}
 
@@ -4878,8 +4910,10 @@ update_mixer:
 		mixer_op_mode, mixer->roi.w, mixer->roi.h,
 		(mdata->bcolor0 & 0xFFF) | ((mdata->bcolor1 & 0xFFF) << 16),
 		mdata->bcolor2 & 0xFFF);
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(mixer->num, mixer_hw->num,
 		mixer_op_mode, mixer->roi.h, mixer->roi.w);
+#endif
 }
 
 int mdss_mdp_mixer_addr_setup(struct mdss_data_type *mdata,
@@ -5311,10 +5345,14 @@ int mdss_mdp_display_wait4comp(struct mdss_mdp_ctl *ctl)
 		return 0;
 	}
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	ATRACE_BEGIN("wait_fnc");
+#endif
 	if (ctl->ops.wait_fnc)
 		ret = ctl->ops.wait_fnc(ctl, NULL);
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	ATRACE_END("wait_fnc");
+#endif
 #if defined(CONFIG_LGE_INTERVAL_MONITOR)
 	lge_interval_notify(ktime_get());
 #endif
@@ -5361,18 +5399,26 @@ int mdss_mdp_display_wait4pingpong(struct mdss_mdp_ctl *ctl, bool use_lock)
 		return 0;
 	}
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	ATRACE_BEGIN("wait_pingpong");
+#endif
 	ret = ctl->ops.wait_pingpong(ctl, NULL);
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	ATRACE_END("wait_pingpong");
+#endif
 	if (ret)
 		recovery_needed = true;
 
 	sctl = mdss_mdp_get_split_ctl(ctl);
 
 	if (sctl && sctl->ops.wait_pingpong) {
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 		ATRACE_BEGIN("wait_pingpong sctl");
+#endif
 		ret = sctl->ops.wait_pingpong(sctl, NULL);
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 		ATRACE_END("wait_pingpong sctl");
+#endif
 		if (ret)
 			recovery_needed = true;
 	}
@@ -5493,17 +5539,23 @@ int mdss_mdp_display_commit(struct mdss_mdp_ctl *ctl, void *arg,
 	    (ctl->mixer_right && ctl->mixer_right->params_changed)) {
 		bool lm_swap = mdss_mdp_is_lm_swap_needed(mdata, ctl);
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 		ATRACE_BEGIN("prepare_fnc");
+#endif
 		if (ctl->ops.prepare_fnc)
 			ret = ctl->ops.prepare_fnc(ctl, arg);
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 		ATRACE_END("prepare_fnc");
+#endif
 		if (ret) {
 			pr_err("error preparing display\n");
 			mutex_unlock(&ctl->flush_lock);
 			goto done;
 		}
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 		ATRACE_BEGIN("mixer_programming");
+#endif
 		mdss_mdp_ctl_perf_update(ctl, 1, false);
 
 		mdss_mdp_mixer_setup(ctl, MDSS_MDP_MIXER_MUX_LEFT, lm_swap);
@@ -5518,7 +5570,9 @@ int mdss_mdp_display_commit(struct mdss_mdp_ctl *ctl, void *arg,
 			sctl->flush_bits |= BIT(17);
 			sctl_flush_bits = sctl->flush_bits;
 		}
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 		ATRACE_END("mixer_programming");
+#endif
 	}
 
 	/*
@@ -5528,7 +5582,9 @@ int mdss_mdp_display_commit(struct mdss_mdp_ctl *ctl, void *arg,
 	if (sctl)
 		mdss_mdp_ctl_split_display_enable(split_lm_valid, ctl, sctl);
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	ATRACE_BEGIN("postproc_programming");
+#endif
 	if (ctl->is_video_mode && ctl->mfd && ctl->mfd->dcm_state != DTM_ENTER)
 		/* postprocessing setup, including dspp */
 		mdss_mdp_pp_setup_locked(ctl);
@@ -5546,11 +5602,15 @@ int mdss_mdp_display_commit(struct mdss_mdp_ctl *ctl, void *arg,
 	ctl->commit_in_progress = true;
 	ctl_flush_bits = ctl->flush_bits;
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	ATRACE_END("postproc_programming");
+#endif
 
 	mutex_unlock(&ctl->flush_lock);
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	ATRACE_BEGIN("frame_ready");
+#endif
 	mdss_mdp_ctl_notify(ctl, MDP_NOTIFY_FRAME_CFG_DONE);
 	if (commit_cb)
 		commit_cb->commit_cb_fnc(
@@ -5572,7 +5632,9 @@ int mdss_mdp_display_commit(struct mdss_mdp_ctl *ctl, void *arg,
 		ret = 0;
 	}
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	ATRACE_END("frame_ready");
+#endif
 
 	if (ctl->ops.wait_pingpong && !mdata->serialize_wait4pp)
 		mdss_mdp_display_wait4pingpong(ctl, false);
@@ -5681,7 +5743,9 @@ int mdss_mdp_display_commit(struct mdss_mdp_ctl *ctl, void *arg,
 	    !bitmap_empty(mdata->bwc_enable_map, MAX_DRV_SUP_PIPES))
 		mdss_mdp_bwcpanic_ctrl(mdata, true);
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	ATRACE_BEGIN("flush_kickoff");
+#endif
 	mdss_mdp_ctl_write(ctl, MDSS_MDP_REG_CTL_FLUSH, ctl_flush_bits);
 	if (sctl) {
 		if (sctl_flush_bits) {
@@ -5693,8 +5757,10 @@ int mdss_mdp_display_commit(struct mdss_mdp_ctl *ctl, void *arg,
 	}
 	ctl->commit_in_progress = false;
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(ctl->intf_num, ctl_flush_bits, sctl_flush_bits,
 		split_lm_valid);
+#endif
 	wmb();
 	ctl->flush_reg_data = ctl_flush_bits;
 	ctl->flush_bits = 0;
@@ -5723,7 +5789,9 @@ int mdss_mdp_display_commit(struct mdss_mdp_ctl *ctl, void *arg,
 #if (defined CONFIG_LGE_PM_TRITON && defined FPS_BOOST)
 	last_commit_ms = ktime_to_ms(ktime_get());
 #endif
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	ATRACE_END("flush_kickoff");
+#endif
 
 done:
 	mdss_mdp_clk_ctrl(MDP_BLOCK_POWER_OFF);

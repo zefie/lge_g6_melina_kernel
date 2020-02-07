@@ -35,8 +35,9 @@
 #include "mdss.h"
 #include "mdss_mdp.h"
 #include "mdss_smmu.h"
+#ifdef CONFIG_DEBUG_FS
 #include "mdss_debug.h"
-
+#endif
 #define SZ_4G 0xF0000000
 
 static DEFINE_MUTEX(mdp_iommu_lock);
@@ -288,14 +289,18 @@ static int mdss_smmu_map_dma_buf_v2(struct dma_buf *dma_buf,
 		pr_err("not able to get smmu context\n");
 		return -EINVAL;
 	}
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	ATRACE_BEGIN("map_buffer");
+#endif
 	rc = msm_dma_map_sg_lazy(mdss_smmu->dev, table->sgl, table->nents, dir,
 		dma_buf);
 	if (rc != table->nents) {
 		pr_err("dma map sg failed\n");
 		return -ENOMEM;
 	}
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	ATRACE_END("map_buffer");
+#endif
 	*iova = table->sgl->dma_address;
 	*size = table->sgl->dma_length;
 	return 0;
@@ -310,10 +315,14 @@ static void mdss_smmu_unmap_dma_buf_v2(struct sg_table *table, int domain,
 		return;
 	}
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	ATRACE_BEGIN("unmap_buffer");
+#endif
 	msm_dma_unmap_sg(mdss_smmu->dev, table->sgl, table->nents, dir,
 		 dma_buf);
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	ATRACE_END("unmap_buffer");
+#endif
 }
 
 /*
@@ -464,7 +473,9 @@ int mdss_smmu_fault_handler(struct iommu_domain *domain, struct device *dev,
 	if (i == MDSS_IOMMU_MAX_DOMAIN)
 		goto end;
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	mdss_mdp_debug_mid(mid);
+#endif
 end:
 	return -ENOSYS;
 }

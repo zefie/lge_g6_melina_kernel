@@ -32,7 +32,9 @@
 
 #include "mdss.h"
 #include "mdss_edp.h"
+#ifdef CONFIG_DEBUG_FS
 #include "mdss_debug.h"
+#endif
 
 #define RGB_COMPONENTS		3
 #define VDDA_MIN_UV			1800000	/* uV units */

@@ -403,7 +403,9 @@ int dhd_write_otp(dhd_pub_t *dhd)
 	cis_rw_t *cish_r = (cis_rw_t *)&buf[8];
 
 	chipid = dhd_bus_chip_id(dhd);
+#ifndef CONFIG_MELINA_QUIET_DHD
 	DHD_INFO(("%s: chipid = 0x%x\n", __FUNCTION__, chipid));
+#endif
 	if (chipid == BCM4358_CHIP_ID || chipid == BCM43569_CHIP_ID) {
 		otp_vars = BCM4358A3_otp_vars;
 		otp_vars_size = sizeof(BCM4358A3_otp_vars);

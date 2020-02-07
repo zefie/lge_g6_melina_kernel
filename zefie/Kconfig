@@ -1,0 +1,110 @@
+menuconfig MELINA
+	bool "Melina Reborn Kernel Enhancements"
+        depends on MACH_MSM8996_LUCYE
+        help
+          This option provides the Melina Kernel Custom Configuration
+	  These enhancements are, like this kernel, specific to the lucye device.
+
+if MELINA
+
+
+choice
+        prompt "Compiler CPU Optimizations"
+        default MELINA_OPTIMIZE_CORTEX_A72_A53 if 64BIT
+        default MELINA_OPTIMIZE_CORTEX_A53 if !64BIT
+
+config MELINA_OPTIMIZE_CORTEX_A53
+        bool "Optimize for cortex-a53"
+        help
+          Compiles the kernel with -mcpu=cortex-a53 -mtune=cortex-a53
+
+config MELINA_OPTIMIZE_CORTEX_A57
+        bool "Optimize for cortex-a57"
+        help
+          Compiles the kernel with -mcpu=cortex-a57 -mtune=cortex-a57
+
+config MELINA_OPTIMIZE_CORTEX_A72
+        bool "Optimize for cortex-a72"
+        help
+          Compiles the kernel with -mcpu=cortex-a72 -mtune=cortex-a72
+
+config MELINA_OPTIMIZE_CORTEX_A72_A53
+        bool "Optimize for big.LITTLE cortex-a72.cortex-a53"
+        depends on 64BIT
+        help
+	  Compiles the kernel with -mcpu=cortex-a72.cortex-a53 -mtune=cortex-a72.cortex-a53
+
+endchoice
+
+menuconfig MELINA_ENHANCED_NDBG
+	bool "Enhanced Debug Removal"
+	depends on MELINA
+        default n
+	help
+	  These options significantly reduces the debugging embedded into the MSM/LGE drivers, slightly improving performance.
+	  Under this menu, you can enable and disable specific device driver debug. (Off = Debug On)
+
+	  If unsure, say N here, this option is safe to enable, but will make it harder to diagnose any problems.
+
+if MELINA_ENHANCED_NDBG
+
+config MELINA_QUIET_DHD
+        bool "Silence DHD Wifi/BT Debug Logging"
+        default y
+        depends on BCMDHD
+        help
+          Silences information from the DHD Wifi/BT driver, which is only useful for debugging.
+
+config MELINA_QUIET_MSMVIDEO
+        bool "Silence MSM Video Debug Logging"
+        default y
+        depends on PCI_MSM
+        help
+          Silences information from the graphics driver, which is only useful for debugging.
+
+config MELINA_QUIET_MSMPCI
+        bool "Silence MSM PCI Bus Debug Logging"
+        default y
+        depends on FB_MSM_MDSS || FB_MSM_MDP
+        help
+          Silences information from the MSM PCI Bus driver, which is only useful for debugging.
+
+config MELINA_QUIET_SMBCHG
+        bool "Silence SMB138x (Charger) Debug Logging"
+        default y
+        depends on QPNP_SMBCHARGER
+        help
+          Silences information from the charging driver curcuit, which is only useful for debugging.
+
+
+endif # MELINA_ENHANCED_NDBG
+
+config DRIVEDROID_CDROM
+        boolean "DriveDroid CD-ROM Mass Storage Emulation"
+        depends on !LGE_USB_G_AUTORUN
+        depends on USB_G_ANDROID
+        default y
+        help
+          Allows you to mount CD-ROM ISO images with DriveDroid.
+          Without this, the image will try to mount as a USB Disk (flash drive).
+
+config MELINA_PERFORMANCE_TWEAKS
+	boolean "Enable Melina Kernel Performance Tweaks"
+	select CPU_INPUT_BOOST
+	select TCP_CONG_WESTWOOD
+	default y
+	help
+	  This is just a helper variable that enables the following:
+	  CPU_INPUT_BOOST and TCP_CONG_WESTWOOD
+
+
+config MELINA_WARN_AS_ERR
+	bool "Treat compile warnings as errors (-Werror)"
+	depends on MELINA
+        default y
+	help
+	  Disabling this option will allow the kernel to compile with warnings, but is not advised.
+
+	  If unsure, say y here.
+
+endif # MELINA

@@ -30,7 +30,9 @@
 #include "mdss.h"
 #include "mdss_panel.h"
 #include "mdss_dsi.h"
+#ifdef CONFIG_DEBUG_FS
 #include "mdss_debug.h"
+#endif
 #include "mdss_dsi_phy.h"
 #include "mdss_dba_utils.h"
 
@@ -1789,14 +1791,18 @@ static int mdss_dsi_unblank(struct mdss_panel_data *pdata)
 #else
 		if (!pdata->panel_info.dynamic_switch_pending) {
 #endif
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 			ATRACE_BEGIN("dsi_panel_on");
+#endif
 			ret = ctrl_pdata->on(pdata);
 			if (ret) {
 				pr_err("%s: unable to initialize the panel\n",
 							__func__);
 				goto error;
 			}
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 			ATRACE_END("dsi_panel_on");
+#endif
 		}
 	}
 
@@ -1890,14 +1896,18 @@ static int mdss_dsi_blank(struct mdss_panel_data *pdata, int power_state)
 #else
 		if (!pdata->panel_info.dynamic_switch_pending) {
 #endif
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 			ATRACE_BEGIN("dsi_panel_off");
+#endif
 			ret = ctrl_pdata->off(pdata);
 			if (ret) {
 				pr_err("%s: Panel OFF failed\n",
 					__func__);
 				goto error;
 			}
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 			ATRACE_END("dsi_panel_off");
+#endif
 		}
 		ctrl_pdata->ctrl_state &= ~(CTRL_STATE_PANEL_INIT |
 			CTRL_STATE_PANEL_LP);
@@ -1948,7 +1958,9 @@ static irqreturn_t test_hw_vsync_handler(int irq, void *data)
 	struct mdss_panel_data *pdata = (struct mdss_panel_data *)data;
 
 	pr_debug("HW VSYNC\n");
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(0xaaa, irq);
+#endif
 	complete_all(&pdata->te_done);
 	if (pdata->next)
 		complete_all(&pdata->next->te_done);
@@ -2065,9 +2077,10 @@ static void __mdss_dsi_update_video_mode_total(struct mdss_panel_data *pdata,
 			ctrl_pdata->panel_data.panel_info.mipi.frame_rate);
 
 	ctrl_pdata->panel_data.panel_info.current_fps = new_fps;
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(current_dsi_v_total, new_dsi_v_total, new_fps,
 		ctrl_pdata->timing_db_mode);
-
+#endif
 }
 
 static void __mdss_dsi_dyn_refresh_config(
@@ -2808,7 +2821,9 @@ static int mdss_dsi_event_handler(struct mdss_panel_data *pdata,
 				panel_data);
 	pr_debug("%s+: ctrl=%d event=%d\n", __func__, ctrl_pdata->ndx, event);
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(event, arg, ctrl_pdata->ndx, 0x3333);
+#endif
 
 	switch (event) {
 	case MDSS_EVENT_UPDATE_PARAMS:
@@ -4562,6 +4577,7 @@ int dsi_panel_device_register(struct platform_device *ctrl_pdev,
 		return rc;
 	}
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	if (pinfo->pdest == DISPLAY_1) {
 		mdss_debug_register_io("dsi0_ctrl", &ctrl_pdata->ctrl_io, NULL);
 		mdss_debug_register_io("dsi0_phy", &ctrl_pdata->phy_io, NULL);
@@ -4575,9 +4591,9 @@ int dsi_panel_device_register(struct platform_device *ctrl_pdev,
 			mdss_debug_register_io("dsi1_phy_regulator",
 				&ctrl_pdata->phy_regulator_io, NULL);
 	}
-
 	panel_debug_register_base("panel",
 		ctrl_pdata->ctrl_base, ctrl_pdata->reg_size);
+#endif
 
 	pr_debug("%s: Panel data initialized\n", __func__);
 	return 0;

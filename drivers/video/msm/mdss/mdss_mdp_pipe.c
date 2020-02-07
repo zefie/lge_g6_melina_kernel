@@ -20,7 +20,9 @@
 
 #include "mdss_mdp.h"
 #include "mdss_mdp_trace.h"
+#ifdef CONFIG_DEBUG_FS
 #include "mdss_debug.h"
+#endif
 
 #define SMP_MB_SIZE		(mdss_res->smp_mb_size)
 #define SMP_MB_CNT		(mdss_res->smp_mb_cnt)
@@ -1430,7 +1432,9 @@ static void mdss_mdp_pipe_check_stage(struct mdss_mdp_pipe *pipe,
 		pr_err("pipe%d mixer:%d pipe->mixer_stage=%d src_split:%d right blend:%d\n",
 			pipe->num, mixer->num, pipe->mixer_stage,
 			pipe->src_split_req, pipe->is_right_blend);
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 		MDSS_XLOG_TOUT_HANDLER("mdp", "dbg_bus", "panic");
+#endif
 	}
 }
 
@@ -1508,8 +1512,10 @@ static bool mdss_mdp_check_pipe_in_use(struct mdss_mdp_pipe *pipe)
 			in_use = true;
 			pr_err("IN USE: pipe=%d mixer=%d\n",
 					pipe->num, mixer->num);
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 			MDSS_XLOG_TOUT_HANDLER("mdp", "vbif", "vbif_nrt",
 				"dbg_bus", "vbif_dbg_bus", "panic");
+#endif
 		}
 
 		mixer = ctl->mixer_right;
@@ -1517,8 +1523,10 @@ static bool mdss_mdp_check_pipe_in_use(struct mdss_mdp_pipe *pipe)
 			in_use = true;
 			pr_err("IN USE: pipe=%d mixer=%d\n",
 					pipe->num, mixer->num);
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 			MDSS_XLOG_TOUT_HANDLER("mdp", "vbif", "vbif_nrt",
 				"dbg_bus", "vbif_dbg_bus", "panic");
+#endif
 		}
 	}
 
@@ -1712,7 +1720,9 @@ int mdss_mdp_pipe_destroy(struct mdss_mdp_pipe *pipe)
 		return -EBUSY;
 	}
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(pipe->num, pipe->ndx); //QCT debug patch for SMMU fault issue
+#endif
 	wake_up_all(&pipe->free_waitq);
 	mutex_unlock(&mdss_mdp_sspp_lock);
 
@@ -1853,8 +1863,10 @@ void mdss_mdp_pipe_position_update(struct mdss_mdp_pipe *pipe,
 				    dst_xy);
 	}
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(pipe->num, pipe->multirect.num, src_size, src_xy,
 		  dst_size, dst_xy, pipe->multirect.mode);
+#endif
 }
 
 static void mdss_mdp_pipe_stride_update(struct mdss_mdp_pipe *pipe)
@@ -1910,8 +1922,10 @@ static void mdss_mdp_pipe_stride_update(struct mdss_mdp_pipe *pipe)
 	pr_debug("pipe%d multirect:num%d mode=%d, ystride0=0x%x ystride1=0x%x\n",
 		pipe->num, pipe->multirect.num, pipe->multirect.mode,
 		reg0, reg1);
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(pipe->num, pipe->multirect.num,
 		  pipe->multirect.mode, reg0, reg1);
+#endif
 }
 
 static int mdss_mdp_image_setup(struct mdss_mdp_pipe *pipe,
@@ -1930,11 +1944,13 @@ static int mdss_mdp_image_setup(struct mdss_mdp_pipe *pipe,
 			pipe->src.x, pipe->src.y, pipe->src.w, pipe->src.h,
 			pipe->dst.x, pipe->dst.y, pipe->dst.w, pipe->dst.h);
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 /* QCT debug patch for SMMU fault issue */
 	MDSS_XLOG(pipe->num, pipe->img_width, pipe->img_height, pipe->flags);
 	MDSS_XLOG(pipe->src.x, pipe->src.y, pipe->src.w, pipe->src.h);
 	MDSS_XLOG(pipe->dst.x, pipe->dst.y, pipe->dst.w, pipe->dst.h);
 /* QCT debug patch for SMMU fault issue */
+#endif
 	width = pipe->img_width;
 	height = pipe->img_height;
 
@@ -2062,7 +2078,9 @@ static int mdss_mdp_image_setup(struct mdss_mdp_pipe *pipe,
 	mdss_mdp_pipe_write(pipe, MDSS_MDP_REG_SSPP_DECIMATION_CONFIG,
 			decimation);
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
     MDSS_XLOG(pipe->num, img_size); //QCT debug patch for SMMU fault issue
+#endif
 	return 0;
 }
 
@@ -2290,7 +2308,9 @@ static int mdss_mdp_src_addr_setup(struct mdss_mdp_pipe *pipe,
 		mdss_mdp_pipe_write(pipe, MDSS_MDP_REG_SSPP_SRC3_ADDR, addr[2]);
 	}
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
     MDSS_XLOG(pipe->num, pipe->multirect.num, addr[0], addr[1], addr[2], addr[3]); //QCT debug patch for SMMU fault issue
+#endif
 	return 0;
 }
 
@@ -2586,7 +2606,9 @@ static int mdss_mdp_set_ts_pipe(struct mdss_mdp_pipe *pipe)
 		ts_rec0);
 	mdss_mdp_pipe_write(pipe, MDSS_MDP_REG_SSPP_TRAFFIC_SHAPER_REC1_PREFILL,
 		ts_rec1);
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(pipe->num, ts_bytes, ts_rec0, ts_rec1);
+#endif
 	pr_debug("ts: pipe:%d bytes=0x%x count0=0x%x count1=0x%x\n",
 		pipe->num, ts_bytes, ts_rec0, ts_rec1);
 	return 0;
@@ -2672,16 +2694,18 @@ int mdss_mdp_pipe_queue_data(struct mdss_mdp_pipe *pipe,
 		pipe->params_changed = 0;
 		mdss_mdp_pipe_solidfill_setup(pipe);
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 		MDSS_XLOG(pipe->num, pipe->multirect.num,
 			pipe->mixer_left->num, pipe->play_cnt, 0x111);
-
+#endif
 		goto update_nobuf;
 	}
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(pipe->num, pipe->multirect.num, pipe->mixer_left->num,
 //						pipe->play_cnt, 0x222);
 						pipe->play_cnt, params_changed, 0x222); //QCT debug patch for SMMU fault issue
-
+#endif
 	if (params_changed) {
 		pipe->params_changed = 0;
 
@@ -2838,7 +2862,9 @@ static inline void __mdss_mdp_pipe_program_pixel_extn_helper(
 	writel_relaxed(tot_req_pixels, pipe->base +
 			MDSS_MDP_REG_SSPP_SW_PIX_EXT_C0_REQ_PIXELS + off);
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(pipe->num, plane, lr_pe, tb_pe, tot_req_pixels);
+#endif
 	pr_debug("pipe num=%d, plane=%d, LR PE=0x%x, TB PE=0x%x, req_pixels=0x0%x\n",
 		pipe->num, plane, lr_pe, tb_pe, tot_req_pixels);
 }

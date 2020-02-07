@@ -18,7 +18,9 @@
 
 #include "mdss_dsi_clk.h"
 #include "mdss_dsi.h"
+#ifdef CONFIG_DEBUG_FS
 #include "mdss_debug.h"
+#endif
 
 #define MAX_CLIENT_NAME_LEN 20
 struct dsi_core_clks {
@@ -584,8 +586,10 @@ static int dsi_recheck_clk_state(struct mdss_dsi_clk_mngr *mngr)
 	pr_debug("%s: l_clk_state (%d -> %d)\n", mngr->name,
 		 old_l_clk_state, new_link_clk_state);
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(old_c_clk_state, new_core_clk_state, old_l_clk_state,
 		  new_link_clk_state);
+#endif
 	if (c_clks || l_clks) {
 		rc = dsi_update_clk_state(c_clks, new_core_clk_state,
 					  l_clks, new_link_clk_state);
@@ -607,7 +611,9 @@ static int dsi_set_clk_rate(struct mdss_dsi_clk_mngr *mngr, int clk, u32 rate,
 	pr_debug("%s: clk = %d, rate = %d, flags = %d\n", mngr->name,
 		 clk, rate, flags);
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(clk, rate, flags);
+#endif
 	switch (clk) {
 	case MDSS_DSI_LINK_ESC_CLK:
 		mngr->link_clks.esc_clk_rate = rate;
@@ -766,7 +772,10 @@ int mdss_dsi_clk_req_state(void *client, enum mdss_dsi_clk_type clk,
 	       c->name, mngr->name, clk, state, c->core_clk_state,
 	       c->link_clk_state);
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(index, clk, state, c->core_clk_state, c->link_clk_state);
+#endif
+
 	/*
 	 * Refcount handling rules:
 	 *	1. Increment refcount whenever ON is called
@@ -832,7 +841,9 @@ int mdss_dsi_clk_req_state(void *client, enum mdss_dsi_clk_type clk,
 	pr_debug("[%s]%s: change=%d, Core (ref=%d, state=%d), Link (ref=%d, state=%d)\n",
 		 c->name, mngr->name, changed, c->core_refcount,
 		 c->core_clk_state, c->link_refcount, c->link_clk_state);
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(index, clk, state, c->core_clk_state, c->link_clk_state);
+#endif
 
 	if (changed) {
 		rc = dsi_recheck_clk_state(mngr);
