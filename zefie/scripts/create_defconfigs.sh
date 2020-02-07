@@ -1,5 +1,8 @@
 #!/bin/bash
-source .zefie/scripts/buildenv.sh
+# shellcheck disable=SC1090,SC2034
+
+SCRIPTDIR=$(realpath "$(dirname "${0}")")
+source "${SCRIPTDIR}/buildenv.sh"
 
 DEFCONFIG_DIR="arch/${ARCH}/configs"
 ORIG_DEFCONFIG_US997="lucye_nao_us-perf_defconfig"
@@ -27,11 +30,11 @@ CONFIG_SECURITY_SELINUX_DEVELOP=y
 EOM
 fi
 
-for m in ${SUPPORTED_MODELS[@]}; do
+for m in "${SUPPORTED_MODELS[@]}"; do
 	DEVMODEL_LOWER="$(echo "$m" | tr '[:upper:]' '[:lower:]')"
 	DEVMODEL_UPPER="$(echo "$m" | tr '[:lower:]' '[:upper:]')"
-	ORIG_DEFCONFIG=$(echo -n 'ORIG_DEFCONFIG_'${DEVMODEL_UPPER})
-	ORIG_DEFCONFIG=${!ORIG_DEFCONFIG}
+	ORIG_DEFCONFIG=$(echo -n "ORIG_DEFCONFIG_${DEVMODEL_UPPER}")
+	ORIG_DEFCONFIG="${!ORIG_DEFCONFIG}"
 
 	TARGET_FILE="${DEFCONFIG_DIR}/${KERNEL_NAME_LOWER}_${DEVMODEL_LOWER}_defconfig"
 	echo "*** Generating ${KERNEL_NAME}_${DEVMODEL_LOWER} kernel defconfigs..."

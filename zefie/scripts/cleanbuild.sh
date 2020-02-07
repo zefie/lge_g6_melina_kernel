@@ -1,13 +1,7 @@
 #!/bin/bash
-.zefie/scripts/clean.sh
-RC=$?
-if [ $RC -ne 0 ]; then
-	echo "Error while cleaning."
-	exit $RC
-fi
-.zefie/scripts/build.sh
-RC=$?
-if [ $RC -ne 0 ]; then
-	echo "Error while building."
-	exit $RC
-fi
+# shellcheck disable=SC1090
+
+SCRIPTDIR=$(realpath "$(dirname "${0}")")
+source "${SCRIPTDIR}/buildenv.sh"
+errchk "${SCRIPTDIR}/clean.sh"
+errchk "${SCRIPTDIR}/build.sh"

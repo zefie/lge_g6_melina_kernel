@@ -1,5 +1,8 @@
 #!/bin/bash
-source "${TARGET_KERNEL_SOURCE}/.zefie/scripts/buildenv.sh"
+# shellcheck disable=SC1090,SC2034
+
+SCRIPTDIR=$(realpath "$(dirname "${0}")")
+source "${SCRIPTDIR}/buildenv.sh"
 
 DEFCONFIG_DIR="${TARGET_KERNEL_SOURCE}/arch/${ARCH}/configs"
 DEFCONFIG_OUTDIR="${KERNEL_OUT}/arch/${ARCH}/configs"
@@ -29,11 +32,11 @@ CONFIG_SECURITY_SELINUX_DEVELOP=y
 EOM
 fi
 
-for m in ${SUPPORTED_MODELS[@]}; do
+for m in "${SUPPORTED_MODELS[@]}"; do
 	DEVMODEL_LOWER="$(echo "$m" | tr '[:upper:]' '[:lower:]')"
 	DEVMODEL_UPPER="$(echo "$m" | tr '[:lower:]' '[:upper:]')"
-	ORIG_DEFCONFIG=$(echo -n 'ORIG_DEFCONFIG_'${DEVMODEL_UPPER})
-	ORIG_DEFCONFIG=${!ORIG_DEFCONFIG}
+	ORIG_DEFCONFIG=$(echo -n "ORIG_DEFCONFIG_${DEVMODEL_UPPER}")
+	ORIG_DEFCONFIG="${!ORIG_DEFCONFIG}"
 
 	TARGET_FILE="${DEFCONFIG_OUTDIR}/${KERNEL_NAME_LOWER}_${DEVMODEL_LOWER}_defconfig"
 	mkdir -p "$(dirname "${TARGET_FILE}")"

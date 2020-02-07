@@ -1,3 +1,5 @@
 #!/bin/bash
-.zefie/scripts/buildenv.sh make mrproper
-exit $?
+# shellcheck disable=SC1090
+SCRIPTDIR=$(realpath "$(dirname "${0}")")
+source "${SCRIPTDIR}/buildenv.sh"
+errchk "${SCRIPTDIR}/buildenv.sh" make mrproper

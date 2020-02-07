@@ -1,11 +1,10 @@
 #!/bin/bash
+# shellcheck disable=SC1090
+SCRIPTDIR=$(realpath "$(dirname "${0}")")
+source "${SCRIPTDIR}/buildenv.sh"
+
 if [ ! -z "${CLEAN}" ]; then
 	echo "Cleaning kernel and regenerating config..."
-	.zefie/scripts/clean.sh
-	RC=$?
-	if [ $RC -ne 0 ]; then
-		exit $RC
-	fi
+	errchk "${SCRIPTDIR}/clean.sh"
 fi
-.zefie/scripts/buildenv.sh .zefie/scripts/make.sh menuconfig
-exit $?
+errchk "${SCRIPTDIR}/make.sh" menuconfig
