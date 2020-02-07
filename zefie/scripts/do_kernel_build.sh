@@ -1,12 +1,16 @@
-LG_OUT_DIRECTORY="../lg_out"
+#!/bin/bash
+# shellcheck disable=SC1090
+SCRIPTDIR=$(realpath "$(dirname "${0}")")
+source "${SCRIPTDIR}/buildenv.sh"
 
 if [ ! -z "${1}" ]; then
-	export KERNEL_DEVMODEL="$(echo "${1}" | tr '[:lower:]' '[:upper:]')"
-	export KERNEL_DEVMODEL_LOWER="$(echo "${KERNEL_DEVMODEL}" | tr '[:upper:]' '[:lower:]')"
+	KERNEL_DEVMODEL="$(echo "${1}" | tr '[:lower:]' '[:upper:]')"
+	KERNEL_DEVMODEL_LOWER="$(echo "${KERNEL_DEVMODEL}" | tr '[:upper:]' '[:lower:]')"
+	export KERNEL_DEVMODEL KERNEL_DEVMODEL_LOWER
 
 	# TODO: An list/array of models
 
-	for m in ${SUPPORTED_MODELS[@]}; do
+	for m in "${SUPPORTED_MODELS[@]}"; do
 		if [ "${KERNEL_DEVMODEL}" == "$m" ]; then
 			SUPPORTED=1
 			break;
@@ -25,39 +29,29 @@ if [ ! -z "${1}" ]; then
 
 	if [ -z "${WORKSPACE}" ]; then
 		echo "* Cleaning old ${1} log files..."
-		rm -f ${LG_OUT_DIRECTORY}/*-${KERNEL_DEVMODEL_LOWER}.log
+		errchk rm -f "${LG_OUT_DIRECTORY}/"*"-${KERNEL_DEVMODEL_LOWER}.log"
 	fi
 
 	if [ -z "${WORKSPACE}" ]; then
 		echo "* Building ${1} kernel (log in ${KERNLOG})"
-		.zefie/scripts/cleanbuild.sh > "${KERNLOG}" 2>&1
+		errchk "${SCRIPTDIR}/cleanbuild.sh" > "${KERNLOG}" 2>&1
 	else
 		echo "* Building ${1} kernel"
-		.zefie/scripts/cleanbuild.sh
-	fi
-	RC=$?
-	if [ $RC -ne 0 ]; then
-		echo "Error. Please check log. Code: $RC"
-		exit $RC
+		errchk "${SCRIPTDIR}/cleanbuild.sh"
 	fi
 
 	if [ -z "${WORKSPACE}" ]; then
 		echo "* Building ${1} zip (log in ${ZIPLOG})"
-		.zefie/scripts/buildzip.sh > "${ZIPLOG}" 2>&1
+		errchk "${SCRIPTDIR}/buildzip.sh" > "${ZIPLOG}" 2>&1
 	else
 		echo "* Building ${1} zip"
-		.zefie/scripts/buildzip.sh
-	fi
-	RC=$?
-	if [ $RC -ne 0 ]; then
-		echo "Error. Please check log. Code: $RC"
-		exit $RC
+		errchk "${SCRIPTDIR}/buildzip.sh"
 	fi
 
 	ZIPNAME=$(find build/out/ -name "boot_*.zip" | rev | cut -d'/' -f1 | rev)
 
-	cp build/out/buildzip.log "${ZIPLOGD}"
-	cp "build/out/${ZIPNAME}" "${LG_OUT_DIRECTORY}"/
+	errchk cp build/out/buildzip.log "${ZIPLOGD}"
+	errchk cp "build/out/${ZIPNAME}" "${LG_OUT_DIRECTORY}"/
 else
 	echo "Usage: ${0} MODEL [conf]"
 	exit 1

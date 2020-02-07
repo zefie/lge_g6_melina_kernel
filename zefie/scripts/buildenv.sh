@@ -1,8 +1,15 @@
 #!/bin/bash
-
+# shellcheck disable=SC2034
 # git clone https://github.com/zefie/binary_toolchains -b uber-6.x-x86_64-aarch64
 export TOOLCHAIN="/home/zefie/ubertc/out/aarch64-linux-android-6.x/bin/aarch64-linux-android-"
 export TOOLCHAIN32="/home/zefie/ubertc/out/arm-linux-androideabi-6.x/bin/arm-linux-androideabi-"
+
+
+SCRIPTDIR=$(realpath "$(dirname "${0}")")
+KERNEL_SOURCE_DIR=$(realpath "${SCRIPTDIR}/../..")
+LG_OUT_DIRECTORY=$(realpath "${KERNEL_SOURCE_DIR}/../lg_out")
+CPUS=$(nproc)
+export KERNEL_SOURCE_DIR SCRIPTDIR CPUS
 
 if [ ! -z "${WORKSPACE}" ]; then
 	# Custom for Jenkins integration
@@ -31,7 +38,7 @@ export DEFAULT_DEVMODEL="US997" # for zip filename, and anykernel whitelist (con
 # Do not edit below this line
 
 export SUPPORTED_MODELS=("US997" "H870" "H872")
-export PATH="${PWD}/.zefie/lz4demo:${PATH}"
+export PATH="${PWD}/zefie/lz4demo:${PATH}"
 export ARCH="arm64"
 export DEFCONFIG_DIR="arch/${ARCH}/configs"
 KERNEL_NAME_LOWER="$(echo "${KERNEL_NAME}" | tr '[:upper:]' '[:lower:]')"
@@ -50,9 +57,36 @@ export KERNEL_DEVMODEL_LOWER
 export CROSS_COMPILE="${TOOLCHAIN}"
 export CROSS_COMPILE_ARM32="${TOOLCHAIN32}"
 
+function errchk() {
+        case "${1}" in
+                "silent")
+                        local silent=1
+                        shift;
+                        ;;
+                "noout")
+                        local noout=1
+                        shift;
+                        ;;
+        esac
+        if [ -z "${noout}" ]; then
+                "${@}"
+        else
+                "${@}" 2>/dev/null >/dev/null
+        fi
+        local res=$?
+        if [ ${res} -ne 0 ]; then
+                if [ -z "${silent}" ]; then
+                        echo "Error ${res} executing ${*}";
+                fi
+                exit "${res}";
+        fi
+}
+
+errchk cd "${KERNEL_SOURCE_DIR}"
+
 if [ "$(basename "${0}")" == "buildenv.sh" ]; then
 	if [ ! -z "$1" ]; then
-		"${@}"
+		errchk "${@}"
 	fi
 fi
 

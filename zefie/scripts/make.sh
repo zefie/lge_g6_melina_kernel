@@ -1,5 +1,8 @@
 #!/bin/bash
-source .zefie/scripts/buildenv.sh
-mkdir -p "${KERNEL_BUILDDIR}"
-make O="${KERNEL_BUILDDIR}" "${@}"
-exit $?
+# shellcheck disable=SC1090
+
+SCRIPTDIR=$(realpath "$(dirname "${0}")")
+source "${SCRIPTDIR}/buildenv.sh"
+
+errchk mkdir -p "${KERNEL_BUILDDIR}"
+errchk make O="${KERNEL_BUILDDIR}" "${@}"
