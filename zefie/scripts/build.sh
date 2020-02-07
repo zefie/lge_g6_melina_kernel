@@ -1,4 +1,5 @@
 #!/bin/bash
-CPUS=$(grep -c ^processor /proc/cpuinfo)
-.zefie/scripts/make.sh -j"${CPUS}"
-exit $?
+# shellcheck disable=SC1090
+SCRIPTDIR=$(realpath "$(dirname "${0}")")
+source "${SCRIPTDIR}/buildenv.sh"
+errchk "${SCRIPTDIR}/make.sh" -j"${CPUS}"
