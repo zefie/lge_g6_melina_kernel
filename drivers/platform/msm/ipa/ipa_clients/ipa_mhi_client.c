@@ -9,7 +9,10 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  */
+#ifdef CONFIG_DEBUG_FS
 #include <linux/debugfs.h>
+#endif
+
 #include <linux/export.h>
 #include <linux/delay.h>
 #include <linux/module.h>
@@ -185,6 +188,8 @@ static char *ipa_mhi_channel_state_str[] = {
 	ipa_mhi_channel_state_str[(state)] : \
 	"INVALID")
 
+#endif
+
 static int ipa_mhi_read_write_host(enum ipa_mhi_dma_dir dir, void *dev_addr,
 	u64 host_addr, int size)
 {
@@ -269,6 +274,7 @@ fail_dma_enable:
 	return res;
 }
 
+#ifdef CONFIG_DEBUG_FS
 static int ipa_mhi_print_channel_info(struct ipa_mhi_channel_ctx *channel,
 	char *buff, int len)
 {
@@ -498,9 +504,6 @@ fail:
 	debugfs_remove_recursive(dent);
 }
 
-#else
-static void ipa_mhi_debugfs_init(void) {}
-static void ipa_mhi_debugfs_destroy(void) {}
 #endif /* CONFIG_DEBUG_FS */
 
 static union IpaHwMhiDlUlSyncCmdData_t ipa_cached_dl_ul_sync_info;
@@ -2354,10 +2357,12 @@ int ipa_mhi_destroy_all_channels(void)
 	return 0;
 }
 
+#ifdef CONFIG_DEBUG_FS
 static void ipa_mhi_debugfs_destroy(void)
 {
 	debugfs_remove_recursive(dent);
 }
+#endif
 
 /**
  * ipa_mhi_destroy() - Destroy MHI IPA
@@ -2449,7 +2454,9 @@ void ipa_mhi_destroy(void)
 	}
 
 	ipa_dma_destroy();
+#ifdef CONFIG_DEBUG_FS
 	ipa_mhi_debugfs_destroy();
+#endif
 	destroy_workqueue(ipa_mhi_client_ctx->wq);
 	kfree(ipa_mhi_client_ctx);
 	ipa_mhi_client_ctx = NULL;
@@ -2593,7 +2600,9 @@ int ipa_mhi_init(struct ipa_mhi_init_params *params)
 		ipa_mhi_set_state(IPA_MHI_STATE_READY);
 
 	/* Initialize debugfs */
+#ifdef CONFIG_DEBUG_FS
 	ipa_mhi_debugfs_init();
+#endif
 
 	IPA_MHI_FUNC_EXIT();
 	return 0;

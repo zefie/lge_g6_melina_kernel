@@ -32,7 +32,10 @@
 #include <soc/qcom/event_timer.h>
 #include <linux/msm-bus.h>
 #include "mdss.h"
+#ifdef CONFIG_DEBUG_FS
 #include "mdss_debug.h"
+#endif
+#include "mdss_misr.h"
 #include "mdss_fb.h"
 #include "mdss_mdp.h"
 #include "mdss_smmu.h"
@@ -1530,7 +1533,9 @@ static void __unstage_pipe_and_clean_buf(struct msm_fb_data_type *mfd,
 
 	pr_debug("unstaging pipe:%d rect:%d buf:%d\n",
 			pipe->num, pipe->multirect.num, !buf);
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(pipe->num, pipe->multirect.num, !buf);
+#endif
 	mdss_mdp_mixer_pipe_unstage(pipe, pipe->mixer_left);
 	mdss_mdp_mixer_pipe_unstage(pipe, pipe->mixer_right);
 	pipe->dirty = true;
@@ -1823,7 +1828,9 @@ int mdss_mode_switch(struct msm_fb_data_type *mfd, u32 mode)
 	int rc = 0;
 
 	pr_debug("fb%d switch to mode=%x\n", mfd->index, mode);
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	ATRACE_FUNC();
+#endif
 
 	ctl->pending_mode_switch = mode;
 	sctl = mdss_mdp_get_split_ctl(ctl);
@@ -1914,7 +1921,9 @@ int mdss_mode_switch(struct msm_fb_data_type *mfd, u32 mode)
 	}
 
 	mdss_mdp_ctl_start(ctl, true);
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	ATRACE_END(__func__);
+#endif
 
 	return 0;
 }
@@ -2839,8 +2848,9 @@ static void __do_frc_in_ready_state(struct mdss_mdp_frc_fsm *frc_fsm, void *arg)
 	int remaining_repeat =
 		__calculate_remaining_repeat(mfd, frc_info);
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	mdss_debug_frc_add_kickoff_sample_pre(ctl, frc_info, remaining_repeat);
-
+#endif
 	/* video arrives later than expected */
 	if (remaining_repeat < 0) {
 		pr_info("Frame %d lags behind %d vsync\n",
@@ -2849,12 +2859,15 @@ static void __do_frc_in_ready_state(struct mdss_mdp_frc_fsm *frc_fsm, void *arg)
 		remaining_repeat = 0;
 	}
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	if (mdss_debug_frc_frame_repeat_disabled())
 		remaining_repeat = 0;
-
+#endif
 	__repeat_current_frame(ctl, remaining_repeat);
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	mdss_debug_frc_add_kickoff_sample_post(ctl, frc_info, remaining_repeat);
+#endif
 }
 
 /* behavior of FRC FSM in DISABLE state */
@@ -3039,7 +3052,9 @@ int mdss_mdp_overlay_kickoff(struct msm_fb_data_type *mfd,
 	if (!ctl || !ctl->mixer_left)
 		return -ENODEV;
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	ATRACE_BEGIN(__func__);
+#endif
 	if (ctl->shared_lock) {
 		mdss_mdp_ctl_notify(ctl, MDP_NOTIFY_FRAME_BEGIN);
 		mutex_lock(ctl->shared_lock);
@@ -3121,9 +3136,13 @@ int mdss_mdp_overlay_kickoff(struct msm_fb_data_type *mfd,
 	if (ctl->ops.pre_programming)
 		ctl->ops.pre_programming(ctl);
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	ATRACE_BEGIN("sspp_programming");
+#endif
 	ret = __overlay_queue_pipes(mfd);
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	ATRACE_END("sspp_programming");
+#endif
 	mutex_unlock(&mdp5_data->list_lock);
 
 	mdp5_data->kickoff_released = false;
@@ -3132,18 +3151,26 @@ int mdss_mdp_overlay_kickoff(struct msm_fb_data_type *mfd,
 		mdss_mdp_overlay_update_frc(mfd);
 
 	if (mfd->panel.type == WRITEBACK_PANEL) {
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 		ATRACE_BEGIN("wb_kickoff");
+#endif
 		commit_cb.commit_cb_fnc = mdss_mdp_commit_cb;
 		commit_cb.data = mfd;
 		ret = mdss_mdp_wfd_kickoff(mdp5_data->wfd, &commit_cb);
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 		ATRACE_END("wb_kickoff");
+#endif
 	} else {
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 		ATRACE_BEGIN("display_commit");
+#endif
 		commit_cb.commit_cb_fnc = mdss_mdp_commit_cb;
 		commit_cb.data = mfd;
 		ret = mdss_mdp_display_commit(mdp5_data->ctl, NULL,
 			&commit_cb);
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 		ATRACE_END("display_commit");
+#endif
 	}
 	__vsync_set_vsync_handler(mfd);
 
@@ -3163,9 +3190,13 @@ int mdss_mdp_overlay_kickoff(struct msm_fb_data_type *mfd,
 	mutex_unlock(&mdp5_data->ov_lock);
 	mdss_mdp_overlay_update_pm(mdp5_data);
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	ATRACE_BEGIN("display_wait4comp");
+#endif
 	ret = mdss_mdp_display_wait4comp(mdp5_data->ctl);
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	ATRACE_END("display_wait4comp");
+#endif
 	mdss_mdp_splash_cleanup(mfd, true);
 
 	/*
@@ -3175,10 +3206,13 @@ int mdss_mdp_overlay_kickoff(struct msm_fb_data_type *mfd,
 	 * bit are set within the same vsync period
 	 * regardless of  mdp revision.
 	 */
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	ATRACE_BEGIN("fps_update");
+#endif
 	ret = mdss_mdp_ctl_update_fps(ctl);
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	ATRACE_END("fps_update");
-
+#endif
 	if (IS_ERR_VALUE(ret)) {
 		pr_err("failed to update fps!\n");
 		goto commit_fail;
@@ -3198,9 +3232,13 @@ int mdss_mdp_overlay_kickoff(struct msm_fb_data_type *mfd,
 
 	mdss_fb_update_notify_update(mfd);
 commit_fail:
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	ATRACE_BEGIN("overlay_cleanup");
+#endif
 	mdss_mdp_overlay_cleanup(mfd, &mdp5_data->pipes_destroy);
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	ATRACE_END("overlay_cleanup");
+#endif
 	mdss_mdp_clk_ctrl(MDP_BLOCK_POWER_OFF);
 	mdss_mdp_ctl_notify(ctl, MDP_NOTIFY_FRAME_FLUSHED);
 	if (!mdp5_data->kickoff_released)
@@ -3210,7 +3248,9 @@ commit_fail:
 	if (ctl->shared_lock)
 		mutex_unlock(ctl->shared_lock);
 	mdss_iommu_ctrl(0);
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	ATRACE_END(__func__);
+#endif
 
 	return ret;
 }
@@ -4077,7 +4117,9 @@ int mdss_mdp_dfps_update_params(struct msm_fb_data_type *mfd,
 	 */
 	mdss_panelinfo_to_fb_var(&pdata->panel_info, var);
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(dfps);
+#endif
 	mutex_unlock(&mdp5_data->dfps_lock);
 
 	return 0;
@@ -4538,8 +4580,9 @@ static ssize_t mdss_mdp_misr_show(struct device *dev,
 		return -EINVAL;
 	}
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	ret = mdss_dump_misr_data(&buf, PAGE_SIZE);
-
+#endif
 	return ret;
 }
 
@@ -4792,7 +4835,9 @@ int mdss_mdp_cursor_flush(struct msm_fb_data_type *mfd,
 	mdss_mdp_clk_ctrl(MDP_BLOCK_POWER_ON);
 
 	mdss_mdp_ctl_write(ctl, MDSS_MDP_REG_CTL_FLUSH, flush_bits);
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(ctl->intf_num, flush_bits);
+#endif
 	if ((!ctl->split_flush_en) && pipe->mixer_right) {
 		sctl = mdss_mdp_get_split_ctl(ctl);
 		if (!sctl) {
@@ -4800,7 +4845,9 @@ int mdss_mdp_cursor_flush(struct msm_fb_data_type *mfd,
 			return -ENODEV;
 		}
 		mdss_mdp_ctl_write(sctl, MDSS_MDP_REG_CTL_FLUSH, flush_bits);
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 		MDSS_XLOG(sctl->intf_num, flush_bits);
+#endif
 	}
 
 	mdss_mdp_clk_ctrl(MDP_BLOCK_POWER_OFF);
@@ -5734,6 +5781,9 @@ static int __handle_overlay_prepare(struct msm_fb_data_type *mfd,
 	}
 
 	pr_debug("prepare fb%d num_ovs=%d\n", mfd->index, num_ovs);
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
+	MDSS_XLOG(mfd->index, num_ovs); //QCT debug patch for SMMU fault issue
+#endif
 
 	for (i = 0; i < num_ovs; i++) {
 		if (IS_RIGHT_MIXER_OV(ip_ovs[i].flags, ip_ovs[i].dst_rect.x,

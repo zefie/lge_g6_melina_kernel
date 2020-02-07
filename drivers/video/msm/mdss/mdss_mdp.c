@@ -52,8 +52,13 @@
 #include "mdss_fb.h"
 #include "mdss_mdp.h"
 #include "mdss_panel.h"
+#include "mdss_misr.h"
+
+#ifdef CONFIG_DEBUG_FS
 #include "mdss_debug.h"
 #include "mdss_mdp_debug.h"
+#endif
+
 #include "mdss_smmu.h"
 
 #include "mdss_mdp_trace.h"
@@ -573,10 +578,14 @@ static int mdss_mdp_bus_scale_set_quota(u64 ab_quota_rt, u64 ab_quota_nrt,
 	if ((mdss_res->bus_ref_cnt == 0) && mdss_res->curr_bw_uc_idx) {
 		rc = 0;
 	} else { /* vote BW if bus_bw_cnt > 0 or uc_idx is zero */
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 		ATRACE_BEGIN("msm_bus_scale_req");
+#endif
 		rc = msm_bus_scale_client_update_request(mdss_res->bus_hdl,
 			new_uc_idx);
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 		ATRACE_END("msm_bus_scale_req");
+#endif
 	}
 	return rc;
 }
@@ -650,7 +659,9 @@ int mdss_update_reg_bus_vote(struct reg_bus_client *bus_client, u32 usecase_ndx)
 	pr_debug("%pS: changed=%d current idx=%d request client %s id:%u idx:%d\n",
 		__builtin_return_address(0), changed, max_usecase_ndx,
 		bus_client->name, bus_client->id, usecase_ndx);
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(changed, max_usecase_ndx, bus_client->id, usecase_ndx);
+#endif
 	if (changed)
 		ret = msm_bus_scale_client_update_request(mdss_res->reg_bus_hdl,
 			max_usecase_ndx);
@@ -1457,7 +1468,9 @@ void mdss_bus_bandwidth_ctrl(int enable)
 		mdata->bus_ref_cnt, changed, enable);
 
 	if (changed) {
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 		MDSS_XLOG(mdata->bus_ref_cnt, enable);
+#endif
 
 		if (!enable) {
 			if (!mdata->handoff_pending) {
@@ -1501,9 +1514,10 @@ void mdss_mdp_clk_ctrl(int enable)
 		}
 	}
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	if (changed)
 		MDSS_XLOG(mdp_clk_cnt, enable, current->pid);
-
+#endif
 	pr_debug("%pS: task:%s clk_cnt=%d changed=%d enable=%d\n",
 		__builtin_return_address(0), current->group_leader->comm,
 		mdata->bus_ref_cnt, changed, enable);
@@ -1698,6 +1712,7 @@ static int mdss_mdp_irq_clk_setup(struct mdss_data_type *mdata)
 	return 0;
 }
 
+#ifdef MDSS_MDP_DEBUG_H
 static void mdss_debug_enable_clock(int on)
 {
 	if (on)
@@ -1735,6 +1750,7 @@ static int mdss_mdp_debug_init(struct platform_device *pdev,
 
 	return 0;
 }
+#endif
 
 static u32 mdss_get_props(void)
 {
@@ -1778,7 +1794,9 @@ static void mdss_mdp_hw_rev_caps_init(struct mdss_data_type *mdata)
 	mdata->pixel_ram_size = 0;
 	mem_protect_sd_ctrl_id = MEM_PROTECT_SD_CTRL_FLAT;
 
+#ifdef MDSS_MDP_DEBUG_H
 	mdss_mdp_hw_rev_debug_caps_init(mdata);
+#endif
 
 	switch (mdata->mdp_rev) {
 	case MDSS_MDP_HW_REV_107:
@@ -2798,11 +2816,13 @@ static int mdss_mdp_probe(struct platform_device *pdev)
 		goto probe_done;
 	}
 
+#ifdef MDSS_MDP_DEBUG_H
 	rc = mdss_mdp_debug_init(pdev, mdata);
 	if (rc) {
 		pr_err("unable to initialize mdp debugging\n");
 		goto probe_done;
 	}
+#endif
 	rc = mdss_mdp_scaler_init(mdata, &pdev->dev);
 	if (rc)
 		goto probe_done;
@@ -4586,8 +4606,10 @@ int mdss_mdp_wait_for_xin_halt(u32 xin_id, bool is_vbif_nrt)
 	if (rc == -ETIMEDOUT) {
 		pr_err("VBIF client %d not halting. TIMEDOUT.\n",
 			xin_id);
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 		MDSS_XLOG_TOUT_HANDLER("mdp", "vbif", "vbif_nrt",
 			"dbg_bus", "vbif_dbg_bus", "panic");
+#endif
 	} else {
 		pr_debug("VBIF client %d is halted\n", xin_id);
 	}
@@ -4908,8 +4930,10 @@ static void mdss_mdp_footswitch_ctrl(struct mdss_data_type *mdata, int on)
 	if (!mdata->fs)
 		return;
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(on, mdata->fs_ena, mdata->idle_pc, mdata->en_svs_high,
 		atomic_read(&mdata->active_intf_cnt));
+#endif
 
 	if (on) {
 		if (!mdata->fs_ena) {
@@ -5150,7 +5174,9 @@ static int mdss_mdp_remove(struct platform_device *pdev)
 	pm_runtime_disable(&pdev->dev);
 	mdss_mdp_pp_term(&pdev->dev);
 	mdss_mdp_bus_scale_unregister(mdata);
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	mdss_debugfs_remove(mdata);
+#endif
 	if (mdata->regulator_notif_register)
 		regulator_unregister_notifier(mdata->fs, &(mdata->gdsc_cb));
 	return 0;

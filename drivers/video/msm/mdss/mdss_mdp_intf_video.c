@@ -23,7 +23,9 @@
 #include "mdss_fb.h"
 #include "mdss_mdp.h"
 #include "mdss_panel.h"
+#ifdef CONFIG_DEBUG_FS
 #include "mdss_debug.h"
+#endif
 #include "mdss_mdp_trace.h"
 
 /* wait for at least 2 vsyncs for lowest refresh rate (24hz) */
@@ -421,8 +423,10 @@ static int mdss_mdp_video_timegen_setup(struct mdss_mdp_ctl *ctl,
 	vsync_period = p->vsync_pulse_width + p->v_back_porch +
 			p->height + p->v_front_porch;
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(p->vsync_pulse_width, p->v_back_porch,
 			p->height, p->v_front_porch);
+#endif
 
 	display_v_start = ((p->vsync_pulse_width + p->v_back_porch) *
 			hsync_period) + p->hsync_skew;
@@ -507,7 +511,9 @@ static int mdss_mdp_video_timegen_setup(struct mdss_mdp_ctl *ctl,
 	mdp_video_write(ctx, MDSS_MDP_REG_INTF_HSYNC_SKEW, p->hsync_skew);
 	mdp_video_write(ctx, MDSS_MDP_REG_INTF_POLARITY_CTL, polarity_ctl);
 	mdp_video_write(ctx, MDSS_MDP_REG_INTF_FRAME_LINE_COUNT_EN, 0x3);
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(hsync_period, vsync_period);
+#endif
 
 	/*
 	 * If CDM is present Interface should have destination
@@ -540,7 +546,9 @@ static void mdss_mdp_video_timegen_flush(struct mdss_mdp_ctl *ctl,
 					(sctx->intf_num - MDSS_MDP_INTF0));
 	}
 	mdss_mdp_ctl_write(ctl, MDSS_MDP_REG_CTL_FLUSH, ctl_flush);
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(ctl->intf_num, sctx?sctx->intf_num:0xf00, ctl_flush);
+#endif
 }
 
 static inline void video_vsync_irq_enable(struct mdss_mdp_ctl *ctl, bool clear)
@@ -588,7 +596,9 @@ static int mdss_mdp_video_add_vsync_handler(struct mdss_mdp_ctl *ctl,
 		goto exit;
 	}
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(ctl->num, ctl->vsync_cnt, handle->enabled);
+#endif
 
 	spin_lock_irqsave(&ctx->vsync_lock, flags);
 	if (!handle->enabled) {
@@ -618,7 +628,9 @@ static int mdss_mdp_video_remove_vsync_handler(struct mdss_mdp_ctl *ctl,
 		return -ENODEV;
 	}
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(ctl->num, ctl->vsync_cnt, handle->enabled);
+#endif
 
 	spin_lock_irqsave(&ctx->vsync_lock, flags);
 	if (handle->enabled) {
@@ -931,7 +943,9 @@ static int mdss_mdp_video_stop(struct mdss_mdp_ctl *ctl, int panel_power_state)
 		return ret;
 	}
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(ctl->num, ctl->vsync_cnt);
+#endif
 
 	mdss_mdp_ctl_reset(ctl, false);
 	ctl->intf_ctx[MASTER_CTX] = NULL;
@@ -958,9 +972,11 @@ static void mdss_mdp_video_vsync_intr_done(void *arg)
 	vsync_time = ktime_get();
 	ctl->vsync_cnt++;
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	mdss_debug_frc_add_vsync_sample(ctl, vsync_time);
 
 	MDSS_XLOG(ctl->num, ctl->vsync_cnt, ctl->vsync_cnt);
+#endif
 
 	pr_debug("intr ctl=%d vsync cnt=%u vsync_time=%d\n",
 		 ctl->num, ctl->vsync_cnt, (int)ktime_to_ms(vsync_time));
@@ -1014,7 +1030,9 @@ static int mdss_mdp_video_pollwait(struct mdss_mdp_ctl *ctl)
 	mdss_mdp_clk_ctrl(MDP_BLOCK_POWER_OFF);
 
 	if (rc == 0) {
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 		MDSS_XLOG(ctl->num, ctl->vsync_cnt);
+#endif
 		pr_debug("vsync poll successful! rc=%d status=0x%x\n",
 				rc, status);
 		ctx->poll_cnt++;
@@ -1098,7 +1116,9 @@ static void mdss_mdp_video_underrun_intr_done(void *arg)
 		return;
 
 	ctl->underrun_cnt++;
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(ctl->num, ctl->underrun_cnt);
+#endif
 	trace_mdp_video_underrun_done(ctl->num, ctl->underrun_cnt);
 	pr_debug("display underrun detected for ctl=%d count=%d\n", ctl->num,
 			ctl->underrun_cnt);
@@ -1153,7 +1173,9 @@ static int mdss_mdp_video_hfp_fps_update(struct mdss_mdp_video_ctx *ctx,
 	mdp_video_write(ctx, MDSS_MDP_REG_INTF_DISPLAY_V_START_F0,
 						display_v_start);
 	mdp_video_write(ctx, MDSS_MDP_REG_INTF_DISPLAY_V_END_F0, display_v_end);
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(ctx->intf_num, hsync_ctl, vsync_period, hsync_period);
+#endif
 
 	return 0;
 }
@@ -1204,8 +1226,10 @@ static int mdss_mdp_video_vfp_fps_update(struct mdss_mdp_video_ctx *ctx,
 		ctx->intf_num, vsync_period, hsync_period,
 		current_vsync_period_f0, new_vsync_period_f0);
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(ctx->intf_num, current_vsync_period_f0,
 		hsync_period, vsync_period, new_vsync_period_f0);
+#endif
 
 	return 0;
 }
@@ -1235,7 +1259,9 @@ static int mdss_mdp_video_wait4vsync(struct mdss_mdp_ctl *ctl)
 		return -ENODEV;
 	}
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(ctl->num, ctl->vsync_cnt, XLOG_FUNC_ENTRY);
+#endif
 
 	video_vsync_irq_enable(ctl, true);
 	reinit_completion(&ctx->vsync_comp);
@@ -1246,19 +1272,25 @@ static int mdss_mdp_video_wait4vsync(struct mdss_mdp_ctl *ctl)
 		pr_warn("vsync timeout %d fallback to poll mode\n",
 			ctl->num);
 		rc = mdss_mdp_video_pollwait(ctl);
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 		MDSS_XLOG(ctl->num, ctl->vsync_cnt);
+#endif
 		if (rc) {
 			pr_err("error polling for vsync\n");
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 			MDSS_XLOG_TOUT_HANDLER("mdp", "dsi0_ctrl", "dsi0_phy",
 				"dsi1_ctrl", "dsi1_phy", "vbif", "dbg_bus",
 				"vbif_dbg_bus", "panic");
+#endif
 		}
 	} else {
 		rc = 0;
 	}
 	video_vsync_irq_disable(ctl);
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(ctl->num, ctl->vsync_cnt, XLOG_FUNC_EXIT);
+#endif
 
 	return rc;
 }
@@ -1337,8 +1369,10 @@ static int mdss_mdp_video_config_fps(struct mdss_mdp_ctl *ctl, int new_fps)
 
 	pr_debug("ctl:%d dfps_update:%d fps:%d\n",
 		ctl->num, pdata->panel_info.dfps_update, new_fps);
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(ctl->num, pdata->panel_info.dfps_update,
 		new_fps, XLOG_FUNC_ENTRY);
+#endif
 
 	if (pdata->panel_info.dfps_update
 			!= DFPS_SUSPEND_RESUME_MODE) {
@@ -1455,7 +1489,9 @@ exit_dfps:
 	}
 
 end:
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(ctl->num, new_fps, XLOG_FUNC_EXIT);
+#endif
 	mutex_unlock(&ctl->offlock);
 	return rc;
 }
@@ -1483,7 +1519,9 @@ static int mdss_mdp_video_display(struct mdss_mdp_ctl *ctl, void *arg)
 		WARN(1, "commit without wait! ctl=%d", ctl->num);
 	}
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(ctl->num, ctl->underrun_cnt);
+#endif
 
 	if (!ctx->timegen_en) {
 		rc = mdss_mdp_ctl_intf_event(ctl, MDSS_EVENT_LINK_READY, NULL,
@@ -1658,7 +1696,9 @@ static void mdss_mdp_fetch_end_config(struct mdss_mdp_video_ctx *ctx,
 
 	mdp_video_write(ctx, MDSS_MDP_REG_INTF_VBLANK_END_CONF, fetch_stop);
 	mdp_video_write(ctx, MDSS_MDP_REG_INTF_CONFIG, vblank_end_enable);
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(ctx->intf_num, fetch_stop, vblank_end_enable);
+#endif
 }
 
 static void mdss_mdp_fetch_start_config(struct mdss_mdp_video_ctx *ctx,
@@ -1695,7 +1735,9 @@ static void mdss_mdp_fetch_start_config(struct mdss_mdp_video_ctx *ctx,
 
 	mdp_video_write(ctx, MDSS_MDP_REG_INTF_PROG_FETCH_START, fetch_start);
 	mdp_video_write(ctx, MDSS_MDP_REG_INTF_CONFIG, fetch_enable);
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(ctx->intf_num, fetch_enable, fetch_start);
+#endif
 }
 
 static inline bool mdss_mdp_video_need_pixel_drop(u32 vic)
@@ -1763,8 +1805,10 @@ static void mdss_mdp_handoff_programmable_fetch(struct mdss_mdp_ctl *ctl,
 				((fetch_start_handoff - 1)/h_total_handoff);
 		pr_debug("programmable fetch lines %d start:%d\n",
 			pinfo->prg_fet, fetch_start_handoff);
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 		MDSS_XLOG(pinfo->prg_fet, fetch_start_handoff,
 			h_total_handoff, v_total_handoff);
+#endif
 	}
 }
 
@@ -2072,7 +2116,9 @@ static void early_wakeup_dfps_update_work(struct work_struct *work)
 	/* get the default fps that was cached before any dfps update */
 	dfps = pdata->panel_info.default_fps;
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	ATRACE_BEGIN(__func__);
+#endif
 
 	if (dfps == pinfo->mipi.frame_rate) {
 		pr_debug("%s: FPS is already %d\n",
@@ -2085,15 +2131,22 @@ static void early_wakeup_dfps_update_work(struct work_struct *work)
 		pr_err("failed to set dfps params!\n");
 
 	/* update the HW with the new fps */
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	ATRACE_BEGIN("fps_update_wq");
+#endif
 	ret = mdss_mdp_ctl_update_fps(ctl);
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	ATRACE_END("fps_update_wq");
+#endif
 	if (ret)
 		pr_err("early wakeup failed to set %d fps ret=%d\n",
 			dfps, ret);
 
 exit:
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	ATRACE_END(__func__);
+#endif
+	return;
 }
 
 static int mdss_mdp_video_early_wake_up(struct mdss_mdp_ctl *ctl)

@@ -27,7 +27,10 @@
 
 #include "mdss_rotator_internal.h"
 #include "mdss_mdp.h"
+
+#ifdef CONFIG_DEBUG_FS
 #include "mdss_debug.h"
+#endif
 
 /* waiting for hw time out, 3 vsync for 30fps*/
 #define ROT_HW_ACQUIRE_TIMEOUT_IN_MS 100
@@ -118,12 +121,16 @@ static int mdss_rotator_bus_scale_set_quota(struct mdss_rot_bus_data_type *bus,
 	bus->curr_quota_val = quota;
 
 	pr_debug("uc_idx=%d quota=%llu\n", new_uc_idx, quota);
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(new_uc_idx, ((quota >> 32) & 0xFFFFFFFF),
 		(quota & 0xFFFFFFFF));
 	ATRACE_BEGIN("msm_bus_scale_req_rot");
+#endif
 	ret = msm_bus_scale_client_update_request(bus->bus_hdl,
 		new_uc_idx);
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	ATRACE_END("msm_bus_scale_req_rot");
+#endif
 	return ret;
 }
 
@@ -147,10 +154,14 @@ static int mdss_rotator_enable_reg_bus(struct mdss_rot_mgr *mgr, u64 quota)
 		quota ? "Enable":"Disable");
 
 	if (changed) {
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 		ATRACE_BEGIN("msm_bus_scale_req_rot_reg");
+#endif
 		ret = msm_bus_scale_client_update_request(mgr->reg_bus.bus_hdl,
 			usecase_ndx);
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 		ATRACE_END("msm_bus_scale_req_rot_reg");
+#endif
 	}
 
 	return ret;
@@ -233,7 +244,9 @@ static void mdss_rotator_set_clk_rate(struct mdss_rot_mgr *mgr,
 				pr_err("clk_set_rate failed, err:%d\n", ret);
 			} else {
 				pr_debug("rotator clk rate=%lu\n", clk_rate);
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 				MDSS_XLOG(clk_rate);
+#endif
 			}
 		}
 		mutex_unlock(&mgr->clk_lock);
@@ -304,13 +317,17 @@ static int mdss_rotator_clk_ctrl(struct mdss_rot_mgr *mgr, int enable)
 			msm_bus_scale_client_update_context(
 				mgr->data_bus.bus_hdl, false,
 				mgr->data_bus.curr_bw_uc_idx);
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 			trace_rotator_bw_ao_as_context(0);
+#endif
 		} else {
 			/* Active Only */
 			msm_bus_scale_client_update_context(
 				mgr->data_bus.bus_hdl, true,
 				mgr->data_bus.curr_bw_uc_idx);
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 			trace_rotator_bw_ao_as_context(1);
+#endif
 		}
 		mutex_unlock(&mgr->bus_lock);
 	}
@@ -346,7 +363,9 @@ int mdss_rotator_resource_ctrl(struct mdss_rot_mgr *mgr, int enable)
 
 	pr_debug("%s: res_cnt=%d changed=%d enable=%d\n",
 		__func__, mgr->res_ref_cnt, changed, enable);
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(mgr->res_ref_cnt, changed, enable);
+#endif
 
 	if (changed) {
 		if (enable)
@@ -542,10 +561,14 @@ static int mdss_rotator_map_and_check_data(struct mdss_rot_entry *entry)
 
 	rotation = (entry->item.flags &  MDP_ROTATION_90) ? true : false;
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	ATRACE_BEGIN(__func__);
+#endif
 	ret = mdss_iommu_ctrl(1);
 	if (IS_ERR_VALUE(ret)) {
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 		ATRACE_END(__func__);
+#endif
 		return ret;
 	}
 
@@ -606,7 +629,9 @@ static int mdss_rotator_map_and_check_data(struct mdss_rot_entry *entry)
 
 end:
 	mdss_iommu_ctrl(0);
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	ATRACE_END(__func__);
+#endif
 
 	return ret;
 }
@@ -1098,7 +1123,9 @@ static int mdss_rotator_update_perf(struct mdss_rot_mgr *mgr)
 	int not_in_suspend_mode;
 	u64 total_bw = 0;
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	ATRACE_BEGIN(__func__);
+#endif
 
 	not_in_suspend_mode = !atomic_read(&mgr->device_suspended);
 
@@ -1120,7 +1147,9 @@ static int mdss_rotator_update_perf(struct mdss_rot_mgr *mgr)
 	mdss_rotator_bus_scale_set_quota(&mgr->data_bus, total_bw);
 	mutex_unlock(&mgr->bus_lock);
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	ATRACE_END(__func__);
+#endif
 	return 0;
 }
 
@@ -1739,7 +1768,9 @@ static int mdss_rotator_config_hw(struct mdss_rot_hw_resource *hw,
 	struct mdss_rot_perf *perf;
 	int ret;
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	ATRACE_BEGIN(__func__);
+#endif
 	pipe = hw->pipe;
 	item = &entry->item;
 	perf = entry->perf;
@@ -1777,10 +1808,14 @@ static int mdss_rotator_config_hw(struct mdss_rot_hw_resource *hw,
 		item->dst_rect.x, item->dst_rect.y,
 		item->dst_rect.w, item->dst_rect.h, item->output.format,
 		item->session_id);
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(item->input.format, pipe->img_width, pipe->img_height,
 		pipe->flags);
+#endif
 done:
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	ATRACE_END(__func__);
+#endif
 	return ret;
 }
 
@@ -1961,7 +1996,9 @@ static int mdss_rotator_open_session(struct mdss_rot_mgr *mgr,
 		return -ENOMEM;
 	}
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	ATRACE_BEGIN(__func__); /* Open session votes for bw */
+#endif
 	perf->work_distribution = devm_kzalloc(&mgr->pdev->dev,
 		sizeof(u32) * mgr->queue_count, GFP_KERNEL);
 	if (!perf->work_distribution) {
@@ -2023,7 +2060,9 @@ copy_user_err:
 alloc_err:
 	devm_kfree(&mgr->pdev->dev, perf);
 done:
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	ATRACE_END(__func__);
+#endif
 	return ret;
 }
 
@@ -2045,7 +2084,9 @@ static int mdss_rotator_close_session(struct mdss_rot_mgr *mgr,
 		return -EINVAL;
 	}
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	ATRACE_BEGIN(__func__);
+#endif
 	mutex_lock(&perf->work_dis_lock);
 	if (mdss_rotator_is_work_pending(mgr, perf)) {
 		pr_debug("Work is still pending, offload free to wq\n");
@@ -2068,7 +2109,9 @@ static int mdss_rotator_close_session(struct mdss_rot_mgr *mgr,
 	mdss_rotator_clk_ctrl(rot_mgr, false);
 done:
 	pr_debug("Closed session id:%u", id);
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	ATRACE_END(__func__);
+#endif
 	mutex_unlock(&mgr->lock);
 	return 0;
 }
@@ -2102,7 +2145,9 @@ static int mdss_rotator_config_session(struct mdss_rot_mgr *mgr,
 		return -EINVAL;
 	}
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	ATRACE_BEGIN(__func__);
+#endif
 	mutex_lock(&private->perf_lock);
 	perf->config = config;
 	ret = mdss_rotator_calc_perf(perf);
@@ -2120,7 +2165,9 @@ static int mdss_rotator_config_session(struct mdss_rot_mgr *mgr,
 		config.input.format, config.output.width, config.output.height,
 		config.output.format);
 done:
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	ATRACE_END(__func__);
+#endif
 	mutex_unlock(&mgr->lock);
 	return ret;
 }
@@ -2496,9 +2543,13 @@ static long mdss_rotator_compat_ioctl(struct file *file, unsigned int cmd,
 
 	switch (cmd) {
 	case MDSS_ROTATION_REQUEST:
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 		ATRACE_BEGIN("rotator_request32");
+#endif
 		ret = mdss_rotator_handle_request32(rot_mgr, private, arg);
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 		ATRACE_END("rotator_request32");
+#endif
 		break;
 	case MDSS_ROTATION_OPEN:
 		ret = mdss_rotator_open_session(rot_mgr, private, arg);
@@ -2544,9 +2595,13 @@ static long mdss_rotator_ioctl(struct file *file, unsigned int cmd,
 
 	switch (cmd) {
 	case MDSS_ROTATION_REQUEST:
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 		ATRACE_BEGIN("rotator_request");
+#endif
 		ret = mdss_rotator_handle_request(rot_mgr, private, arg);
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 		ATRACE_END("rotator_request");
+#endif
 		break;
 	case MDSS_ROTATION_OPEN:
 		ret = mdss_rotator_open_session(rot_mgr, private, arg);

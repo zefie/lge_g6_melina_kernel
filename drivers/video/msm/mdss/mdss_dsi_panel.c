@@ -24,7 +24,10 @@
 #include <linux/string.h>
 
 #include "mdss_dsi.h"
+#ifdef CONFIG_DEBUG_FS
 #include "mdss_debug.h"
+#endif
+
 #ifdef TARGET_HW_MDSS_HDMI
 #include "mdss_dba_utils.h"
 #endif

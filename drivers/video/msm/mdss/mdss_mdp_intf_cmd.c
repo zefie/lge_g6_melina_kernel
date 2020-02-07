@@ -18,11 +18,16 @@
 
 #include "mdss_mdp.h"
 #include "mdss_panel.h"
+
+#ifdef CONFIG_DEBUG_FS
 #include "mdss_debug.h"
+#endif
+
 #include "mdss_mdp_trace.h"
 #include "mdss_dsi_clk.h"
 #include <linux/interrupt.h>
-#if defined(CONFIG_LGE_DISPLAY_COMMON)
+
+#ifdef CONFIG_LGE_DISPLAY_COMMON
 #include <linux/input/lge_touch_notify.h>
 #include <soc/qcom/lge/board_lge.h>
 #endif
@@ -600,8 +605,10 @@ int mdss_mdp_resource_control(struct mdss_mdp_ctl *ctl, u32 sw_event)
 		get_clk_pwr_state_name(mdp5_data->resources_state),
 		get_sw_event_name(sw_event));
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(ctl->num, mdp5_data->resources_state, sw_event,
 		XLOG_FUNC_ENTRY);
+#endif
 
 	switch (sw_event) {
 	case MDP_RSRC_CTL_EVENT_KICKOFF:
@@ -640,7 +647,9 @@ int mdss_mdp_resource_control(struct mdss_mdp_ctl *ctl, u32 sw_event)
 		}
 
 		mutex_lock(&ctl->rsrc_lock);
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 		MDSS_XLOG(ctl->num, mdp5_data->resources_state, sw_event, 0x11);
+#endif
 		/* Transition OFF->ON || GATE->ON (enable clocks) */
 		if ((mdp5_data->resources_state == MDP_RSRC_CTL_STATE_OFF) ||
 			(mdp5_data->resources_state ==
@@ -727,8 +736,10 @@ int mdss_mdp_resource_control(struct mdss_mdp_ctl *ctl, u32 sw_event)
 				jiffies_to_msecs
 				(CMD_MODE_IDLE_TIMEOUT));
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 			MDSS_XLOG(ctl->num, mdp5_data->resources_state,
 				sw_event, 0x22);
+#endif
 
 			/* start work item to gate */
 			if (mdata->enable_gate)
@@ -794,7 +805,9 @@ int mdss_mdp_resource_control(struct mdss_mdp_ctl *ctl, u32 sw_event)
 		}
 
 		mutex_lock(&ctl->rsrc_lock);
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 		MDSS_XLOG(ctl->num, mdp5_data->resources_state, sw_event, 0x33);
+#endif
 		if ((mdp5_data->resources_state == MDP_RSRC_CTL_STATE_ON) ||
 				(mdp5_data->resources_state
 				== MDP_RSRC_CTL_STATE_GATE)) {
@@ -855,8 +868,10 @@ int mdss_mdp_resource_control(struct mdss_mdp_ctl *ctl, u32 sw_event)
 		}
 
 		mutex_lock(&ctl->rsrc_lock);
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 		MDSS_XLOG(ctl->num, mdp5_data->resources_state, sw_event,
 			schedule_off, 0x44);
+#endif
 		if (mdp5_data->resources_state == MDP_RSRC_CTL_STATE_OFF) {
 			u32 flags = CTL_INTF_EVENT_FLAG_SKIP_BROADCAST;
 
@@ -909,7 +924,9 @@ int mdss_mdp_resource_control(struct mdss_mdp_ctl *ctl, u32 sw_event)
 		pr_warn("%s unexpected event (%d)\n", __func__, sw_event);
 		break;
 	}
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(sw_event, mdp5_data->resources_state, XLOG_FUNC_EXIT);
+#endif
 
 exit:
 	return rc;
@@ -940,8 +957,10 @@ static inline void mdss_mdp_cmd_clk_on(struct mdss_mdp_cmd_ctx *ctx)
 		__func__, current->group_leader->comm, ctx->current_pp_num);
 
 	mutex_lock(&ctx->clk_mtx);
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(ctx->current_pp_num, atomic_read(&ctx->koff_cnt),
 		mdata->bus_ref_cnt);
+#endif
 
 	mdss_bus_bandwidth_ctrl(true);
 
@@ -959,8 +978,10 @@ static inline void mdss_mdp_cmd_clk_off(struct mdss_mdp_cmd_ctx *ctx)
 		__func__, current->group_leader->comm, ctx->current_pp_num);
 
 	mutex_lock(&ctx->clk_mtx);
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(ctx->current_pp_num, atomic_read(&ctx->koff_cnt),
 		mdata->bus_ref_cnt);
+#endif
 
 	mdss_mdp_hist_intr_setup(&mdata->hist_intr, MDSS_IRQ_SUSPEND);
 
@@ -999,13 +1020,17 @@ static void mdss_mdp_cmd_readptr_done(void *arg)
 
 	vsync_time = ktime_get();
 	ctl->vsync_cnt++;
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(ctl->num, atomic_read(&ctx->koff_cnt));
+#endif
 	complete_all(&ctx->rdptr_done);
 
 	/* If caller is waiting for the read pointer, notify. */
 	if (atomic_read(&ctx->rdptr_cnt)) {
 		if (atomic_add_unless(&ctx->rdptr_cnt, -1, 0)) {
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 			MDSS_XLOG(atomic_read(&ctx->rdptr_cnt));
+#endif
 			if (atomic_read(&ctx->rdptr_cnt))
 				pr_warn("%s: too many rdptrs=%d!\n",
 				  __func__, atomic_read(&ctx->rdptr_cnt));
@@ -1075,7 +1100,9 @@ static int mdss_mdp_cmd_intf_callback(void *data, int event)
 		}
 
 		/* wait for read pointer */
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 		MDSS_XLOG(atomic_read(&ctx->rdptr_cnt));
+#endif
 		pr_debug("%s: wait for frame cnt:%d\n",
 			__func__, atomic_read(&ctx->rdptr_cnt));
 		mdss_mdp_cmd_wait4readptr(ctx);
@@ -1200,7 +1227,9 @@ static void mdss_mdp_cmd_pingpong_done(void *arg)
 	mdss_mdp_set_intr_callback_nosync(MDSS_MDP_IRQ_TYPE_PING_PONG_COMP,
 		ctx->current_pp_num, NULL, NULL);
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(ctl->num, atomic_read(&ctx->koff_cnt), ctx->current_pp_num);
+#endif
 
 	/*
 	 * check state of sync ctx before decrementing koff_cnt to avoid race
@@ -1258,8 +1287,10 @@ static int mdss_mdp_setup_lineptr(struct mdss_mdp_cmd_ctx *ctx,
 		}
 	}
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	if (changed)
 		MDSS_XLOG(ctx->lineptr_irq_cnt, enable, current->pid);
+#endif
 
 	pr_debug("%pS->%s: lineptr_irq_cnt=%d changed=%d enable=%d ctl:%d pp:%d\n",
 			__builtin_return_address(0), __func__,
@@ -1309,7 +1340,9 @@ static int mdss_mdp_cmd_add_lineptr_handler(struct mdss_mdp_ctl *ctl,
 	pr_debug("%pS->%s: ctl=%d\n",
 		__builtin_return_address(0), __func__, ctl->num);
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(ctl->num, atomic_read(&ctx->koff_cnt));
+#endif
 
 	spin_lock_irqsave(&ctx->clk_lock, flags);
 	if (!handle->enabled) {
@@ -1346,7 +1379,9 @@ static int mdss_mdp_cmd_remove_lineptr_handler(struct mdss_mdp_ctl *ctl,
 	pr_debug("%pS->%s: ctl=%d\n",
 		__builtin_return_address(0), __func__, ctl->num);
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(ctl->num, atomic_read(&ctx->koff_cnt));
+#endif
 
 	spin_lock_irqsave(&ctx->clk_lock, flags);
 	if (handle->enabled) {
@@ -1443,7 +1478,9 @@ static void mdss_mdp_cmd_autorefresh_pp_done(void *arg)
 	mdss_mdp_set_intr_callback_nosync(MDSS_MDP_IRQ_TYPE_PING_PONG_COMP,
 		ctx->current_pp_num, NULL, NULL);
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(ctl->num, atomic_read(&ctx->koff_cnt), ctx->current_pp_num);
+#endif
 	complete_all(&ctx->autorefresh_ppdone);
 
 	pr_debug("%s: ctl_num=%d intf_num=%d ctx=%d cnt=%d\n", __func__,
@@ -1503,7 +1540,9 @@ static void clk_ctrl_delayed_off_work(struct work_struct *work)
 	}
 
 	mdp5_data = mfd_to_mdp5_data(ctl->mfd);
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	ATRACE_BEGIN(__func__);
+#endif
 
 	/*
 	 * Ideally we should not wait for the gate work item to finish, since
@@ -1519,7 +1558,9 @@ static void clk_ctrl_delayed_off_work(struct work_struct *work)
 		(mdp5_data->resources_state));
 
 	mutex_lock(&ctl->rsrc_lock);
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(ctl->num, mdp5_data->resources_state, XLOG_FUNC_ENTRY);
+#endif
 
 	if (ctl->mfd->split_mode == MDP_DUAL_LM_DUAL_DISPLAY) {
 		mutex_lock(&cmd_clk_mtx);
@@ -1586,10 +1627,14 @@ exit:
 	    is_pingpong_split(ctl->mfd))
 		mutex_unlock(&cmd_clk_mtx);
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(ctl->num, mdp5_data->resources_state, XLOG_FUNC_EXIT);
+#endif
 	mutex_unlock(&ctl->rsrc_lock);
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	ATRACE_END(__func__);
+#endif
 }
 
 static void clk_ctrl_gate_work(struct work_struct *work)
@@ -1606,7 +1651,9 @@ static void clk_ctrl_gate_work(struct work_struct *work)
 		return;
 	}
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	ATRACE_BEGIN(__func__);
+#endif
 	ctl = ctx->ctl;
 	if (!ctl) {
 		pr_err("%s: invalid ctl\n", __func__);
@@ -1624,7 +1671,9 @@ static void clk_ctrl_gate_work(struct work_struct *work)
 		(mdp5_data->resources_state));
 
 	mutex_lock(&ctl->rsrc_lock);
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(ctl->num, mdp5_data->resources_state, XLOG_FUNC_ENTRY);
+#endif
 
 
 	if (ctl->mfd->split_mode == MDP_DUAL_LM_DUAL_DISPLAY) {
@@ -1697,10 +1746,14 @@ exit:
 	    is_pingpong_split(ctl->mfd))
 		mutex_unlock(&cmd_clk_mtx);
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(ctl->num, mdp5_data->resources_state, XLOG_FUNC_EXIT);
+#endif
 	mutex_unlock(&ctl->rsrc_lock);
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	ATRACE_END(__func__);
+#endif
 }
 
 static int mdss_mdp_setup_vsync(struct mdss_mdp_cmd_ctx *ctx,
@@ -1725,8 +1778,10 @@ static int mdss_mdp_setup_vsync(struct mdss_mdp_cmd_ctx *ctx,
 		}
 	}
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	if (changed)
 		MDSS_XLOG(ctx->vsync_irq_cnt, enable, current->pid);
+#endif
 
 	pr_debug("%pS->%s: vsync_cnt=%d changed=%d enable=%d ctl:%d pp:%d\n",
 			__builtin_return_address(0), __func__,
@@ -1779,7 +1834,10 @@ static int mdss_mdp_cmd_add_vsync_handler(struct mdss_mdp_ctl *ctl,
 	pr_debug("%pS->%s ctl:%d\n",
 		__builtin_return_address(0), __func__, ctl->num);
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(ctl->num, atomic_read(&ctx->koff_cnt));
+#endif
+
 	sctl = mdss_mdp_get_split_ctl(ctl);
 	if (sctl)
 		sctx = (struct mdss_mdp_cmd_ctx *) sctl->intf_ctx[MASTER_CTX];
@@ -1827,7 +1885,10 @@ static int mdss_mdp_cmd_remove_vsync_handler(struct mdss_mdp_ctl *ctl,
 	pr_debug("%pS->%s ctl:%d\n",
 		__builtin_return_address(0), __func__, ctl->num);
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(ctl->num, atomic_read(&ctx->koff_cnt), 0x88888);
+#endif 
+
 	sctl = mdss_mdp_get_split_ctl(ctl);
 	if (sctl)
 		sctx = (struct mdss_mdp_cmd_ctx *) sctl->intf_ctx[MASTER_CTX];
@@ -1895,7 +1956,10 @@ static int __mdss_mdp_wait4pingpong(struct mdss_mdp_cmd_ctx *ctx)
 				KOFF_TIMEOUT);
 		time = ktime_to_ms(ktime_get());
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 		MDSS_XLOG(rc, time, expected_time, atomic_read(&ctx->koff_cnt));
+#endif
+
 		/*
 		 * If we time out, counter is valid and time is less,
 		 * wait again.
@@ -1921,8 +1985,10 @@ static int mdss_mdp_cmd_wait4pingpong(struct mdss_mdp_ctl *ctl, void *arg)
 
 	pdata = ctl->panel_data;
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(ctl->num, atomic_read(&ctx->koff_cnt), ctl->roi_bkup.w,
 			ctl->roi_bkup.h);
+#endif
 
 	pr_debug("%s: intf_num=%d ctx=%pK koff_cnt=%d\n", __func__,
 			ctl->intf_num, ctx, atomic_read(&ctx->koff_cnt));
@@ -1938,7 +2004,9 @@ static int mdss_mdp_cmd_wait4pingpong(struct mdss_mdp_ctl *ctl, void *arg)
 				ctx->current_pp_num);
 		status = mask & readl_relaxed(ctl->mdata->mdp_base +
 				MDSS_MDP_REG_INTR_STATUS);
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 		MDSS_XLOG(status, rc, atomic_read(&ctx->koff_cnt));
+#endif
 		if (status) {
 			pr_warn("pp done but irq not triggered\n");
 			mdss_mdp_irq_clear(ctl->mdata,
@@ -1974,15 +2042,24 @@ static int mdss_mdp_cmd_wait4pingpong(struct mdss_mdp_ctl *ctl, void *arg)
 		rc = wait_for_completion_timeout(&pdata->te_done, KOFF_TIMEOUT);
 
 		if (!rc) {
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 			MDSS_XLOG(0xbac);
+#endif
 			mdss_fb_report_panel_dead(ctl->mfd);
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 		} else if (ctx->pp_timeout_report_cnt == 0) {
 			MDSS_XLOG(0xbad);
+			MDSS_XLOG_TOUT_HANDLER("mdp", "dsi0_ctrl", "dsi0_phy",
+				"dsi1_ctrl", "dsi1_phy", "vbif", "vbif_nrt",
+				"dbg_bus", "vbif_dbg_bus", "panic");
+#endif
 		} else if (ctx->pp_timeout_report_cnt == MAX_RECOVERY_TRIALS) {
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 			MDSS_XLOG(0xbad2);
 			MDSS_XLOG_TOUT_HANDLER("mdp", "dsi0_ctrl", "dsi0_phy",
 				"dsi1_ctrl", "dsi1_phy", "vbif", "vbif_nrt",
 				"dbg_bus", "vbif_dbg_bus", "panic");
+#endif
 			mdss_fb_report_panel_dead(ctl->mfd);
 		}
 
@@ -2012,7 +2089,9 @@ static int mdss_mdp_cmd_wait4pingpong(struct mdss_mdp_ctl *ctl, void *arg)
 	while (atomic_add_unless(&ctx->pp_done_cnt, -1, 0))
 		mdss_mdp_ctl_notify(ctx->ctl, MDP_NOTIFY_FRAME_DONE);
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(ctl->num, atomic_read(&ctx->koff_cnt), rc);
+#endif
 
 	return rc;
 }
@@ -2215,8 +2294,10 @@ int mdss_mdp_cmd_set_autorefresh_mode(struct mdss_mdp_ctl *mctl, int frame_cnt)
 		goto exit;
 	}
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(ctx->autorefresh_state,
 		  ctx->autorefresh_frame_cnt, frame_cnt);
+#endif
 
 	pr_debug("curent autorfresh state=%d, frmae_cnt: old=%d new=%d\n",
 			ctx->autorefresh_state,
@@ -2282,8 +2363,10 @@ int mdss_mdp_cmd_set_autorefresh_mode(struct mdss_mdp_ctl *mctl, int frame_cnt)
 		pr_err("invalid autorefresh state\n");
 	}
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(ctx->autorefresh_state,
 		ctx->autorefresh_frame_cnt);
+#endif
 
 exit:
 	mutex_unlock(&ctx->autorefresh_lock);
@@ -2319,7 +2402,9 @@ static void mdss_mdp_cmd_pre_programming(struct mdss_mdp_ctl *mctl)
 	mutex_lock(&ctx->autorefresh_lock);
 
 	autorefresh_state = ctx->autorefresh_state;
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(autorefresh_state);
+#endif
 	pr_debug("pre_programming state: %d\n", autorefresh_state);
 
 	if ((autorefresh_state == MDP_AUTOREFRESH_ON) ||
@@ -2359,7 +2444,9 @@ static void mdss_mdp_cmd_post_programming(struct mdss_mdp_ctl *mctl)
 	 */
 	if (ctx->ignore_external_te) {
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 		MDSS_XLOG(ctx->ignore_external_te);
+#endif
 		pr_debug("post_programming TE status: %d\n",
 			ctx->ignore_external_te);
 
@@ -2384,7 +2471,9 @@ static void mdss_mdp_cmd_wait4_autorefresh_pp(struct mdss_mdp_ctl *ctl)
 
 	line_out = mdss_mdp_pingpong_read(pp_base, MDSS_MDP_REG_PP_LINE_COUNT);
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(ctl->num, line_out, ctl->mixer_left->roi.h);
+#endif
 
 	if ((line_out < ctl->mixer_left->roi.h) && line_out) {
 		reinit_completion(&ctx->autorefresh_ppdone);
@@ -2411,10 +2500,12 @@ static void mdss_mdp_cmd_wait4_autorefresh_pp(struct mdss_mdp_ctl *ctl)
 			} else {
 				pr_err("timedout waiting for ctl%d autorefresh pp done\n",
 					ctl->num);
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 				MDSS_XLOG(0xbad3);
 				MDSS_XLOG_TOUT_HANDLER("mdp",
 					"vbif", "dbg_bus", "vbif_dbg_bus",
 					"panic");
+#endif
 			}
 		}
 	}
@@ -2435,7 +2526,9 @@ static void mdss_mdp_cmd_autorefresh_done(void *arg)
 	mdss_mdp_set_intr_callback_nosync(MDSS_MDP_IRQ_TYPE_PING_PONG_AUTO_REF,
 		ctx->current_pp_num, NULL, NULL);
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(ctl->num, atomic_read(&ctx->koff_cnt), ctx->current_pp_num);
+#endif
 	complete_all(&ctx->autorefresh_done);
 }
 
@@ -2496,7 +2589,9 @@ static void mdss_mdp_cmd_wait4_autorefresh_done(struct mdss_mdp_ctl *ctl)
 
 	line_out = mdss_mdp_pingpong_read(pp_base, MDSS_MDP_REG_PP_LINE_COUNT);
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(ctl->num, line_out, ctl->mixer_left->roi.h);
+#endif
 
 	reinit_completion(&ctx->autorefresh_done);
 
@@ -2550,10 +2645,12 @@ static void mdss_mdp_cmd_wait4_autorefresh_done(struct mdss_mdp_ctl *ctl)
 
 		pr_err("timedout waiting for ctl%d autorefresh done line_cnt:%d frames:%d\n",
 			ctl->num, val, ctx->autorefresh_frame_cnt);
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 		MDSS_XLOG(0xbad4, val);
 		MDSS_XLOG_TOUT_HANDLER("mdp", "dsi0_ctrl", "dsi0_phy",
 			"dsi1_ctrl", "dsi1_phy", "vbif", "vbif_nrt",
 			"dbg_bus", "vbif_dbg_bus", "panic");
+#endif
 	}
 }
 
@@ -2572,7 +2669,9 @@ static int mdss_mdp_disable_autorefresh(struct mdss_mdp_ctl *ctl,
 		return -ENODEV;
 	}
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(ctx->autorefresh_state, ctx->autorefresh_frame_cnt);
+#endif
 
 	/*
 	 * This can happen if driver gets sysfs request to enable autorefresh,
@@ -2614,7 +2713,9 @@ static int mdss_mdp_disable_autorefresh(struct mdss_mdp_ctl *ctl,
 	cfg &= ~BIT(20);
 	mdss_mdp_pingpong_write(pp_base,
 				MDSS_MDP_REG_PP_SYNC_CONFIG_VSYNC, cfg);
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(cfg);
+#endif
 
 	/* wait for previous transfer to finish */
 	mdss_mdp_cmd_wait4_autorefresh_pp(ctl);
@@ -2649,7 +2750,9 @@ static void __mdss_mdp_kickoff(struct mdss_mdp_ctl *ctl,
 	struct mdss_data_type *mdata = mdss_mdp_get_mdata();
 	bool is_pp_split = is_pingpong_split(ctl->mfd);
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(ctx->autorefresh_state);
+#endif
 
 	if ((ctx->autorefresh_state == MDP_AUTOREFRESH_ON_REQUESTED) ||
 		(ctx->autorefresh_state == MDP_AUTOREFRESH_ON)) {
@@ -2667,14 +2770,18 @@ static void __mdss_mdp_kickoff(struct mdss_mdp_ctl *ctl,
 				MDSS_MDP_REG_PP_AUTOREFRESH_CONFIG,
 				BIT(31) | ctx->autorefresh_frame_cnt);
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 		MDSS_XLOG(0x11, ctx->autorefresh_frame_cnt,
 			ctx->autorefresh_state, is_pp_split);
+#endif
 		ctx->autorefresh_state = MDP_AUTOREFRESH_ON;
 
 	} else {
 		/* SW Kickoff */
 		mdss_mdp_ctl_write(ctl, MDSS_MDP_REG_CTL_START, 1);
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 		MDSS_XLOG(0x11, ctx->autorefresh_state);
+#endif
 	}
 }
 
@@ -2775,8 +2882,10 @@ static int mdss_mdp_cmd_kickoff(struct mdss_mdp_ctl *ctl, void *arg)
 	if (__mdss_mdp_cmd_is_aux_pp_needed(mdata, mctl))
 		ctx->current_pp_num = ctx->aux_pp_num;
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(ctl->num, ctx->current_pp_num,
 		ctl->roi.x, ctl->roi.y, ctl->roi.w, ctl->roi.h);
+#endif
 
 	atomic_inc(&ctx->koff_cnt);
 	if (sctx)
@@ -2855,8 +2964,10 @@ static int mdss_mdp_cmd_kickoff(struct mdss_mdp_ctl *ctl, void *arg)
 	mb();
 	mutex_unlock(&ctx->autorefresh_lock);
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(ctl->num, ctx->current_pp_num,
 		sctx ? sctx->current_pp_num : -1, atomic_read(&ctx->koff_cnt));
+#endif
 	return 0;
 }
 
@@ -2911,7 +3022,9 @@ int mdss_mdp_cmd_ctx_stop(struct mdss_mdp_ctl *ctl,
 	if (is_pingpong_split(ctl->mfd)) {
 		pr_debug("%s will wait for rd ptr:%d\n", __func__,
 			atomic_read(&ctx->rdptr_cnt));
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 		MDSS_XLOG(atomic_read(&ctx->rdptr_cnt));
+#endif
 		mdss_mdp_cmd_wait4readptr(ctx);
 	}
 
@@ -3021,7 +3134,9 @@ static int mdss_mdp_cmd_stop_sub(struct mdss_mdp_ctl *ctl,
 		mdss_mdp_cmd_remove_vsync_handler(ctl, handle);
 	if (mdss_mdp_is_lineptr_supported(ctl))
 		mdss_mdp_cmd_lineptr_ctrl(ctl, false);
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(ctl->num, atomic_read(&ctx->koff_cnt), XLOG_FUNC_ENTRY);
+#endif
 
 	/* Command mode is supported only starting at INTF1 */
 	session = ctl->intf_num - MDSS_MDP_INTF1;
@@ -3060,7 +3175,9 @@ int mdss_mdp_cmd_stop(struct mdss_mdp_ctl *ctl, int panel_power_state)
 	if (sctl)
 		sctx = (struct mdss_mdp_cmd_ctx *) sctl->intf_ctx[MASTER_CTX];
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(ctx->panel_power_state, panel_power_state);
+#endif
 
 	mutex_lock(&ctl->offlock);
 	mutex_lock(&cmd_off_mtx);
@@ -3187,7 +3304,9 @@ end:
 			sctx->panel_power_state = panel_power_state;
 	}
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(ctl->num, atomic_read(&ctx->koff_cnt), XLOG_FUNC_EXIT);
+#endif
 	mutex_unlock(&cmd_off_mtx);
 	mutex_unlock(&ctl->offlock);
 	pr_debug("%s:-\n", __func__);
@@ -3207,7 +3326,9 @@ static void early_wakeup_work(struct work_struct *work)
 		return;
 	}
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	ATRACE_BEGIN(__func__);
+#endif
 	ctl = ctx->ctl;
 
 	if (!ctl) {
@@ -3220,7 +3341,10 @@ static void early_wakeup_work(struct work_struct *work)
 		pr_err("%s: failed to control resources\n", __func__);
 
 fail:
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	ATRACE_END(__func__);
+#endif
+	return;
 }
 
 static int mdss_mdp_cmd_early_wake_up(struct mdss_mdp_ctl *ctl)
@@ -3299,7 +3423,9 @@ static int mdss_mdp_cmd_ctx_setup(struct mdss_mdp_ctl *ctl,
 
 	pr_debug("%s: ctx=%pK num=%d aux=%d\n", __func__, ctx,
 		default_pp_num, aux_pp_num);
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(ctl->num, atomic_read(&ctx->koff_cnt));
+#endif
 
 	mdss_mdp_set_intr_callback(MDSS_MDP_IRQ_TYPE_PING_PONG_RD_PTR,
 		ctx->default_pp_num, mdss_mdp_cmd_readptr_done, ctl);

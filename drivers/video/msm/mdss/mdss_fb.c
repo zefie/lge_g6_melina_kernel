@@ -73,7 +73,6 @@
 
 #if defined(CONFIG_MACH_LGE)
 #include <linux/timer.h>
-#include <linux/debugfs.h>
 #endif
 
 #ifdef CONFIG_KLAPSE
@@ -219,7 +218,9 @@ void mdss_fb_bl_update_notify(struct msm_fb_data_type *mfd,
 	if (mdp3_session) {
 		mdp3_session->bl_events++;
 		sysfs_notify_dirent(mdp3_session->bl_event_sd);
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 		pr_debug("bl_event = %u\n", mdp3_session->bl_events);
+#endif
 	}
 #endif
 }
@@ -501,9 +502,11 @@ static inline int mdss_fb_validate_split(int left, int right,
 	int rc = -EINVAL;
 	u32 panel_xres = mdss_fb_get_panel_xres(mfd->panel_info);
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	pr_debug("%pS: split_mode = %d left=%d right=%d panel_xres=%d\n",
 		__builtin_return_address(0), mfd->split_mode,
 		left, right, panel_xres);
+#endif
 
 	/* more validate condition could be added if needed */
 	if (left && right) {
@@ -557,8 +560,10 @@ static void mdss_fb_get_split(struct msm_fb_data_type *mfd)
 	    (mfd->split_fb_left && mfd->split_fb_right))
 		mfd->split_mode = MDP_DUAL_LM_SINGLE_DISPLAY;
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	pr_debug("split fb%d left=%d right=%d mode=%d\n", mfd->index,
 		mfd->split_fb_left, mfd->split_fb_right, mfd->split_mode);
+#endif
 }
 
 static ssize_t mdss_fb_get_src_split_info(struct device *dev,
@@ -569,7 +574,9 @@ static ssize_t mdss_fb_get_src_split_info(struct device *dev,
 	struct msm_fb_data_type *mfd = fbi->par;
 
 	if (is_split_lm(mfd) && (fbi->var.yres > fbi->var.xres)) {
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 		pr_debug("always split mode enabled\n");
+#endif
 		ret = scnprintf(buf, PAGE_SIZE,
 			"src_split_always\n");
 	}
@@ -604,7 +611,9 @@ static ssize_t mdss_fb_set_thermal_level(struct device *dev,
 		return rc;
 	}
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	pr_debug("Thermal level set to %d\n", thermal_level);
+#endif
 	mfd->thermal_level = thermal_level;
 	sysfs_notify(&mfd->fbi->dev->kobj, NULL, "msm_fb_thermal_level");
 
@@ -618,8 +627,10 @@ static ssize_t mdss_mdp_show_blank_event(struct device *dev,
 	struct msm_fb_data_type *mfd = (struct msm_fb_data_type *)fbi->par;
 	int ret;
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	pr_debug("fb%d panel_power_state = %d\n", mfd->index,
 		mfd->panel_power_state);
+#endif
 	ret = scnprintf(buf, PAGE_SIZE, "panel_power_on = %d\n",
 						mfd->panel_power_state);
 
@@ -633,8 +644,9 @@ static void __mdss_fb_idle_notify_work(struct work_struct *work)
 		idle_notify_work);
 
 	/* Notify idle-ness here */
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	pr_debug("Idle timeout %dms expired!\n", mfd->idle_time);
-
+#endif
 	mfd->idle_state = MDSS_FB_IDLE;
 	/*
 	 * idle_notify node events are used to reduce MDP load when idle,
@@ -686,7 +698,9 @@ static ssize_t mdss_fb_set_idle_time(struct device *dev,
 		return rc;
 	}
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	pr_debug("Idle time = %d\n", idle_time);
+#endif
 	mfd->idle_time = idle_time;
 
 	return count;
@@ -1051,7 +1065,9 @@ static ssize_t mdss_fb_change_persist_mode(struct device *dev,
 	mutex_unlock(&mfd->bl_lock);
 
 	if (!ret) {
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 		pr_debug("%s: Persist mode %d\n", __func__, persist_mode);
+#endif
 		pinfo->persist_mode = persist_mode;
 	}
 
@@ -1373,10 +1389,11 @@ static int mdss_fb_init_panel_modes(struct msm_fb_data_type *mfd,
 					modedb[i].name);
 			if (!IS_ERR_OR_NULL(spt))
 				modedb[i].xres += spt->xres;
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 			else
 				pr_debug("no matching split config for %s\n",
 						modedb[i].name);
-
+#endif
 			/*
 			 * if no panel timing found for current, need to
 			 * disable it otherwise mark it as active
@@ -1386,7 +1403,9 @@ static int mdss_fb_init_panel_modes(struct msm_fb_data_type *mfd,
 		}
 
 		if (pt == pdata->current_timing) {
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 			pr_debug("found current mode: %s\n", pt->name);
+#endif
 			fbi->mode = modedb + i;
 		}
 		i++;
@@ -1556,7 +1575,9 @@ static int mdss_fb_probe(struct platform_device *pdev)
 		int ret;
 		ret = of_property_read_u32(pdev->dev.of_node,
 					"qcom,default-brightness", &tmp);
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 		pr_debug("qcom,default-brightness read result = %d, value = %d\n", ret, tmp);
+#endif
 		mfd->panel_info->default_brightness = (ret == 0 && tmp != 0)?tmp:mfd->panel_info->brightness_max;
 		pr_info("qcom,default-brightness = %d\n", mfd->panel_info->default_brightness);
 
@@ -1791,7 +1812,9 @@ static int mdss_fb_send_panel_event(struct msm_fb_data_type *mfd,
 		return -ENODEV;
 	}
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	pr_debug("sending event=%d for fb%d\n", event, mfd->index);
+#endif
 
 	do {
 		if (pdata->event_handler)
@@ -1810,7 +1833,9 @@ static int mdss_fb_suspend_sub(struct msm_fb_data_type *mfd)
 	if ((!mfd) || (mfd->key != MFD_KEY))
 		return 0;
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	pr_debug("mdss_fb suspend index=%d\n", mfd->index);
+#endif
 
 	ret = mdss_fb_pan_idle(mfd);
 	if (ret) {
@@ -1859,7 +1884,9 @@ static int mdss_fb_resume_sub(struct msm_fb_data_type *mfd)
 
 	reinit_completion(&mfd->power_set_comp);
 	mfd->is_power_setting = true;
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	pr_debug("mdss_fb resume index=%d\n", mfd->index);
+#endif
 
 	ret = mdss_fb_pan_idle(mfd);
 	if (ret) {
@@ -1989,7 +2016,9 @@ static void mdss_fb_scale_bl(struct msm_fb_data_type *mfd, u32 *bl_lvl)
 {
 	u32 temp = *bl_lvl;
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	pr_debug("input = %d, scale = %d\n", temp, mfd->bl_scale);
+#endif
 	if (temp >= mfd->bl_min_lvl) {
 		if (temp > mfd->panel_info->bl_max) {
 			pr_warn("%s: invalid bl level\n",
@@ -2011,7 +2040,9 @@ static void mdss_fb_scale_bl(struct msm_fb_data_type *mfd, u32 *bl_lvl)
 		if (temp < mfd->bl_min_lvl)
 			temp = mfd->bl_min_lvl;
 	}
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	pr_debug("output = %d\n", temp);
+#endif
 
 	(*bl_lvl) = temp;
 }
@@ -2140,8 +2171,10 @@ static int mdss_fb_start_disp_thread(struct msm_fb_data_type *mfd)
 {
 	int ret = 0;
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	pr_debug("%pS: start display thread fb%d\n",
 		__builtin_return_address(0), mfd->index);
+#endif
 
 	/* this is needed for new split request from debugfs */
 	mdss_fb_get_split(mfd);
@@ -2162,8 +2195,10 @@ static int mdss_fb_start_disp_thread(struct msm_fb_data_type *mfd)
 
 static void mdss_fb_stop_disp_thread(struct msm_fb_data_type *mfd)
 {
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	pr_debug("%pS: stop display thread fb%d\n",
 		__builtin_return_address(0), mfd->index);
+#endif
 
 	kthread_stop(mfd->disp_thread);
 	mfd->disp_thread = NULL;
@@ -2184,7 +2219,9 @@ static void mdss_panel_validate_debugfs_info(struct msm_fb_data_type *mfd)
 			mfd->panel_reconfig = false;
 		}
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 		pr_debug("Overriding panel_info with debugfs_info\n");
+#endif
 		panel_info->debugfs_info->override_flag = 0;
 		mdss_panel_debugfsinfo_to_panelinfo(panel_info);
 		if (is_panel_split(mfd) && pdata->next)
@@ -2228,11 +2265,15 @@ static int mdss_fb_blank_blank(struct msm_fb_data_type *mfd,
 #ifdef CONFIG_LGE_LCD_OFF_DIMMING
 	lge_set_blank_called();
 #endif
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	pr_debug("Transitioning from %d --> %d\n", cur_power_state,
 		req_power_state);
+#endif
 
 	if (cur_power_state == req_power_state) {
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 		pr_debug("No change in power state\n");
+#endif
 		return 0;
 	}
 
@@ -2299,8 +2340,10 @@ static int mdss_fb_blank_unblank(struct msm_fb_data_type *mfd)
 	}
 
 	cur_power_state = mfd->panel_power_state;
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	pr_debug("Transitioning from %d --> %d\n", cur_power_state,
 		MDSS_PANEL_POWER_ON);
+#endif
 
 	if (mdss_panel_is_power_on_interactive(cur_power_state)) {
 		pr_debug("No change in power state\n");
@@ -2416,7 +2459,9 @@ static int mdss_fb_blank_sub(int blank_mode, struct fb_info *info,
 
 	snprintf(trace_buffer, sizeof(trace_buffer), "fb%d blank %d",
 		mfd->index, blank_mode);
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	ATRACE_BEGIN(trace_buffer);
+#endif
 
 	cur_power_state = mfd->panel_power_state;
 
@@ -2435,13 +2480,17 @@ static int mdss_fb_blank_sub(int blank_mode, struct fb_info *info,
 
 	if (mfd->panel_info->type != MIPI_CMD_PANEL) {
 		if (BLANK_FLAG_LP == blank_mode) {
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 			pr_debug("lp mode only valid for cmd mode panels\n");
+#endif
 			if (mdss_fb_is_power_on_interactive(mfd))
 				return 0;
 			else
 				blank_mode = FB_BLANK_UNBLANK;
 		} else if (BLANK_FLAG_ULP == blank_mode) {
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 			pr_debug("ulp mode valid for cmd mode panels\n");
+#endif
 			if (mdss_fb_is_power_off(mfd))
 				return 0;
 			else
@@ -2458,7 +2507,9 @@ static int mdss_fb_blank_sub(int blank_mode, struct fb_info *info,
 
 	switch (blank_mode) {
 	case FB_BLANK_UNBLANK:
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 		pr_debug("unblank called. cur pwr state=%d\n", cur_power_state);
+#endif
 		ret = mdss_fb_blank_unblank(mfd);
 #if defined(CONFIG_LGE_DISPLAY_DYN_DSI_MODE_SWITCH)
 		if (mfd->index == 0){
@@ -2471,9 +2522,13 @@ static int mdss_fb_blank_sub(int blank_mode, struct fb_info *info,
 		break;
 	case BLANK_FLAG_ULP:
 		req_power_state = MDSS_PANEL_POWER_LP2;
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 		pr_debug("ultra low power mode requested\n");
+#endif
 		if (mdss_fb_is_power_off(mfd)) {
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 			pr_debug("Unsupp transition: off --> ulp\n");
+#endif
 #if defined(CONFIG_LGE_DISPLAY_AOD_SUPPORTED)
 			if(!mfd->panel_info->cont_splash_enabled && mfd->index == 0 && mutex_is_locked(&mfd->aod_lock))
 				mutex_unlock(&mfd->aod_lock);
@@ -2485,14 +2540,18 @@ static int mdss_fb_blank_sub(int blank_mode, struct fb_info *info,
 		break;
 	case BLANK_FLAG_LP:
 		req_power_state = MDSS_PANEL_POWER_LP1;
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 		pr_debug(" power mode requested\n");
+#endif
 
 		/*
 		 * If low power mode is requested when panel is already off,
 		 * then first unblank the panel before entering low power mode
 		 */
 		if (mdss_fb_is_power_off(mfd) && mfd->mdp.on_fnc) {
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 			pr_debug("off --> lp. switch to on first\n");
+#endif
 			ret = mdss_fb_blank_unblank(mfd);
 			if (ret)
 				break;
@@ -2504,7 +2563,9 @@ static int mdss_fb_blank_sub(int blank_mode, struct fb_info *info,
 	case FB_BLANK_POWERDOWN:
 	default:
 		req_power_state = MDSS_PANEL_POWER_OFF;
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 		pr_debug("blank powerdown called\n");
+#endif
 		ret = mdss_fb_blank_blank(mfd, req_power_state);
 		break;
 	}
@@ -2515,7 +2576,9 @@ static int mdss_fb_blank_sub(int blank_mode, struct fb_info *info,
 	/* Notify listeners */
 	sysfs_notify(&mfd->fbi->dev->kobj, NULL, "show_blank_event");
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	ATRACE_END(trace_buffer);
+#endif
 #if defined(CONFIG_LGE_DISPLAY_COMMON)
 	if (mfd->recovery && blank_mode == FB_BLANK_UNBLANK) {
 		mfd->recovery= false;
@@ -2566,7 +2629,9 @@ static int mdss_fb_blank(int blank_mode, struct fb_info *info)
 		ret = 0;
 		goto end;
 	}
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	pr_debug("mode: %d\n", blank_mode);
+#endif
 
 	pdata = dev_get_platdata(&mfd->pdev->dev);
 
@@ -2600,7 +2665,9 @@ static int mdss_fb_blank(int blank_mode, struct fb_info *info)
 #else
 	if (pdata->panel_info.is_lpm_mode &&
 			blank_mode == FB_BLANK_UNBLANK) {
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 		pr_debug("panel is in lpm mode\n");
+#endif
 		mfd->mdp.configure_panel(mfd, 0, 1);
 		mdss_fb_set_mdp_sync_pt_threshold(mfd, mfd->panel.type);
 		pdata->panel_info.is_lpm_mode = false;
@@ -2679,7 +2746,9 @@ int mdss_fb_alloc_fb_ion_memory(struct msm_fb_data_type *mfd, size_t fb_size)
 		}
 	}
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	pr_debug("size for mmap = %zu\n", fb_size);
+#endif
 	mfd->fb_ion_handle = ion_alloc(mfd->fb_ion_client, fb_size, SZ_4K,
 			ION_HEAP(ION_SYSTEM_HEAP_ID), 0);
 	if (IS_ERR_OR_NULL(mfd->fb_ion_handle)) {
@@ -2723,8 +2792,10 @@ int mdss_fb_alloc_fb_ion_memory(struct msm_fb_data_type *mfd, size_t fb_size)
 		rc = PTR_ERR(vaddr);
 		goto err_unmap;
 	}
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	pr_debug("alloc 0x%zuB vaddr = %pK for fb%d\n", fb_size,
 			vaddr, mfd->index);
+#endif
 
 	mfd->fbi->screen_base = (char *) vaddr;
 	mfd->fbi->fix.smem_len = fb_size;
@@ -2826,12 +2897,14 @@ static int mdss_fb_fbmem_ion_mmap(struct fb_info *info,
 				vma->vm_page_prot =
 					pgprot_writecombine(vma->vm_page_prot);
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 			pr_debug("vma=%pK, addr=%x len=%ld\n",
 					vma, (unsigned int)addr, len);
 			pr_debug("vm_start=%x vm_end=%x vm_page_prot=%ld\n",
 					(unsigned int)vma->vm_start,
 					(unsigned int)vma->vm_end,
 					(unsigned long int)vma->vm_page_prot);
+#endif
 
 			io_remap_pfn_range(vma, addr, page_to_pfn(page), len,
 					vma->vm_page_prot);
@@ -3495,8 +3568,10 @@ static int __mdss_fb_wait_for_fence_sub(struct msm_sync_pt_data *sync_pt_data,
 					fences[i]->name);
 			pr_cont("Waiting %ld.%ld more seconds\n",
 				(wait_ms/MSEC_PER_SEC), (wait_ms%MSEC_PER_SEC));
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 			MDSS_XLOG(sync_pt_data->timeline_value);
 			MDSS_XLOG_TOUT_HANDLER("mdp");
+#endif
 			ret = sync_fence_wait(fences[i], wait_ms);
 
 			if (ret == -ETIME)
@@ -3542,15 +3617,19 @@ void mdss_fb_signal_timeline(struct msm_sync_pt_data *sync_pt_data)
 	if (atomic_add_unless(&sync_pt_data->commit_cnt, -1, 0) &&
 			sync_pt_data->timeline) {
 		sw_sync_timeline_inc(sync_pt_data->timeline, 1);
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 		MDSS_XLOG(sync_pt_data->timeline_value);
+#endif
 		sync_pt_data->timeline_value++;
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 		pr_debug("%s: buffer signaled! timeline val=%d remaining=%d\n",
 			sync_pt_data->fence_name, sync_pt_data->timeline_value,
 			atomic_read(&sync_pt_data->commit_cnt));
 	} else {
 		pr_debug("%s timeline signaled without commits val=%d\n",
 			sync_pt_data->fence_name, sync_pt_data->timeline_value);
+#endif
 	}
 	mutex_unlock(&sync_pt_data->sync_mutex);
 }
@@ -3686,11 +3765,15 @@ static int mdss_fb_pan_idle(struct msm_fb_data_type *mfd)
 		pr_err("%pS: wait for idle timeout commits=%d\n",
 				__builtin_return_address(0),
 				atomic_read(&mfd->commits_pending));
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 		MDSS_XLOG_TOUT_HANDLER("mdp", "vbif", "vbif_nrt",
 			"dbg_bus", "vbif_dbg_bus");
+#endif
 		ret = -ETIMEDOUT;
 	} else if (mfd->shutdown_pending) {
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 		pr_debug("Shutdown signalled\n");
+#endif
 		ret = -ESHUTDOWN;
 	} else {
 		ret = 0;
@@ -3715,11 +3798,15 @@ static int mdss_fb_wait_for_kickoff(struct msm_fb_data_type *mfd)
 				__builtin_return_address(0),
 				atomic_read(&mfd->kickoff_pending),
 				atomic_read(&mfd->commits_pending));
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 		MDSS_XLOG_TOUT_HANDLER("mdp", "vbif", "vbif_nrt",
 			"dbg_bus", "vbif_dbg_bus");
+#endif
 		ret = -ETIMEDOUT;
 	} else if (mfd->shutdown_pending) {
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 		pr_debug("Shutdown signalled\n");
+#endif
 		ret = -ESHUTDOWN;
 	} else {
 		ret = 0;
@@ -4189,9 +4276,11 @@ static int __mdss_fb_perform_commit(struct msm_fb_data_type *mfd)
 	}
 	mutex_unlock(&mfd->switch_lock);
 	if (dynamic_dsi_switch) {
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 		MDSS_XLOG(mfd->index, mfd->split_mode, new_dsi_mode,
 			XLOG_FUNC_ENTRY);
 		pr_debug("Triggering dyn mode switch to %d\n", new_dsi_mode);
+#endif
 		ret = mfd->mdp.mode_switch(mfd, new_dsi_mode);
 		if (ret)
 			pr_err("DSI mode switch has failed");
@@ -4236,15 +4325,19 @@ skip_commit:
 	}
 
 	if (dynamic_dsi_switch) {
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 		MDSS_XLOG(mfd->index, mfd->split_mode, new_dsi_mode,
 			XLOG_FUNC_EXIT);
+#endif
 		mfd->mdp.mode_switch_post(mfd, new_dsi_mode);
 		mutex_lock(&mfd->switch_lock);
 		mfd->switch_state = MDSS_MDP_NO_UPDATE_REQUESTED;
 		mutex_unlock(&mfd->switch_lock);
 		if (new_dsi_mode != SWITCH_RESOLUTION)
 			mfd->panel.type = new_dsi_mode;
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 		pr_debug("Dynamic mode switch completed\n");
+#endif
 	}
 
 	return ret;
@@ -4275,9 +4368,13 @@ static int __mdss_fb_display_thread(void *data)
 		if (kthread_should_stop())
 			break;
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 		MDSS_XLOG(mfd->index, XLOG_FUNC_ENTRY);
+#endif
 		ret = __mdss_fb_perform_commit(mfd);
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 		MDSS_XLOG(mfd->index, XLOG_FUNC_EXIT);
+#endif
 
 		atomic_dec(&mfd->commits_pending);
 		wake_up_all(&mfd->idle_wait_q);
@@ -4426,11 +4523,13 @@ static int mdss_fb_videomode_switch(struct msm_fb_data_type *mfd,
 	/* make sure that we are idle while switching */
 	mdss_fb_wait_for_kickoff(mfd);
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	pr_debug("fb%d: changing display mode to %s\n", mfd->index, mode->name);
 	MDSS_XLOG(mfd->index, mode->name,
 			mdss_fb_get_panel_xres(mfd->panel_info),
 			mfd->panel_info->yres, mfd->split_mode,
 			XLOG_FUNC_ENTRY);
+#endif
 	tmp = pdata;
 	do {
 		if (!tmp->event_handler) {
@@ -4463,11 +4562,13 @@ static int mdss_fb_videomode_switch(struct msm_fb_data_type *mfd,
 				pdata->panel_info.mipi.mode, dest_ctrl);
 	}
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(mfd->index, mode->name,
 			mdss_fb_get_panel_xres(mfd->panel_info),
 			mfd->panel_info->yres, mfd->split_mode,
 			XLOG_FUNC_EXIT);
 	pr_debug("fb%d: %s mode change complete\n", mfd->index, mode->name);
+#endif
 
 	return ret;
 }
@@ -4535,10 +4636,13 @@ static int mdss_fb_set_par(struct fb_info *info)
 		if (!mode)
 			return -EINVAL;
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 		pr_debug("found mode: %s\n", mode->name);
-
+#endif
 		if (fb_mode_is_equal(mode, info->mode)) {
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 			pr_debug("mode is equal to current mode\n");
+#endif
 			return 0;
 		}
 
@@ -4571,7 +4675,9 @@ static int mdss_fb_set_par(struct fb_info *info)
 		if (mfd->panel_info->is_dba_panel &&
 			mdss_fb_send_panel_event(mfd, MDSS_EVENT_UPDATE_PARAMS,
 							mfd->panel_info))
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 			pr_debug("Failed to send panel event UPDATE_PARAMS\n");
+#endif
 		mdss_fb_blank_sub(FB_BLANK_UNBLANK, info, mfd->op_enable);
 		mfd->panel_reconfig = false;
 	}
@@ -4768,7 +4874,9 @@ struct sync_fence *mdss_fb_sync_get_fence(struct sw_sync_timeline *timeline,
 	struct sync_pt *sync_pt;
 	struct sync_fence *fence;
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	pr_debug("%s: buf sync fence timeline=%d\n", fence_name, val);
+#endif
 
 	sync_pt = sw_sync_pt_create(timeline, val);
 	if (sync_pt == NULL) {
@@ -4833,11 +4941,13 @@ static int mdss_fb_handle_buf_sync_ioctl(struct msm_sync_pt_data *sync_pt_data,
 	val = sync_pt_data->timeline_value + sync_pt_data->threshold +
 			atomic_read(&sync_pt_data->commit_cnt);
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(sync_pt_data->timeline_value, val,
 		atomic_read(&sync_pt_data->commit_cnt));
 	pr_debug("%s: fence CTL%d Commit_cnt%d\n", sync_pt_data->fence_name,
 		sync_pt_data->timeline_value,
 		atomic_read(&sync_pt_data->commit_cnt));
+#endif
 	/* Set release fence */
 	rel_fence = mdss_fb_sync_get_fence(sync_pt_data->timeline,
 			sync_pt_data->fence_name, val);
@@ -5075,8 +5185,10 @@ static int mdss_fb_atomic_commit_ioctl(struct fb_info *info,
 	mdp5_data = mfd_to_mdp5_data(mfd);
 
 	if (mfd->panel_info->panel_dead) {
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 		pr_debug("early commit return\n");
 		MDSS_XLOG(mfd->panel_info->panel_dead);
+#endif
 		/*
 		 * In case of an ESD attack, since we early return from the
 		 * commits, we need to signal the outstanding fences.
@@ -5179,11 +5291,15 @@ static int mdss_fb_atomic_commit_ioctl(struct fb_info *info,
 		commit.commit_v1.frc_info = frc_info;
 	}
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	ATRACE_BEGIN("ATOMIC_COMMIT");
+#endif
 	ret = mdss_fb_atomic_commit(info, &commit, file);
 	if (ret)
 		pr_err("atomic commit failed ret:%d\n", ret);
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	ATRACE_END("ATOMIC_COMMIT");
+#endif
 
 	if (layer_count) {
 		for (j = 0; j < layer_count; j++) {
@@ -5241,7 +5357,9 @@ int mdss_fb_switch_check(struct msm_fb_data_type *mfd, u32 mode)
 
 	mutex_lock(&mfd->switch_lock);
 	if (mode == pinfo->type) {
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 		pr_debug("Already in requested mode!\n");
+#endif
 		mutex_unlock(&mfd->switch_lock);
 		return -EPERM;
 	}
@@ -5249,7 +5367,9 @@ int mdss_fb_switch_check(struct msm_fb_data_type *mfd, u32 mode)
 
 	panel_type = mfd->panel.type;
 	if (panel_type != MIPI_VIDEO_PANEL && panel_type != MIPI_CMD_PANEL) {
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 		pr_debug("Panel not in mipi video or cmd mode, cannot change\n");
+#endif
 		return -EPERM;
 	}
 
@@ -5266,7 +5386,9 @@ static int mdss_fb_immediate_mode_switch(struct msm_fb_data_type *mfd, u32 mode)
 	else
 		tranlated_mode = MIPI_VIDEO_PANEL;
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	pr_debug("%s: Request to switch to %d,", __func__, tranlated_mode);
+#endif
 
 	ret = mdss_fb_switch_check(mfd, tranlated_mode);
 	if (ret)
@@ -5800,8 +5922,10 @@ void mdss_fb_calc_fps(struct msm_fb_data_type *mfd)
 		fps = ((u64)mfd->fps_info.frame_count) * 10000000;
 		do_div(fps, diff_us);
 		mfd->fps_info.measured_fps = (unsigned int)fps;
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 		pr_debug(" MDP_FPS for fb%d is %d.%d\n",
 			mfd->index, (unsigned int)fps/10, (unsigned int)fps%10);
+#endif
 		mfd->fps_info.last_sampled_time_us = current_time_us;
 		mfd->fps_info.frame_count = 0;
 	}

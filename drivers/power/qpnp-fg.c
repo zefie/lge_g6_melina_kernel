@@ -3172,7 +3172,9 @@ static int update_sram_data(struct fg_chip *chip, int *resched_ms)
 #ifdef CONFIG_MACH_MSM8996_LUCYE
 			temp_for_vint_err = twos_compliment_extend(temp, 3);
 			chip->vint_err_pct = div64_s64(temp_for_vint_err * 10000, FULL_PERCENT_3B);
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 			pr_info("vint err raw %d\n", chip->vint_err_pct);
+#endif
 #endif
 
 			temp = twos_compliment_extend(temp, fg_data[i].len);
@@ -3226,6 +3228,7 @@ static int update_sram_data(struct fg_chip *chip, int *resched_ms)
 		fg_relax(&chip->lge_debug_wakeup_source);
 		fg_sram_update_period_ms = 30000;
 	}
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	pr_info("soc:[%d], soc_raw[%d], voltage:[%d], ocv:[%d], current:[%d], "
 		"batt_temp:[%d], charge_raw [%d / %lld]\n",
 		get_prop_capacity(chip),
@@ -3237,6 +3240,7 @@ static int update_sram_data(struct fg_chip *chip, int *resched_ms)
 		get_sram_prop_now(chip, FG_DATA_CC_CHARGE),
 		chip->learning_data.learned_cc_uah
 		);
+#endif
 #endif
 
  resched:
@@ -4020,8 +4024,9 @@ static int fg_get_battery_cycle(struct fg_chip *chip)
 
 	chip->battery_cycle = cycle_bucket_sum/8;
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	pr_info("Get battery cycle = %d\n", chip->battery_cycle);
-
+#endif
 	return chip->battery_cycle;
 }
 #endif

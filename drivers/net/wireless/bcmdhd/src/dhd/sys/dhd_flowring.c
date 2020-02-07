@@ -270,7 +270,9 @@ dhd_flow_rings_init(dhd_pub_t *dhdp, uint32 num_flow_rings)
 	void *list_lock = NULL;
 	unsigned long flags;
 
+#ifndef CONFIG_MELINA_QUIET_DHD
 	DHD_INFO(("%s\n", __FUNCTION__));
+#endif
 
 	/* Construct a 16bit flowid allocator */
 	flowid_allocator = id16_map_init(dhdp->osh,
@@ -350,7 +352,9 @@ dhd_flow_rings_init(dhd_pub_t *dhdp, uint32 num_flow_rings)
 	dhdp->flowring_list_lock = list_lock;
 	DHD_FLOWID_UNLOCK(lock, flags);
 
+#ifndef CONFIG_MELINA_QUIET_DHD
 	DHD_INFO(("%s done\n", __FUNCTION__));
+#endif
 	return BCME_OK;
 
 lock_fail:
@@ -384,7 +388,9 @@ void dhd_flow_rings_deinit(dhd_pub_t *dhdp)
 	unsigned long flags;
 	void *lock;
 
+#ifndef CONFIG_MELINA_QUIET_DHD
 	DHD_INFO(("dhd_flow_rings_deinit\n"));
+#endif
 
 	if (!(dhdp->flow_rings_inited)) {
 		DHD_ERROR(("dhd_flow_rings not initialized!\n"));
@@ -531,7 +537,9 @@ dhd_flowid_find(dhd_pub_t *dhdp, uint8 ifindex, uint8 prio, char *sa, char *da)
 	}
 	DHD_FLOWID_UNLOCK(dhdp->flowid_lock, flags);
 
+#ifndef CONFIG_MELINA_QUIET_DHD
 	DHD_INFO(("%s: cannot find flowid\n", __FUNCTION__));
+#endif
 	return FLOWID_INVALID;
 } /* dhd_flowid_find */
 
@@ -604,7 +612,9 @@ dhd_flowid_alloc(dhd_pub_t *dhdp, uint8 ifindex, uint8 prio, char *sa, char *da)
 	}
 	DHD_FLOWID_UNLOCK(dhdp->flowid_lock, flags);
 
+#ifndef CONFIG_MELINA_QUIET_DHD
 	DHD_INFO(("%s: allocated flowid %d\n", __FUNCTION__, fl_hash_node->flowid));
+#endif
 
 	return fl_hash_node->flowid;
 } /* dhd_flowid_alloc */
@@ -619,7 +629,9 @@ dhd_flowid_lookup(dhd_pub_t *dhdp, uint8 ifindex,
 	flow_ring_table_t *flow_ring_table;
 	unsigned long flags;
 
+#ifndef CONFIG_MELINA_QUIET_DHD
 	DHD_INFO(("%s\n", __FUNCTION__));
+#endif
 
 	if (!dhdp->flow_ring_table) {
 		return BCME_ERROR;
@@ -708,7 +720,9 @@ dhd_flowid_update(dhd_pub_t *dhdp, uint8 ifindex, uint8 prio, void *pktbuf)
 		return BCME_ERROR;
 	}
 
+#ifndef CONFIG_MELINA_QUIET_DHD
 	DHD_INFO(("%s: prio %d flowid %d\n", __FUNCTION__, prio, flowid));
+#endif
 
 	/* Tag the packet with flowid */
 	DHD_PKT_SET_FLOWID(pktbuf, flowid);
@@ -779,8 +793,9 @@ dhd_flow_rings_delete(dhd_pub_t *dhdp, uint8 ifindex)
 	uint32 id;
 	flow_ring_table_t *flow_ring_table;
 
+#ifndef CONFIG_MELINA_QUIET_DHD
 	DHD_INFO(("%s: ifindex %u\n", __FUNCTION__, ifindex));
-
+#endif
 	ASSERT(ifindex < DHD_MAX_IFS);
 	if (ifindex >= DHD_MAX_IFS)
 		return;
@@ -820,8 +835,10 @@ dhd_flow_rings_delete_for_peer(dhd_pub_t *dhdp, uint8 ifindex, char *addr)
 			(flow_ring_table[id].flow_info.ifindex == ifindex) &&
 			(!memcmp(flow_ring_table[id].flow_info.da, addr, ETHER_ADDR_LEN)) &&
 			(flow_ring_table[id].status != FLOW_RING_STATUS_DELETE_PENDING)) {
+#ifndef CONFIG_MELINA_QUIET_DHD
 			DHD_INFO(("%s: deleting flowid %d\n",
 				__FUNCTION__, flow_ring_table[id].flowid));
+#endif
 			dhd_bus_flow_ring_delete_request(dhdp->bus,
 				(void *) &flow_ring_table[id]);
 		}
@@ -840,8 +857,10 @@ dhd_update_interface_flow_info(dhd_pub_t *dhdp, uint8 ifindex,
 	if (ifindex >= DHD_MAX_IFS)
 		return;
 
+#ifndef CONFIG_MELINA_QUIET_DHD
 	DHD_INFO(("%s: ifindex %u op %u role is %u \n",
 	          __FUNCTION__, ifindex, op, role));
+#endif
 	if (!dhdp->flowid_allocator) {
 		DHD_ERROR(("%s: Flow ring not intited yet  \n", __FUNCTION__));
 		return;
@@ -856,14 +875,18 @@ dhd_update_interface_flow_info(dhd_pub_t *dhdp, uint8 ifindex,
 
 		if (role != WLC_E_IF_ROLE_STA) {
 			if_flow_lkup[ifindex].status = TRUE;
+#ifndef CONFIG_MELINA_QUIET_DHD
 			DHD_INFO(("%s: Mcast Flow ring for ifindex %d role is %d \n",
 			          __FUNCTION__, ifindex, role));
+#endif
 			/* Create Mcast Flow */
 		}
 	} else	if (op == WLC_E_IF_DEL) {
 		if_flow_lkup[ifindex].status = FALSE;
+#ifndef CONFIG_MELINA_QUIET_DHD
 		DHD_INFO(("%s: cleanup all Flow rings for ifindex %d role is %d \n",
 		          __FUNCTION__, ifindex, role));
+#endif
 	}
 	DHD_FLOWID_UNLOCK(dhdp->flowid_lock, flags);
 }
@@ -879,7 +902,9 @@ dhd_update_interface_link_status(dhd_pub_t *dhdp, uint8 ifindex, uint8 status)
 	if (ifindex >= DHD_MAX_IFS)
 		return BCME_BADARG;
 
+#ifndef CONFIG_MELINA_QUIET_DHD
 	DHD_INFO(("%s: ifindex %d status %d\n", __FUNCTION__, ifindex, status));
+#endif
 
 	DHD_FLOWID_LOCK(dhdp->flowid_lock, flags);
 	if_flow_lkup = (if_flow_lkup_t *)dhdp->if_flow_lkup;

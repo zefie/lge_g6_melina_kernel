@@ -488,8 +488,10 @@ _dhd_wlfc_deque_afq(athost_wl_status_info_t* ctx, uint16 hslot, uint8 hcnt, uint
 		}
 	} else {
 		/* middle packet is matched */
+#ifndef CONFIG_MELINA_QUIET_DHD
 		DHD_INFO(("%s: out of order, seq(%d), head_seq(%d)\n", __FUNCTION__, hcnt,
 			WL_TXSTATUS_GET_FREERUNCTR(DHD_PKTTAG_H2DTAG(PKTTAG(q->head)))));
+#endif
 		ctx->stats.ooo_pkts[prec]++;
 		PKTSETLINK(b, PKTLINK(p));
 		if (PKTLINK(p) == NULL) {
@@ -2542,7 +2544,9 @@ _dhd_wlfc_dbg_senum_check(dhd_pub_t *dhd, uint8 *value)
 
 	bcopy(&value[2], &timestamp, sizeof(uint32));
 	timestamp = ltoh32(timestamp);
+#ifndef CONFIG_MELINA_QUIET_DHD
 	DHD_INFO(("RXPKT: SEQ: %d, timestamp %d\n", value[1], timestamp));
+#endif
 	return BCME_OK;
 }
 
@@ -3006,8 +3010,10 @@ dhd_wlfc_parse_header_info(dhd_pub_t *dhd, void* pktbuf, int tlv_hdr_len, uchar 
 			processed += 2 + len;
 			entry = NULL;
 
+#ifndef CONFIG_MELINA_QUIET_DHD
 			DHD_INFO(("%s():%d type %d remainder %d processed %d\n",
 				__FUNCTION__, __LINE__, type, remainder, processed));
+#endif
 
 			if (type == WLFC_CTL_TYPE_HOST_REORDER_RXPKTS)
 				_dhd_wlfc_reorderinfo_indicate(value, len, reorder_info_buf,
@@ -3018,9 +3024,11 @@ dhd_wlfc_parse_header_info(dhd_pub_t *dhd, void* pktbuf, int tlv_hdr_len, uchar 
 
 				if (type != WLFC_CTL_TYPE_HOST_REORDER_RXPKTS &&
 					type != WLFC_CTL_TYPE_TRANS_ID)
+#ifndef CONFIG_MELINA_QUIET_DHD
 					DHD_INFO(("%s():%d dhd->wlfc_state is NULL yet!"
 					" type %d remainder %d processed %d\n",
 					__FUNCTION__, __LINE__, type, remainder, processed));
+#endif
 				continue;
 			}
 
@@ -3528,7 +3536,9 @@ dhd_wlfc_init(dhd_pub_t *dhd)
 
 	dhd_os_wlfc_block(dhd);
 	if (dhd->wlfc_enabled) {
+#ifndef CONFIG_MELINA_QUIET_DHD
 		DHD_INFO(("%s():%d, Already enabled!\n", __FUNCTION__, __LINE__));
+#endif
 		dhd_os_wlfc_unblock(dhd);
 		return BCME_OK;
 	}
@@ -3553,8 +3563,10 @@ dhd_wlfc_init(dhd_pub_t *dhd)
 		Leaving the message for now, it should be removed after a while; once
 		the tlv situation is stable.
 		*/
+#ifndef CONFIG_MELINA_QUIET_DHD
 		DHD_INFO(("dhd_wlfc_init(): successfully %s bdcv2 tlv signaling, %d\n",
 			dhd->wlfc_enabled?"enabled":"disabled", tlv));
+#endif
 	}
 
 	mode = 0;
@@ -3563,7 +3575,9 @@ dhd_wlfc_init(dhd_pub_t *dhd)
 	ret = dhd_wl_ioctl_get_intiovar(dhd, "wlfc_mode", &fw_caps, WLC_GET_VAR, FALSE, 0);
 
 	if (!ret) {
+#ifndef CONFIG_MELINA_QUIET_DHD
 		DHD_INFO(("%s: query wlfc_mode succeed, fw_caps=0x%x\n", __FUNCTION__, fw_caps));
+#endif
 
 		if (WLFC_IS_OLD_DEF(fw_caps)) {
 			/* enable proptxtstatus v2 by default */
@@ -3587,7 +3601,9 @@ dhd_wlfc_init(dhd_pub_t *dhd)
 		}
 	}
 
+#ifndef CONFIG_MELINA_QUIET_DHD
 	DHD_INFO(("dhd_wlfc_init(): wlfc_mode=0x%x, ret=%d\n", dhd->wlfc_mode, ret));
+#endif
 
 	dhd_os_wlfc_unblock(dhd);
 

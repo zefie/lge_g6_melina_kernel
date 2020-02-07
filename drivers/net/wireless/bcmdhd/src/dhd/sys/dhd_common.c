@@ -2476,12 +2476,16 @@ dhd_arp_offload_enable(dhd_pub_t * dhd, int arp_enable)
 		retcode = dhd_wl_ioctl_get_intiovar(dhd, "arp_version",
 			&version, WLC_GET_VAR, FALSE, 0);
 		if (retcode) {
+#ifndef CONFIG_MELINA_QUIET_DHD
 			DHD_INFO(("%s: fail to get version (maybe version 1:retcode = %d\n",
 				__FUNCTION__, retcode));
+#endif
 			dhd->arp_version = 1;
 		}
 		else {
+#ifndef CONFIG_MELINA_QUIET_DHD
 			DHD_INFO(("%s: ARP Version= %x\n", __FUNCTION__, version));
+#endif
 			dhd->arp_version = version;
 		}
 	}
@@ -2768,8 +2772,10 @@ dhd_ndo_add_ip_with_type(dhd_pub_t *dhdp, char *ipv6addr, uint8 type, int idx)
 #ifdef NDO_CONFIG_SUPPORT
 		if (retcode == BCME_NORESOURCE) {
 			/* number of host ip addr exceeds FW capacity, Deactivate ND offload */
+#ifndef CONFIG_MELINA_QUIET_DHD
 			DHD_INFO(("%s: Host IP count exceed device capacity,"
 				"ND offload deactivated\n", __FUNCTION__));
+#endif
 			dhdp->ndo_host_ip_overflow = TRUE;
 			dhd_ndo_enable(dhdp, 0);
 		}

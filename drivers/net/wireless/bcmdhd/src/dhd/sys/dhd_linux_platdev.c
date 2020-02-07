@@ -112,7 +112,9 @@ void* wifi_platform_prealloc(wifi_adapter_info_t *adapter, int section, unsigned
 	if (plat_data->mem_prealloc) {
 		alloc_ptr = plat_data->mem_prealloc(section, size);
 		if (alloc_ptr) {
+#ifndef CONFIG_MELINA_QUIET_DHD
 			DHD_INFO(("success alloc section %d\n", section));
+#endif
 			if (size != 0L)
 				bzero(alloc_ptr, size);
 			return alloc_ptr;
@@ -603,11 +605,13 @@ static int dhd_wifi_platform_load_pcie(void)
 				adapter = &dhd_wifi_platdata->adapters[i];
 
 				DHD_ERROR(("Power-up adapter '%s'\n", adapter->name));
+#ifndef CONFIG_MELINA_QUIET_DHD
 				DHD_INFO((" - irq %d [flags %d], firmware: %s, nvram: %s\n",
 					adapter->irq_num, adapter->intr_flags, adapter->fw_path,
 					adapter->nv_path));
 				DHD_INFO((" - bus type %d, bus num %d, slot num %d\n\n",
 					adapter->bus_type, adapter->bus_num, adapter->slot_num));
+#endif
 
 				do {
 					err = wifi_platform_set_power(adapter,
@@ -716,10 +720,12 @@ static int dhd_wifi_platform_load_sdio(void)
 		adapter = &dhd_wifi_platdata->adapters[i];
 
 		DHD_ERROR(("Power-up adapter '%s'\n", adapter->name));
+#ifndef CONFIG_MELINA_QUIET_DHD
 		DHD_INFO((" - irq %d [flags %d], firmware: %s, nvram: %s\n",
 			adapter->irq_num, adapter->intr_flags, adapter->fw_path, adapter->nv_path));
 		DHD_INFO((" - bus type %d, bus num %d, slot num %d\n\n",
 			adapter->bus_type, adapter->bus_num, adapter->slot_num));
+#endif
 
 		do {
 			sema_init(&dhd_chipup_sem, 0);

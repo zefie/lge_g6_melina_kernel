@@ -27,7 +27,11 @@
 
 #include <soc/qcom/event_timer.h>
 #include "mdss.h"
+
+#ifdef CONFIG_DEBUG_FS
 #include "mdss_debug.h"
+#endif
+
 #include "mdss_fb.h"
 #include "mdss_mdp.h"
 #include "mdss_mdp_wfd.h"
@@ -1942,10 +1946,12 @@ validate_exit:
 		ret, layer_count, left_lm_layers, right_lm_layers,
 		rec_release_ndx[0], rec_release_ndx[1],
 		rec_destroy_ndx[0], rec_destroy_ndx[1], i);
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(rec_ndx[0], rec_ndx[1], layer_count,
 			left_lm_layers, right_lm_layers,
 			rec_release_ndx[0], rec_release_ndx[1],
 			rec_destroy_ndx[0], rec_destroy_ndx[1], ret);
+#endif
 	mutex_lock(&mdp5_data->list_lock);
 	list_for_each_entry_safe(pipe, tmp, &mdp5_data->pipes_used, list) {
 		if (IS_ERR_VALUE(ret)) {
@@ -2369,7 +2375,9 @@ int mdss_mdp_async_position_update(struct msm_fb_data_type *mfd,
 	mdss_mdp_async_ctl_flush(mfd, flush_bits);
 
 done:
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(inputndx, update_pos->input_layer_cnt, flush_bits, rc);
+#endif
 	mdss_mdp_clk_ctrl(MDP_BLOCK_POWER_OFF);
 	return rc;
 }

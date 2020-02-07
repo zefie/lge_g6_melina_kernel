@@ -17,8 +17,11 @@
 
 #include "mdss_mdp.h"
 #include "mdss_panel.h"
+
+#ifdef CONFIG_DEBUG_FS
 #include "mdss_debug.h"
 #include "mdss_mdp_debug.h"
+#endif
 
 #define BUF_DUMP_LAST_N 10
 

@@ -26,7 +26,9 @@
 #include "mdss.h"
 #include "mdss_dsi.h"
 #include "mdss_panel.h"
+#ifdef CONFIG_DEBUG_FS
 #include "mdss_debug.h"
+#endif
 #include "mdss_smmu.h"
 #include "mdss_dsi_phy.h"
 
@@ -157,15 +159,20 @@ void mdss_dsi_set_reg(struct mdss_dsi_ctrl_pdata *ctrl, int off,
 void mdss_dsi_clk_req(struct mdss_dsi_ctrl_pdata *ctrl,
 	struct dsi_panel_clk_ctrl *clk_ctrl)
 {
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	enum dsi_clk_req_client client = clk_ctrl->client;
+#endif
 	int enable = clk_ctrl->state;
 	void *clk_handle = ctrl->mdp_clk_handle;
 
 	if (clk_ctrl->client == DSI_CLK_REQ_DSI_CLIENT)
 		clk_handle = ctrl->dsi_clk_handle;
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(ctrl->ndx, enable, ctrl->mdp_busy, current->pid,
 		client);
+#endif
+
 	if (enable == 0) {
 		/* need wait before disable */
 		mutex_lock(&ctrl->cmd_mutex);
@@ -173,8 +180,10 @@ void mdss_dsi_clk_req(struct mdss_dsi_ctrl_pdata *ctrl,
 		mutex_unlock(&ctrl->cmd_mutex);
 	}
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(ctrl->ndx, enable, ctrl->mdp_busy, current->pid,
 		client);
+#endif
 	mdss_dsi_clk_ctrl(ctrl, clk_handle,
 		  MDSS_DSI_ALL_CLKS, enable);
 }
@@ -203,7 +212,9 @@ void mdss_dsi_enable_irq(struct mdss_dsi_ctrl_pdata *ctrl, u32 term)
 		return;
 	}
 	if (ctrl->dsi_irq_mask == 0) {
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 		MDSS_XLOG(ctrl->ndx, term);
+#endif
 		ctrl->mdss_util->enable_irq(ctrl->dsi_hw);
 		pr_debug("%s: IRQ Enable, ndx=%d mask=%x term=%x\n", __func__,
 			ctrl->ndx, (int)ctrl->dsi_irq_mask, (int)term);
@@ -223,7 +234,9 @@ void mdss_dsi_disable_irq(struct mdss_dsi_ctrl_pdata *ctrl, u32 term)
 	}
 	ctrl->dsi_irq_mask &= ~term;
 	if (ctrl->dsi_irq_mask == 0) {
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 		MDSS_XLOG(ctrl->ndx, term);
+#endif
 		ctrl->mdss_util->disable_irq(ctrl->dsi_hw);
 		pr_debug("%s: IRQ Disable, ndx=%d mask=%x term=%x\n", __func__,
 			ctrl->ndx, (int)ctrl->dsi_irq_mask, (int)term);
@@ -244,7 +257,9 @@ void mdss_dsi_disable_irq_nosync(struct mdss_dsi_ctrl_pdata *ctrl, u32 term)
 	}
 	ctrl->dsi_irq_mask &= ~term;
 	if (ctrl->dsi_irq_mask == 0) {
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 		MDSS_XLOG(ctrl->ndx, term);
+#endif
 		ctrl->mdss_util->disable_irq_nosync(ctrl->dsi_hw);
 		pr_debug("%s: IRQ Disable, ndx=%d mask=%x term=%x\n", __func__,
 			ctrl->ndx, (int)ctrl->dsi_irq_mask, (int)term);
@@ -856,12 +871,16 @@ static void mdss_dsi_ctl_phy_reset(struct mdss_dsi_ctrl_pdata *ctrl, u32 event)
 				udelay(u_dly);
 		}
 		if (i == loop) {
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 			MDSS_XLOG(ctrl0->ndx, ln0, 0x1f1f);
 			MDSS_XLOG(ctrl1->ndx, ln1, 0x1f1f);
+#endif
 			pr_err("%s: Clock lane still in stop state\n",
 					__func__);
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 			MDSS_XLOG_TOUT_HANDLER("mdp", "dsi0_ctrl", "dsi0_phy",
 				"dsi1_ctrl", "dsi1_phy", "panic");
+#endif
 		}
 		pr_debug("%s: lane ctrl, ctrl0 = 0x%x, ctrl1 = 0x%x\n",
 			 __func__, ln0, ln1);
@@ -935,11 +954,15 @@ static void mdss_dsi_ctl_phy_reset(struct mdss_dsi_ctrl_pdata *ctrl, u32 event)
 				udelay(u_dly);
 		}
 		if (i == loop) {
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 			MDSS_XLOG(ctrl->ndx, ln0, 0x1f1f);
+#endif
 			pr_err("%s: Clock lane still in stop state\n",
 					__func__);
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 			MDSS_XLOG_TOUT_HANDLER("mdp", "dsi0_ctrl", "dsi0_phy",
 				"dsi1_ctrl", "dsi1_phy", "panic");
+#endif
 		}
 		pr_debug("%s: lane status = 0x%x\n",
 			 __func__, ln0);
@@ -2411,7 +2434,9 @@ void mdss_dsi_cmd_mdp_start(struct mdss_dsi_ctrl_pdata *ctrl)
 	mdss_dsi_enable_irq(ctrl, DSI_MDP_TERM);
 	ctrl->mdp_busy = true;
 	reinit_completion(&ctrl->mdp_comp);
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(ctrl->ndx, ctrl->mdp_busy, current->pid);
+#endif
 	spin_unlock_irqrestore(&ctrl->mdp_lock, flag);
 }
 
@@ -2470,7 +2495,9 @@ void mdss_dsi_cmd_mdp_busy(struct mdss_dsi_ctrl_pdata *ctrl)
 	pr_debug("%s: start pid=%d\n",
 				__func__, current->pid);
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(ctrl->ndx, ctrl->mdp_busy, current->pid, XLOG_FUNC_ENTRY);
+#endif
 	spin_lock_irqsave(&ctrl->mdp_lock, flags);
 	if (ctrl->mdp_busy == true)
 		need_wait++;
@@ -2490,7 +2517,9 @@ void mdss_dsi_cmd_mdp_busy(struct mdss_dsi_ctrl_pdata *ctrl)
 			pr_err("%s: timeout error\n", __func__);
 	}
 	pr_debug("%s: done pid=%d\n", __func__, current->pid);
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(ctrl->ndx, ctrl->mdp_busy, current->pid, XLOG_FUNC_EXIT);
+#endif
 }
 
 int mdss_dsi_cmdlist_tx(struct mdss_dsi_ctrl_pdata *ctrl,
@@ -2575,7 +2604,9 @@ static inline bool mdss_dsi_delay_cmd(struct mdss_dsi_ctrl_pdata *ctrl,
 		need_wait = true;
 
 exit:
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(need_wait, from_mdp, mdp_busy);
+#endif
 	return need_wait;
 }
 
@@ -2606,8 +2637,10 @@ int mdss_dsi_cmdlist_commit(struct mdss_dsi_ctrl_pdata *ctrl, int from_mdp)
 		cmd_mutex_acquired = true;
 	}
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(ctrl->ndx, from_mdp, ctrl->mdp_busy, current->pid,
 							XLOG_FUNC_ENTRY);
+#endif
 
 	if (req && (req->flags & CMD_REQ_HS_MODE))
 		hs_req = true;
@@ -2660,7 +2693,9 @@ int mdss_dsi_cmdlist_commit(struct mdss_dsi_ctrl_pdata *ctrl, int from_mdp)
 	if (!req)
 		goto need_lock;
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(ctrl->ndx, req->flags, req->cmds_cnt, from_mdp, current->pid);
+#endif
 
 	pr_debug("%s:  from_mdp=%d pid=%d\n", __func__, from_mdp, current->pid);
 
@@ -2726,8 +2761,10 @@ int mdss_dsi_cmdlist_commit(struct mdss_dsi_ctrl_pdata *ctrl, int from_mdp)
 			MDSS_DSI_CLK_OFF);
 need_lock:
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(ctrl->ndx, from_mdp, ctrl->mdp_busy, current->pid,
 							XLOG_FUNC_EXIT);
+#endif
 
 	if (from_mdp) { /* from mdp kickoff */
 		/*
@@ -3120,8 +3157,10 @@ static void __dsi_error_counter(struct dsi_err_container *err_container)
 		((curr_time - prev_time) < err_container->err_time_delta)) {
 		pr_err("%s: panic in WQ as dsi error intrs within:%dms\n",
 				__func__, err_container->err_time_delta);
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 		MDSS_XLOG_TOUT_HANDLER_WQ("mdp", "dsi0_ctrl", "dsi0_phy",
 			"dsi1_ctrl", "dsi1_phy");
+#endif
 	}
 }
 
@@ -3180,12 +3219,16 @@ irqreturn_t mdss_dsi_isr(int irq, void *ptr)
 	pr_debug("%s: ndx=%d isr=%x\n", __func__, ctrl->ndx, isr);
 
 	if (isr & DSI_INTR_ERROR) {
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 		MDSS_XLOG(ctrl->ndx, ctrl->mdp_busy, isr, 0x97);
+#endif
 		mdss_dsi_error(ctrl);
 	}
 
 	if (isr & DSI_INTR_BTA_DONE) {
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 		MDSS_XLOG(ctrl->ndx, ctrl->mdp_busy, isr, 0x96);
+#endif
 		spin_lock(&ctrl->mdp_lock);
 		mdss_dsi_disable_irq_nosync(ctrl, DSI_BTA_TERM);
 		complete(&ctrl->bta_comp);
@@ -3216,7 +3259,9 @@ irqreturn_t mdss_dsi_isr(int irq, void *ptr)
 	}
 
 	if (isr & DSI_INTR_CMD_DMA_DONE) {
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 		MDSS_XLOG(ctrl->ndx, ctrl->mdp_busy, isr, 0x98);
+#endif
 		spin_lock(&ctrl->mdp_lock);
 		mdss_dsi_disable_irq_nosync(ctrl, DSI_CMD_TERM);
 		complete(&ctrl->dma_comp);
@@ -3224,7 +3269,9 @@ irqreturn_t mdss_dsi_isr(int irq, void *ptr)
 	}
 
 	if (isr & DSI_INTR_CMD_MDP_DONE) {
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 		MDSS_XLOG(ctrl->ndx, ctrl->mdp_busy, isr, 0x99);
+#endif
 		spin_lock(&ctrl->mdp_lock);
 		mdss_dsi_disable_irq_nosync(ctrl, DSI_MDP_TERM);
 		if (ctrl->shared_data->cmd_clk_ln_recovery_en &&
