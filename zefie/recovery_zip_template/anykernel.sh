@@ -76,32 +76,45 @@ write_boot;
 ui_print "Installing modules...";
 if `mount -o rw,remount -t auto /vendor`; then
 	ui_print "Detected Android Vendor Partition"
-	rm -rf /vendor/lib/modules
-	mkdir -p /vendor/lib/modules
+	MODDIR=/vendor/lib/modules
 elif `mount -o rw,remount -t auto /system`; then
 	if [ -d "/system/vendor/lib/modules" ]; then
 		ui_print "Detected Android System-Root with Vendor-on-System"
-		rm -rf /system/vendor/lib/modules
-		mkdir -p /system/vendor/lib/modules
+		MODDIR=/system/vendor/lib/modules
 	elif [ -d "/system/system/vendor/lib/modules" ]; then
 		ui_print "Detected Android System-Root with nested Vendor"
-		rm -rf /system/system/vendor/lib/modules
-		mkdir -p /system/system/vendor/lib/modules
+		MODDIR=/system/system/vendor/lib/modules
 	elif [ -d "/system/system/lib/modules" ]; then
 		ui_print "Detected Android System-Root without Vendor"
-		rm -rf /system/system/lib/modules
-		mkdir -p /system/system/lib/modules
+		MODDIR=/system/system/lib/modules
 	elif [ -d "/system/lib/modules" ]; then
 		ui_print "Detected Classic Android System"
-		rm -rf /system/lib/modules
-		mkdir -p /system/lib/modules
+		MODDIR=/system/lib/modules
 	fi
-else
+fi
+
+if [ -z "$MODDIR" ]; then
 	ui_print "Could not install modules."
 	exit 1
+else
+	rm -rf $MODDIR
+	mkdir -p $MODDIR
+	cp -rf /tmp/anykernel/modules/* $MODDIR/;
+	set_perm_recursive 0 0 0755 0644 $MODDIR;
 fi
-cp -rf /tmp/anykernel/modules/* /system/lib/modules/;
-set_perm_recursive 0 0 0755 0644 /system/lib/modules;
 
-mount -o ro,remount -t auto /system;
+
+#if `mount -o rw,remount -t auto /data`; then
+#	if [ -f /data/adb/magisk/addon.d.sh ]; then
+#	  ui_print "Detected Magisk install, attempting to restore Magisk"
+#	  exec sh /data/adb/magisk/addon.d.sh "\$@"
+#	fi
+#fi
+
+# remount any partitions we mounted rw as ro, except /data
+for f in system vendor; do
+	if [ $(df | grep -c "/$f") -gt 0 ]; then
+		mount -o ro,remount -t auto "/$f";
+	fi
+done
 ## end install
