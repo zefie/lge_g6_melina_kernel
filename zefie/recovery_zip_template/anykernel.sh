@@ -83,6 +83,10 @@ elif `mount -o rw,remount -t auto /system`; then
 		ui_print "Detected Android System-Root with Vendor-on-System"
 		rm -rf /system/vendor/lib/modules
 		mkdir -p /system/vendor/lib/modules
+	elif [ -d "/system/system/vendor/lib/modules" ]; then
+		ui_print "Detected Android System-Root with nested Vendor"
+		rm -rf /system/system/vendor/lib/modules
+		mkdir -p /system/system/vendor/lib/modules
 	elif [ -d "/system/system/lib/modules" ]; then
 		ui_print "Detected Android System-Root without Vendor"
 		rm -rf /system/system/lib/modules
