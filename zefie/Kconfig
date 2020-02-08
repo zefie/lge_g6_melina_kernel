@@ -13,6 +13,11 @@ choice
         default MELINA_OPTIMIZE_CORTEX_A72_A53 if 64BIT
         default MELINA_OPTIMIZE_CORTEX_A53 if !64BIT
 
+config MELINA_OPTIMIZE_NONE
+        bool "Do not optimize"
+        help
+          Compiles the kernel without any additional -mcpu or -mtune optimizations.
+
 config MELINA_OPTIMIZE_CORTEX_A53
         bool "Optimize for cortex-a53"
         help

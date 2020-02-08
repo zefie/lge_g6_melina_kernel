@@ -4,7 +4,19 @@
 SCRIPTDIR=$(realpath "$(dirname "${0}")")
 source "${SCRIPTDIR}/buildenv.sh"
 
-DEFCONFIG_DIR="arch/${ARCH}/configs"
+if [ -d "${1}" ]; then
+	Z_KERNEL_OUT="${1}"
+	shift
+fi
+
+DEFCONFIG_DIR="${KERNEL_SOURCE_DIR}/arch/${ARCH}/configs"
+if [ -z "${KERNEL_OUT}" ]; then
+	DEFCONFIG_OUTDIR="${DEFCONFIG_DIR}"
+else
+	DEFCONFIG_OUTDIR="${Z_KERNEL_OUT}/arch/${ARCH}/configs"
+	mkdir -p "${DEFCONFIG_OUTDIR}"
+fi
+
 ORIG_DEFCONFIG_US997="lucye_nao_us-perf_defconfig"
 ORIG_DEFCONFIG_H870="lucye_global_com-perf_defconfig"
 ORIG_DEFCONFIG_H872="lucye_tmo_us-perf_defconfig"
@@ -37,7 +49,7 @@ for m in "${SUPPORTED_MODELS[@]}"; do
 	ORIG_DEFCONFIG=$(echo -n "ORIG_DEFCONFIG_${DEVMODEL_UPPER}")
 	ORIG_DEFCONFIG="${!ORIG_DEFCONFIG}"
 
-	TARGET_FILE="${DEFCONFIG_DIR}/${KERNEL_NAME_LOWER}_${DEVMODEL_LOWER}_defconfig"
+	TARGET_FILE="${DEFCONFIG_OUTDIR}/${KERNEL_NAME_LOWER}_${DEVMODEL_LOWER}_defconfig"
 	echo "*** Generating ${KERNEL_NAME}_${DEVMODEL_LOWER} kernel defconfigs..."
 	rm -f "${TARGET_FILE}"
 	cp -f "${DEFCONFIG_DIR}/${ORIG_DEFCONFIG}" "${TARGET_FILE}"

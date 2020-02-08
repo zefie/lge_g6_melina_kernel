@@ -42,7 +42,9 @@ ifeq ($(CONFIG_COMPAT_VDSO), y)
 endif
 
 KBUILD_CFLAGS	+= $(vdso32)
-KBUILD_CFLAGS	+= -mgeneral-regs-only
+ifneq ($(COMPILER),clang)
+  KBUILD_CFLAGS	+= -mgeneral-regs-only
+endif
 KBUILD_CFLAGS	+= -fno-pic
 KBUILD_CFLAGS	+= $(call cc-option, -mpc-relative-literal-loads)
 KBUILD_AFLAGS	+= $(vdso32)

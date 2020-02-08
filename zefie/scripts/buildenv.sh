@@ -1,8 +1,8 @@
 #!/bin/bash
 # shellcheck disable=SC2034
 # git clone https://github.com/zefie/binary_toolchains -b uber-6.x-x86_64-aarch64
-export TOOLCHAIN="/home/zefie/ubertc/out/aarch64-linux-android-6.x/bin/aarch64-linux-android-"
-export TOOLCHAIN32="/home/zefie/ubertc/out/arm-linux-androideabi-6.x/bin/arm-linux-androideabi-"
+export TOOLCHAIN="${CROSS_COMPILE:-/home/zefie/ubertc/out/aarch64-linux-android-6.x/bin/aarch64-linux-android-}"
+export TOOLCHAIN32="${CROSS_COMPILE_ARM32:-/home/zefie/ubertc/out/arm-linux-androideabi-6.x/bin/arm-linux-androideabi-}"
 
 
 SCRIPTDIR=$(realpath "$(dirname "${0}")")
@@ -11,16 +11,10 @@ LG_OUT_DIRECTORY=$(realpath "${KERNEL_SOURCE_DIR}/../lg_out")
 CPUS=$(nproc)
 export KERNEL_SOURCE_DIR SCRIPTDIR CPUS
 
+# Jenkins
 if [ ! -z "${WORKSPACE}" ]; then
-	# Custom for Jenkins integration
-	if [ "${JOB_BASE_NAME}" != "lg-g6-kernel" ]; then
-		# todo: fix inline
-		echo "not supported"
-		exit 1;
-	else
-		export TOOLCHAIN="${WORKSPACE}/ubertc/aarch64-linux-android-6.x/bin/aarch64-linux-android-"
-		export TOOLCHAIN32="${WORKSPACE}/ubertc/arm-linux-androideabi-6.x/bin/arm-linux-androideabi-"
-	fi
+	export TOOLCHAIN="${WORKSPACE}/ubertc/aarch64-linux-android-6.x/bin/aarch64-linux-android-"
+	export TOOLCHAIN32="${WORKSPACE}/ubertc/arm-linux-androideabi-6.x/bin/arm-linux-androideabi-"
 fi
 
 export KERNEL_NAME="MelinaReborn" # please change from Melina for custom builds
