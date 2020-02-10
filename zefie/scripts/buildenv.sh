@@ -51,12 +51,10 @@ KERNEL_DEVMODEL_LOWER="$(echo "${KERNEL_DEVMODEL}" | tr '[:upper:]' '[:lower:]')
 export KERNEL_DEVMODEL_LOWER
 
 if [ ! -z "${USE_CCACHE}" ]; then
-	export TOOLCHAIN="ccache ${TOOLCHAIN}"
-	export TOOLCHAIN32="ccache ${TOOLCHAIN32}"
+	TOOLCHAIN="ccache ${TOOLCHAIN}"
+	TOOLCHAIN32="ccache ${TOOLCHAIN32}"
+	export TOOLCHAIN TOOLCHAIN32
 fi
-
-export CROSS_COMPILE="${TOOLCHAIN}"
-export CROSS_COMPILE_ARM32="${TOOLCHAIN32}"
 
 function errchk() {
         case "${1}" in
