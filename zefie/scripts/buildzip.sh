@@ -87,6 +87,7 @@ errchk sed -i -e 's/\%TOOLCHAIN_VERSION\%/'"${TC_VER}"'/' "${TMPDIR}/anykernel.s
 if [ ${MODULES} -eq 1 ]; then
 	errchk rm -rf "${TMPDIR}/_modtmp"
 	errchk mkdir -p "${TMPDIR}/_modtmp"
+	errchk mkdir -p "${MODDIR}"
 	errchk "${SCRIPTDIR}/make.sh" INSTALL_MOD_PATH="${TMPDIR}/_modtmp" modules_install >> "${LOGFIL}" 2>&1
 
         # Rename exfat module for compatiblity (LG uses propritary Tuxera, we use open source)
@@ -108,11 +109,11 @@ if [ ${MODULES} -eq 1 ]; then
 		if [ "${FOUND}" -eq "1" ]; then
 			echo " * [FOUND] ${mout}"
 			errchk cp -f "${FILE}" "${MODDIR}/${mout}"
+			errchk chmod 644 "${MODDIR}/${mout}"
 		else
 			echo " * [MISSN] ${mout}" >> /dev/stderr
 		fi
 	done;
-	errchk chmod 644 "${MODDIR}/"*
 	errchk rm -rf "${TMPDIR}/_modtmp"
 fi
 
