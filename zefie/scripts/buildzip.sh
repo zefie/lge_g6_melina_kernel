@@ -9,7 +9,7 @@ OUTDIR="${KERNDIR}/build/out"
 TMPDIR="${OUTDIR}/build"
 MODDIR="${TMPDIR}/modules"
 LOGFIL="${OUTDIR}/buildzip.log"
-MODULES=1
+MODULES=0
 
 KERNEL_IMAGE="build/arch/${ARCH}/boot/Image.gz-dtb"
 
