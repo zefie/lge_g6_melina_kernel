@@ -1,6 +1,6 @@
 # Melina Reborn Kernel for LG G6 modern AOSP ROMs (Oreo Edition)
 
-Based on LGE OpenSource H870 v30a Kernel ([commit ed4ba0c](https://github.com/zefie/lge_g6_melina_kernel/tree/ed4ba0cace3e073a491e9ebfd509f031031170a0))
+Based on LGE OpenSource H870 v30a Kernel ([commit cff8191](https://github.com/zefie/lge_g6_melina_kernel/tree/cff81912fd72dc07746be77663b6cba73ebd5938))
 
 **Note**: I own the US997, therefore I cannot test any other releases made available,
 only compile them and let you try them. Keep that in mind.
