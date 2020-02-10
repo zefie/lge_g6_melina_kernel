@@ -83,8 +83,8 @@
 				hide_coordinate = <0>;
 
 				/* Firmware */
-				fw_image = "touch/lucye/L1L57P2_1_05.img",
-						"touch/lucye/L1L57P2_1_03.img";
+				fw_image = "touch/lucye/L1L57P1_8_23_SW49407_Lucy_VB.img",
+						"touch/lucye/L1L57P1_8_23_SW49407_Lucy_VB.img";
 
 				panel_spec = "touch/lucye/lucye_limit.txt";
 				panel_spec_mfts_folder = "touch/lucye/lucye_limit_mfts.txt";
