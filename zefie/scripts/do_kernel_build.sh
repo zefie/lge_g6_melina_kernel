@@ -8,8 +8,7 @@ if [ ! -z "${1}" ]; then
 	KERNEL_DEVMODEL_LOWER="$(echo "${KERNEL_DEVMODEL}" | tr '[:upper:]' '[:lower:]')"
 	export KERNEL_DEVMODEL KERNEL_DEVMODEL_LOWER
 
-	# TODO: An list/array of models
-
+	SUPPORTED=0
 	for m in "${SUPPORTED_MODELS[@]}"; do
 		if [ "${KERNEL_DEVMODEL}" == "$m" ]; then
 			SUPPORTED=1
@@ -17,8 +16,8 @@ if [ ! -z "${1}" ]; then
 		fi
 	done
 
-	if [ ! -z "${SUPPORTED}" ]; then
-		echo "Error: Unknown model (${1})";
+	if [ -z "${SUPPORTED}" ]; then
+		echo "Error: Unknown model (${KERNEL_DEVMODEL})";
 		echo "This script supports: ${SUPPORTED_MODELS[*]}";
 		exit 1
 	fi
