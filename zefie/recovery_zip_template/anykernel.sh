@@ -59,7 +59,6 @@ dump_boot;
 
 # end ramdisk changes
 
-
 ui_print " "
 ui_print "Kernel Device: %MANU% %MODEL% (%DEVMODEL%)"
 ui_print "Kernel Name: %NAME%"
@@ -69,43 +68,6 @@ ui_print "Toolchain: %TOOLCHAIN_VERSION%"
 ui_print " "
 
 write_boot;
-
-
-# Manual module install
-ui_print "Installing modules...";
-if `mount -o rw,remount -t auto /vendor`; then
-	ui_print "Detected Android Vendor Partition"
-	MODDIR=/vendor/lib/modules
-else
-	if [ -d "/system/vendor/lib/modules" ]; then
-		ui_print "Detected Android System-Root with Vendor-on-System"
-		MODDIR=/system_root/vendor/lib/modules
-	elif [ -d "/system/system/vendor/lib/modules" ]; then
-		ui_print "Detected Android System-Root with nested Vendor"
-		MODDIR=/system/system/vendor/lib/modules
-	elif [ -d "/system/system/lib/modules" ]; then
-		ui_print "Detected Android System-Root without Vendor"
-		MODDIR=/system/system/lib/modules
-	elif [ -d "/system/lib/modules" ]; then
-		if [ -d "/system/system" ]; then
-			ui_print "Detected Android System-Root with Root Modules"
-		else
-			ui_print "Detected Classic Android System"
-		fi
-		MODDIR=/system/lib/modules
-	fi
-fi
-
-if [ -z "$MODDIR" ]; then
-	ui_print "Could not install modules."
-	exit 1
-else
-	rm -rf $MODDIR
-	mkdir -p $MODDIR
-	cp -rf /tmp/anykernel/modules/* $MODDIR/;
-	set_perm_recursive 0 0 0755 0644 $MODDIR;
-fi
-
 
 ui_print "******************************************"
 ui_print "If you find this release useful, please"
