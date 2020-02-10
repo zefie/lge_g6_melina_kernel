@@ -1,7 +1,7 @@
 #!/bin/bash
 # shellcheck disable=SC1090
 
-export USE_CCACHE=1
+#export USE_CCACHE=1
 
 if [ ! -z "${1}" ]; then
 	export KERNEL_DEVMODEL="$(echo "${1}" | tr [:lower:] [:upper:])"
