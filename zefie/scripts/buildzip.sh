@@ -24,7 +24,7 @@ if [ ! -f "${KERNEL_IMAGE}" ]; then
 fi
 
 KVER=$(strings build/init/version.o | grep "Linux version" | cut -d' ' -f3 | cut -d'-' -f1-)
-TCVER=$("${TOOLCHAIN}gcc" --version | awk '/gcc /{print $0;exit 0;}')
+TC_VER=$("${TOOLCHAIN}gcc" --version | awk '/gcc /{print $0;exit 0;}')
 if [ ${MODULES} -eq 1 ]; then
 ## If you would like to add a custom module to your ROM
 ## add it's filename on its own line anywhere between the words INCLUDED.

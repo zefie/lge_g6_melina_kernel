@@ -4,18 +4,8 @@
 SCRIPTDIR=$(realpath "$(dirname "${0}")")
 source "${SCRIPTDIR}/buildenv.sh"
 
-if [ -d "${1}" ]; then
-	Z_KERNEL_OUT="${1}"
-	shift
-fi
-
 DEFCONFIG_DIR="${KERNEL_SOURCE_DIR}/arch/${ARCH}/configs"
-if [ -z "${KERNEL_OUT}" ]; then
-	DEFCONFIG_OUTDIR="${DEFCONFIG_DIR}"
-else
-	DEFCONFIG_OUTDIR="${Z_KERNEL_OUT}/arch/${ARCH}/configs"
-	mkdir -p "${DEFCONFIG_OUTDIR}"
-fi
+DEFCONFIG_OUTDIR="${DEFCONFIG_DIR}"
 
 ORIG_DEFCONFIG_US997="lucye_nao_us-perf_defconfig"
 ORIG_DEFCONFIG_H870="lucye_global_com-perf_defconfig"
