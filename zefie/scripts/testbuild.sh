@@ -4,7 +4,7 @@
 export USE_CCACHE=1
 
 if [ ! -z "${1}" ]; then
-	export KERNEL_DEVMODEL="${1}"
+	export KERNEL_DEVMODEL="$(echo "${1}" | tr [:lower:] [:upper:])"
 	shift
 fi
 
