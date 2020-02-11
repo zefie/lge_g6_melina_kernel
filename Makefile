@@ -700,6 +700,10 @@ ifdef CONFIG_MELINA_OPTIMIZE_CORTEX_A72_A53
 KBUILD_CFLAGS 	+= -mcpu=cortex-a72.cortex-a53 -mtune=cortex-a72.cortex-a53
 endif
 
+ifdef CONFIG_MELINA_OPTIMIZE_CORTEX_A72_A53
+KBUILD_CFLAGS 	+= -mcpu=kyro -mtune=kyro
+endif
+
 
 ifdef CONFIG_READABLE_ASM
 # Disable optimizations that make assembler listings hard to read.
