@@ -4596,7 +4596,7 @@ int msm_pcie_enable(struct msm_pcie_dev_t *dev, u32 options)
 		pcie_phy_dump(dev);
 		goto link_fail;
 #ifndef CONFIG_MELINA_QUIET_MSMPCI
-	else {
+	} else {
 		PCIE_INFO(dev, "PCIe RC%d PHY is ready!\n", dev->rc_idx);
 #endif
 	}
