@@ -1466,8 +1466,10 @@ dhdpcie_download_code_file(struct dhd_bus *bus, char *pfw_path)
 	if ((uint32)(uintptr)memblock % DHD_SDALIGN)
 		memptr += (DHD_SDALIGN - ((uint32)(uintptr)memblock % DHD_SDALIGN));
 
+#ifndef CONFIG_MELINA_QUIET_DHD
 	DHD_INFO_HW4(("%s: dongle_ram_base: 0x%x ramsize: 0x%x tcm: %p\n",
 			__FUNCTION__, bus->dongle_ram_base, bus->ramsize, bus->tcm));
+#endif
 	/* Download image with MEMBLOCK size */
 	while ((len = dhd_os_get_image_block((char*)memptr, MEMBLOCK, imgbuf))) {
 		if (len < 0) {
@@ -2338,7 +2340,9 @@ dhd_bus_schedule_queue(struct dhd_bus  *bus, uint16 flow_id, bool txs)
 #ifdef DHD_LOSSLESS_ROAMING
 	dhd_pub_t *dhdp = bus->dhd;
 #endif
+#ifndef CONFIG_MELINA_QUIET_DHD
 	DHD_INFO(("%s: flow_id is %d\n", __FUNCTION__, flow_id));
+#endif
 
 	/* ASSERT on flow_id */
 	if (flow_id >= bus->max_sub_queues) {
@@ -2351,8 +2355,10 @@ dhd_bus_schedule_queue(struct dhd_bus  *bus, uint16 flow_id, bool txs)
 
 #ifdef DHD_LOSSLESS_ROAMING
 	if ((dhdp->dequeue_prec_map & (1 << flow_ring_node->flow_info.tid)) == 0) {
+#ifndef CONFIG_MELINA_QUIET_DHD
 		DHD_INFO(("%s: tid %d is not in precedence map. block scheduling\n",
 			__FUNCTION__, flow_ring_node->flow_info.tid));
+#endif
 		return BCME_OK;
 	}
 #endif /* DHD_LOSSLESS_ROAMING */
@@ -2411,7 +2417,9 @@ dhd_bus_schedule_queue(struct dhd_bus  *bus, uint16 flow_id, bool txs)
 			/* Attempt to transfer packet over flow ring */
 			ret = dhd_prot_txdata(bus->dhd, txp, flow_ring_node->flow_info.ifindex);
 			if (ret != BCME_OK) { /* may not have resources in flow ring */
+#ifndef CONFIG_MELINA_QUIET_DHD
 				DHD_INFO(("%s: Reinserrt %d\n", __FUNCTION__, ret));
+#endif
 				dhd_prot_txdata_write_flush(bus->dhd, flow_id, FALSE);
 				/* reinsert at head */
 				dhd_flow_queue_reinsert(bus->dhd, queue, txp);
@@ -2460,9 +2468,11 @@ dhd_bus_txdata(struct dhd_bus *bus, void *txp, uint8 ifidx)
 		(flow_ring_node->status == FLOW_RING_STATUS_DELETE_PENDING) ||
 		(flow_ring_node->status == FLOW_RING_STATUS_STA_FREEING)) {
 		DHD_FLOWRING_UNLOCK(flow_ring_node->lock, flags);
+#ifndef CONFIG_MELINA_QUIET_DHD
 		DHD_INFO(("%s: Dropping pkt flowid %d, status %d active %d\n",
 			__FUNCTION__, flowid, flow_ring_node->status,
 			flow_ring_node->active));
+#endif
 		ret = BCME_ERROR;
 		goto toss;
 	}
@@ -2476,9 +2486,11 @@ dhd_bus_txdata(struct dhd_bus *bus, void *txp, uint8 ifidx)
 	DHD_FLOWRING_UNLOCK(flow_ring_node->lock, flags);
 
 	if (flow_ring_node->status) {
+#ifndef CONFIG_MELINA_QUIET_DHD
 		DHD_INFO(("%s: Enq pkt flowid %d, status %d active %d\n",
 			__FUNCTION__, flowid, flow_ring_node->status,
 			flow_ring_node->active));
+#endif
 		if (txp_pend) {
 			txp = txp_pend;
 			goto toss;
@@ -2503,7 +2515,9 @@ dhd_bus_txdata(struct dhd_bus *bus, void *txp, uint8 ifidx)
 	return ret;
 
 toss:
+#ifndef CONFIG_MELINA_QUIET_DHD
 	DHD_INFO(("%s: Toss %d\n", __FUNCTION__, ret));
+#endif
 	PKTCFREE(bus->dhd->osh, txp, TRUE);
 	return ret;
 } /* dhd_bus_txdata */
@@ -2643,7 +2657,9 @@ dhd_bus_cmn_writeshared(dhd_bus_t *bus, void *data, uint32 len, uint8 type, uint
 	uint64 long_data;
 	ulong tcm_offset;
 
+#ifndef CONFIG_MELINA_QUIET_DHD
 	DHD_INFO(("%s: writing to dongle type %d len %d\n", __FUNCTION__, type, len));
+#endif
 
 	if (bus->is_linkdown) {
 		DHD_ERROR(("%s: PCIe link was down\n", __FUNCTION__));
@@ -2831,8 +2847,10 @@ dhd_bus_iovar_op(dhd_pub_t *dhdp, const char *name,
 	/* Set does NOT take qualifiers */
 	ASSERT(!set || (!params && !plen));
 
+#ifndef CONFIG_MELINA_QUIET_DHD
 	DHD_INFO(("%s: %s %s, len %d plen %d\n", __FUNCTION__,
 	         name, (set ? "set" : "get"), len, plen));
+#endif
 
 	/* Look up var locally; if not found pass to host driver */
 	if ((vi = bcm_iovar_lookup(dhdpcie_iovars, name)) == NULL) {
@@ -3099,7 +3117,9 @@ int dhd_buzzz_dump_dngl(dhd_bus_t *bus)
 
 	sh = bus->pcie_sh;
 
+#ifndef CONFIG_MELINA_QUIET_DHD
 	DHD_INFO(("%s buzzz:%08x\n", __FUNCTION__, sh->buzzz));
+#endif
 
 	if (sh->buzzz != 0U) {	/* Fetch and display dongle BUZZZ Trace */
 
@@ -3415,8 +3435,10 @@ dhdpcie_bus_doiovar(dhd_bus_t *bus, const bcm_iovar_t *vi, uint32 actionid, cons
 			break;
 		}
 
+#ifndef CONFIG_MELINA_QUIET_DHD
 		DHD_INFO(("%s: Request to %s %d bytes at address 0x%08x\n dsize %d ", __FUNCTION__,
 		          (set ? "write" : "read"), size, address, dsize));
+#endif
 
 		/* check if CR4 */
 		if (si_setcore(bus->sih, ARMCR4_CORE_ID, 0) ||
@@ -3455,8 +3477,10 @@ dhdpcie_bus_doiovar(dhd_bus_t *bus, const bcm_iovar_t *vi, uint32 actionid, cons
 				/* move it such that address is real now */
 				address -= SOCDEVRAM_ARM_ADDR;
 				address += SOCDEVRAM_BP_ADDR;
+#ifndef CONFIG_MELINA_QUIET_DHD
 				DHD_INFO(("%s: Request to %s %d bytes @ Mapped address 0x%08x\n",
 					__FUNCTION__, (set ? "write" : "read"), size, address));
+#endif
 			} else if (REMAP_ENAB(bus) && REMAP_ISADDR(bus, address) && remap) {
 				/* Can not access remap region while devram remap bit is set
 				 * ROM content would be returned in this case
@@ -4194,14 +4218,18 @@ dhdpcie_bus_write_vars(dhd_bus_t *bus)
 		bzero(vbuffer, varsize);
 		bcopy(bus->vars, vbuffer, bus->varsz);
 		/* Write the vars list */
+#ifndef CONFIG_MELINA_QUIET_DHD
 		DHD_INFO_HW4(("%s: tcm: %p varaddr: 0x%x varsize: %d\n",
 			__FUNCTION__, bus->tcm, varaddr, varsize));
+#endif
 		bcmerror = dhdpcie_bus_membytes(bus, TRUE, varaddr, vbuffer, varsize);
 
 		/* Implement read back and verify later */
 #ifdef DHD_DEBUG
 		/* Verify NVRAM bytes */
+#ifndef CONFIG_MELINA_QUIET_DHD
 		DHD_INFO(("Compare NVRAM dl & ul; varsize=%d\n", varsize));
+#endif
 		nvram_ularray = (uint8*)MALLOC(bus->dhd->osh, varsize);
 		if (!nvram_ularray)
 			return BCME_NOMEM;
@@ -4234,10 +4262,12 @@ dhdpcie_bus_write_vars(dhd_bus_t *bus)
 	phys_size += bus->dongle_ram_base;
 
 	/* adjust to the user specified RAM */
+#ifndef CONFIG_MELINA_QUIET_DHD
 	DHD_INFO(("Physical memory size: %d, usable memory size: %d\n",
 		phys_size, bus->ramsize));
 	DHD_INFO(("Vars are at %d, orig varsize is %d\n",
 		varaddr, varsize));
+#endif
 	varsize = ((phys_size - 4) - varaddr);
 
 	/*
@@ -4254,11 +4284,13 @@ dhdpcie_bus_write_vars(dhd_bus_t *bus)
 		varsizew = htol32(varsizew);
 	}
 
+#ifndef CONFIG_MELINA_QUIET_DHD
 	DHD_INFO(("New varsize is %d, length token=0x%08x\n", varsize, varsizew));
 
 	/* Write the length token to the last word */
 	DHD_INFO_HW4(("%s: tcm: %p phys_size: 0x%x varsizew: %x\n",
 			__FUNCTION__, bus->tcm, phys_size, varsizew));
+#endif
 	bcmerror = dhdpcie_bus_membytes(bus, TRUE, (phys_size - 4),
 		(uint8*)&varsizew, 4);
 
@@ -4501,10 +4533,14 @@ dhd_bus_gen_devmb_intr(struct dhd_bus *bus)
 	}
 	if (bus->db1_for_mb)  {
 		/* this is a pcie core register, not the config register */
+#ifndef CONFIG_MELINA_QUIET_DHD
 		DHD_INFO(("writing a mail box interrupt to the device, through doorbell 1\n"));
+#endif
 		si_corereg(bus->sih, bus->sih->buscoreidx, PCIH2D_DB1, ~0, 0x12345678);
 	} else {
+#ifndef CONFIG_MELINA_QUIET_DHD
 		DHD_INFO(("writing a mail box interrupt to the device, through config space\n"));
+#endif
 		dhdpcie_bus_cfg_write_dword(bus, PCISBMbx, 4, (1 << 0));
 		dhdpcie_bus_cfg_write_dword(bus, PCISBMbx, 4, (1 << 0));
 	}
@@ -4515,7 +4551,9 @@ dhd_bus_set_device_wake(struct dhd_bus *bus, bool val)
 {
 	if (bus->device_wake_state != val)
 	{
+#ifndef CONFIG_MELINA_QUIET_DHD
 		DHD_INFO(("Set Device_Wake to %d\n", val));
+#endif
 #ifdef PCIE_OOB
 		if (bus->oob_enabled)
 		{
@@ -4537,7 +4575,9 @@ dhd_bus_set_device_wake(struct dhd_bus *bus, bool val)
 void
 dhd_oob_set_bt_reg_on(struct dhd_bus *bus, bool val)
 {
+#ifndef CONFIG_MELINA_QUIET_DHD
 	DHD_INFO(("Set Device_Wake to %d\n", val));
+#endif
 	if (val)
 	{
 		gpio_port = gpio_port | (1 << BIT_BT_REG_ON);
@@ -4590,7 +4630,9 @@ dhd_bus_ringbell(struct dhd_bus *bus, uint32 value)
 		si_corereg(bus->sih, bus->sih->buscoreidx, PCIMailBoxInt, PCIE_INTB, PCIE_INTB);
 	} else {
 		/* this is a pcie core register, not the config regsiter */
+#ifndef CONFIG_MELINA_QUIET_DHD
 		DHD_INFO(("writing a door bell to the device\n"));
+#endif
 		si_corereg(bus->sih, bus->sih->buscoreidx, PCIH2D_MailBox, ~0, 0x12345678);
 	}
 }
@@ -4689,7 +4731,9 @@ dhdpcie_send_mb_data(dhd_bus_t *bus, uint32 h2d_mb_data)
 {
 	uint32 cur_h2d_mb_data = 0;
 
+#ifndef CONFIG_MELINA_QUIET_DHD
 	DHD_INFO_HW4(("%s: H2D_MB_DATA: 0x%08X\n", __FUNCTION__, h2d_mb_data));
+#endif
 
 	if (bus->is_linkdown) {
 		DHD_ERROR(("%s: PCIe link was down\n", __FUNCTION__));
@@ -4708,7 +4752,9 @@ dhdpcie_send_mb_data(dhd_bus_t *bus, uint32 h2d_mb_data)
 
 	if (cur_h2d_mb_data != 0) {
 		uint32 i = 0;
+#ifndef CONFIG_MELINA_QUIET_DHD
 		DHD_INFO(("GRRRRRRR: MB transaction is already pending 0x%04x\n", cur_h2d_mb_data));
+#endif
 		while ((i++ < 100) && cur_h2d_mb_data) {
 			OSL_DELAY(10);
 			dhd_bus_cmn_readshared(bus, &cur_h2d_mb_data, H2D_MB_DATA, 0);
@@ -4725,15 +4771,21 @@ dhdpcie_send_mb_data(dhd_bus_t *bus, uint32 h2d_mb_data)
 	dhd_bus_gen_devmb_intr(bus);
 
 	if (h2d_mb_data == H2D_HOST_D3_INFORM) {
+#ifndef CONFIG_MELINA_QUIET_DHD
 		DHD_INFO_HW4(("%s: send H2D_HOST_D3_INFORM to dongle\n", __FUNCTION__));
+#endif
 		bus->d3_inform_cnt++;
 	}
 	if (h2d_mb_data == H2D_HOST_D0_INFORM_IN_USE) {
+#ifndef CONFIG_MELINA_QUIET_DHD
 		DHD_INFO_HW4(("%s: send H2D_HOST_D0_INFORM_IN_USE to dongle\n", __FUNCTION__));
+#endif
 		bus->d0_inform_in_use_cnt++;
 	}
 	if (h2d_mb_data == H2D_HOST_D0_INFORM) {
+#ifndef CONFIG_MELINA_QUIET_DHD
 		DHD_INFO_HW4(("%s: send H2D_HOST_D0_INFORM to dongle\n", __FUNCTION__));
+#endif
 		bus->d0_inform_cnt++;
 	}
 }
@@ -4745,14 +4797,18 @@ dhdpcie_handle_mb_data(dhd_bus_t *bus)
 	uint32 zero = 0;
 	dhd_bus_cmn_readshared(bus, &d2h_mb_data, D2H_MB_DATA, 0);
 	if (D2H_DEV_MB_INVALIDATED(d2h_mb_data)) {
+#ifndef CONFIG_MELINA_QUIET_DHD
 		DHD_INFO_HW4(("%s: Invalid D2H_MB_DATA: 0x%08x\n",
 			__FUNCTION__, d2h_mb_data));
+#endif
 		return;
 	}
 
 	dhd_bus_cmn_writeshared(bus, &zero, sizeof(uint32), D2H_MB_DATA, 0);
 
+#ifndef CONFIG_MELINA_QUIET_DHD
 	DHD_INFO_HW4(("D2H_MB_DATA: 0x%08x\n", d2h_mb_data));
+#endif
 	if (d2h_mb_data & D2H_DEV_FWHALT)  {
 		DHD_ERROR(("FW trap has happened\n"));
 		dhdpcie_checkdied(bus, NULL, 0);
@@ -4767,17 +4823,25 @@ dhdpcie_handle_mb_data(dhd_bus_t *bus)
 	}
 	if (d2h_mb_data & D2H_DEV_DS_ENTER_REQ)  {
 		/* what should we do */
+#ifndef CONFIG_MELINA_QUIET_DHD
 		DHD_INFO(("D2H_MB_DATA: DEEP SLEEP REQ\n"));
+#endif
 		dhdpcie_send_mb_data(bus, H2D_HOST_DS_ACK);
+#ifndef CONFIG_MELINA_QUIET_DHD
 		DHD_INFO(("D2H_MB_DATA: sent DEEP SLEEP ACK\n"));
+#endif
 	}
+#ifndef CONFIG_MELINA_QUIET_DHD
 	if (d2h_mb_data & D2H_DEV_DS_EXIT_NOTE)  {
 		/* what should we do */
 		DHD_INFO(("D2H_MB_DATA: DEEP SLEEP EXIT\n"));
 	}
+#endif
 	if (d2h_mb_data & D2H_DEV_D3_ACK)  {
 		/* what should we do */
+#ifndef CONFIG_MELINA_QUIET_DHD
 		DHD_INFO_HW4(("D2H_MB_DATA: D3 ACK\n"));
+#endif
 		if (!bus->wait_for_d3_ack) {
 			bus->wait_for_d3_ack = 1;
 			dhd_os_d3ack_wake(bus->dhd);
@@ -4894,8 +4958,10 @@ dhdpcie_tcm_valid(dhd_bus_t *bus)
 static bool
 dhdpcie_check_firmware_compatible(uint32 firmware_api_version, uint32 host_api_version)
 {
+#ifndef CONFIG_MELINA_QUIET_DHD
 	DHD_INFO(("firmware api revision %d, host api revision %d\n",
 		firmware_api_version, host_api_version));
+#endif
 	if (firmware_api_version <= host_api_version)
 		return TRUE;
 	if ((firmware_api_version == 6) && (host_api_version == 5))
@@ -4916,9 +4982,11 @@ dhdpcie_readshared(dhd_bus_t *bus)
 
 	shaddr = bus->dongle_ram_base + bus->ramsize - 4;
 
+#ifndef CONFIG_MELINA_QUIET_DHD
 	DHD_INFO_HW4(("%s: ram_base: 0x%x ramsize 0x%x tcm: %p shaddr: 0x%x nvram_csm: 0x%x\n",
 		__FUNCTION__, bus->dongle_ram_base, bus->ramsize,
 		bus->tcm, shaddr, bus->nvram_csm));
+#endif
 	/* start a timer for 5 seconds */
 	dhd_timeout_start(&tmo, MAX_READ_TIMEOUT);
 
@@ -5056,21 +5124,27 @@ dhdpcie_readshared(dhd_bus_t *bus)
 		dhd_fillup_ring_sharedptr_info(bus, &ring_info);
 
 		bcm_print_bytes("ring_info_raw", (uchar *)&ring_info, sizeof(ring_info_t));
+#ifndef CONFIG_MELINA_QUIET_DHD
 		DHD_INFO(("ring_info\n"));
+#endif
 
 		DHD_ERROR(("%s: max H2D queues %d\n",
 			__FUNCTION__, ltoh16(ring_info.max_sub_queues)));
 
+#ifndef CONFIG_MELINA_QUIET_DHD
 		DHD_INFO(("mail box address\n"));
 		DHD_INFO(("%s: h2d_mb_data_ptr_addr 0x%04x\n",
 			__FUNCTION__, bus->h2d_mb_data_ptr_addr));
 		DHD_INFO(("%s: d2h_mb_data_ptr_addr 0x%04x\n",
 			__FUNCTION__, bus->d2h_mb_data_ptr_addr));
+#endif
 	}
 
 	bus->dhd->d2h_sync_mode = sh->flags & PCIE_SHARED_D2H_SYNC_MODE_MASK;
+#ifndef CONFIG_MELINA_QUIET_DHD
 	DHD_INFO(("%s: d2h_sync_mode 0x%08x\n",
 		__FUNCTION__, bus->dhd->d2h_sync_mode));
+#endif
 
 	return BCME_OK;
 } /* dhdpcie_readshared */
@@ -5102,8 +5176,10 @@ dhd_fillup_ring_sharedptr_info(dhd_bus_t *bus, ring_info_t *ring_info)
 			bus->ring_sh[i].ring_mem_addr = tcm_memloc;
 			/* Update mem block */
 			tcm_memloc = tcm_memloc + sizeof(ring_mem_t);
+#ifndef CONFIG_MELINA_QUIET_DHD
 			DHD_INFO(("ring id %d ring mem addr 0x%04x \n",
 				i, bus->ring_sh[i].ring_mem_addr));
+#endif
 		}
 	}
 
@@ -5123,8 +5199,10 @@ dhd_fillup_ring_sharedptr_info(dhd_bus_t *bus, ring_info_t *ring_info)
 			h2d_w_idx_ptr = h2d_w_idx_ptr + bus->rw_index_sz;
 			h2d_r_idx_ptr = h2d_r_idx_ptr + bus->rw_index_sz;
 
+#ifndef CONFIG_MELINA_QUIET_DHD
 			DHD_INFO(("h2d w/r : idx %d write %x read %x \n", i,
 				bus->ring_sh[i].ring_state_w, bus->ring_sh[i].ring_state_r));
+#endif
 		}
 
 		/* Store d2h common ring write/read pointers */
@@ -5136,8 +5214,10 @@ dhd_fillup_ring_sharedptr_info(dhd_bus_t *bus, ring_info_t *ring_info)
 			d2h_w_idx_ptr = d2h_w_idx_ptr + bus->rw_index_sz;
 			d2h_r_idx_ptr = d2h_r_idx_ptr + bus->rw_index_sz;
 
+#ifndef CONFIG_MELINA_QUIET_DHD
 			DHD_INFO(("d2h w/r : idx %d write %x read %x \n", i,
 				bus->ring_sh[i].ring_state_w, bus->ring_sh[i].ring_state_r));
+#endif
 		}
 
 		/* Store txflow ring write/read pointers */
@@ -5151,9 +5231,11 @@ dhd_fillup_ring_sharedptr_info(dhd_bus_t *bus, ring_info_t *ring_info)
 			h2d_w_idx_ptr = h2d_w_idx_ptr + bus->rw_index_sz;
 			h2d_r_idx_ptr = h2d_r_idx_ptr + bus->rw_index_sz;
 
+#ifndef CONFIG_MELINA_QUIET_DHD
 			DHD_INFO(("FLOW Rings h2d w/r : idx %d write %x read %x \n", i,
 				bus->ring_sh[i].ring_state_w,
 				bus->ring_sh[i].ring_state_r));
+#endif
 		}
 	}
 } /* dhd_fillup_ring_sharedptr_info */
@@ -5222,7 +5304,9 @@ dhdpcie_init_shared_addr(dhd_bus_t *bus)
 #ifdef DHD_PCIE_RUNTIMEPM
 	dhdpcie_runtime_bus_wake(bus->dhd, TRUE, __builtin_return_address(0));
 #endif /* DHD_PCIE_RUNTIMEPM */
+#ifndef CONFIG_MELINA_QUIET_DHD
 	DHD_INFO_HW4(("%s: tcm: %p, addr: 0x%x val: 0x%x\n", __FUNCTION__, bus->tcm, addr, val));
+#endif
 	dhdpcie_bus_membytes(bus, TRUE, addr, (uint8 *)&val, sizeof(val));
 }
 
@@ -5369,8 +5453,10 @@ dhdpcie_cc_nvmshadow(dhd_bus_t *bus, struct bcmstrbuf *b)
 			otp_size = otp_size_65nm[(chipcregs->capabilities & CC_CAP_OTPSIZE)
 				        >> CC_CAP_OTPSIZE_SHIFT];
 			bcm_bprintf(b, "(Size %d bits)\n", otp_size);
+#ifndef CONFIG_MELINA_QUIET_DHD
 			DHD_INFO(("%s: 65nm/130nm OTP Size not tested. \n",
 				__FUNCTION__));
+#endif
 		}
 	}
 
@@ -5487,7 +5573,9 @@ dhd_bus_flow_ring_create_request(dhd_bus_t *bus, void *arg)
 {
 	flow_ring_node_t *flow_ring_node = (flow_ring_node_t *)arg;
 
+#ifndef CONFIG_MELINA_QUIET_DHD
 	DHD_INFO(("%s :Flow create\n", __FUNCTION__));
+#endif
 
 	/* Send Msg to device about flow ring creation */
 	if (dhd_prot_flow_ring_create(bus->dhd, flow_ring_node) != BCME_OK)
@@ -5503,7 +5591,9 @@ dhd_bus_flow_ring_create_response(dhd_bus_t *bus, uint16 flowid, int32 status)
 	flow_ring_node_t *flow_ring_node;
 	unsigned long flags;
 
+#ifndef CONFIG_MELINA_QUIET_DHD
 	DHD_INFO(("%s :Flow Response %d \n", __FUNCTION__, flowid));
+#endif
 
 	flow_ring_node = DHD_FLOW_RING(bus->dhd, flowid);
 	ASSERT(flow_ring_node->flowid == flowid);
@@ -5554,7 +5644,9 @@ dhd_bus_flow_ring_delete_request(dhd_bus_t *bus, void *arg)
 	flow_ring_node_t *flow_ring_node;
 	unsigned long flags;
 
+#ifndef CONFIG_MELINA_QUIET_DHD
 	DHD_INFO(("%s :Flow Delete\n", __FUNCTION__));
+#endif
 
 	flow_ring_node = (flow_ring_node_t *)arg;
 
@@ -5595,7 +5687,9 @@ dhd_bus_flow_ring_delete_response(dhd_bus_t *bus, uint16 flowid, uint32 status)
 {
 	flow_ring_node_t *flow_ring_node;
 
+#ifndef CONFIG_MELINA_QUIET_DHD
 	DHD_INFO(("%s :Flow Delete Response %d \n", __FUNCTION__, flowid));
+#endif
 
 	flow_ring_node = DHD_FLOW_RING(bus->dhd, flowid);
 	ASSERT(flow_ring_node->flowid == flowid);
@@ -5620,7 +5714,9 @@ int dhd_bus_flow_ring_flush_request(dhd_bus_t *bus, void *arg)
 	flow_ring_node_t *flow_ring_node;
 	unsigned long flags;
 
+#ifndef CONFIG_MELINA_QUIET_DHD
 	DHD_INFO(("%s :Flow Delete\n", __FUNCTION__));
+#endif
 
 	flow_ring_node = (flow_ring_node_t *)arg;
 	queue = &flow_ring_node->queue; /* queue associated with flow ring */
