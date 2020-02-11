@@ -90,7 +90,6 @@ short ifs = 254;
 short headerSize = 3;
 unsigned char sof = 0xA5;
 unsigned char csSize = 1;
-static unsigned char array[];
 const char C_TRANSMIT_NO_STOP_CONDITION = 0x01;
 const char C_TRANSMIT_NO_START_CONDITION = 0x02;
 const char C_TRANSMIT_NORMAL_SPI_OPERATION = 0x04;
