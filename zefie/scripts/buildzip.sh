@@ -24,7 +24,12 @@ if [ ! -f "${KERNEL_IMAGE}" ]; then
 fi
 
 KVER=$(strings build/init/version.o | grep "Linux version" | cut -d' ' -f3 | cut -d'-' -f1-)
-TC_VER=$("${TOOLCHAIN}gcc" --version | awk '/gcc /{print $0;exit 0;}')
+if [ -z "${USE_CLANG}" ]; then
+	TC_VER=$("${TOOLCHAIN}gcc" --version | awk '/gcc /{print $0;exit 0;}')
+else
+	TC_VER=$("${Z_ANDROID_CLANG}/bin/clang" --version | awk '/clang /{print $0;exit 0;}' | cut -d':' -f1 | rev | cut -d'(' -f2- | cut -d' ' -f2- | rev)
+	GCC_VER=$("${TOOLCHAIN}gcc" --version | awk '/gcc /{print $0;exit 0;}')
+fi
 if [ ${MODULES} -eq 1 ]; then
 ## If you would like to add a custom module to your ROM
 ## add it's filename on its own line anywhere between the words INCLUDED.
@@ -65,6 +70,11 @@ echo "*** Starting buildzip: $(date)"
   echo "*** Kernel Name: ${KERNEL_NAME}"; \
   echo "*** Kernel Device: ${KERNEL_MANU} ${KERNEL_MODEL} (${KERNEL_DEVMODEL})"; \
   echo "*** Kernel Version: ${KVER}"; } >> "${LOGFIL}"
+if [ ! -z "${GCC_VER}" ]; then
+  echo "*** Toolchain Version: ${TC_VER} + ${GCC_VER}" >> "${LOGFIL}"
+else
+  echo "*** Toolchain Version: ${TC_VER}" >> "${LOGFIL}"
+fi
 
 errchk rm -rf "${TMPDIR}"
 errchk mkdir -p "${TMPDIR}"
@@ -82,7 +92,18 @@ errchk sed -i -e 's/\%MANU\%/'"${KERNEL_MANU}"'/' "${TMPDIR}/anykernel.sh"
 errchk sed -i -e 's/\%MODEL\%/'"${KERNEL_MODEL}"'/' "${TMPDIR}/anykernel.sh"
 errchk sed -i -e 's/\%DEVMODEL\%/'"${KERNEL_DEVMODEL}"'/' "${TMPDIR}/anykernel.sh"
 errchk sed -i -e 's/\%VERSION\%/'"${KVER}"'/' "${TMPDIR}/anykernel.sh"
-errchk sed -i -e 's/\%TOOLCHAIN_VERSION\%/'"${TC_VER}"'/' "${TMPDIR}/anykernel.sh"
+if [ -z "${USE_CLANG}" ]; then
+	errchk sed -i -e 's/\%TOOLCHAIN_VERSION\%/'"${TC_VER}"'/' "${TMPDIR}/anykernel.sh"
+	errchk sed -i -e 's/\%EXTRA_INFO\%//' "${TMPDIR}/anykernel.sh"
+else
+	EXTRA_CMDS=("ui_print \"clang: ${TC_VER}\"")
+	EXTRA_CMDS_STR=""
+	for c in "${EXTRA_CMDS[@]}"; do
+		EXTRA_CMDS_STR+="${c}\n"
+	done
+	errchk sed -i -e 's/\%TOOLCHAIN_VERSION\%/'"${GCC_VER}"'/' "${TMPDIR}/anykernel.sh"
+	errchk sed -i -e 's/\%EXTRA_CMDS\%/'"${EXTRA_CMDS_STR}"'/' "${TMPDIR}/anykernel.sh"
+fi
 
 if [ ${MODULES} -eq 1 ]; then
 	errchk rm -rf "${TMPDIR}/_modtmp"
@@ -118,11 +139,13 @@ if [ ${MODULES} -eq 1 ]; then
 fi
 
 errchk cp "${KERNEL_IMAGE}" "${TMPDIR}/zImage"
-#echo " * Generating QCDT..."
-#${KERNEL_SOURCE_DIR}/build/scripts/dtbTool/dtbTool -o "${TMPDIR}/dtb" -d build/scripts/dtc/dtc build/arch/arm64/boot/dts/ 2>&1 >> "${LOGFIL}"
 
 # Standard naming
-OUTFILE="boot_${KERNEL_MANU}-${KERNEL_DEVMODEL}_${KVER}_$(date --utc +%Y.%m.%d)_${ANDROID_TARGET}_${KERNEL_DEVNAME}.zip"
+if [ -z "${USE_CLANG}" ]; then
+	OUTFILE="boot_${KERNEL_MANU}-${KERNEL_DEVMODEL}_${KVER}_$(date --utc +%Y.%m.%d)_${ANDROID_TARGET}_${KERNEL_DEVNAME}.zip"
+else
+	OUTFILE="boot_${KERNEL_MANU}-${KERNEL_DEVMODEL}_${KVER}_$(date --utc +%Y.%m.%d)_clang_${ANDROID_TARGET}_${KERNEL_DEVNAME}.zip"
+fi
 
 if [ -f "${OUTDIR}/${OUTFILE}" ]; then
 	rm -f "${OUTDIR}/${OUTFILE}"
