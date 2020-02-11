@@ -24,10 +24,12 @@ targets := Image Image.gz Image.lz4
 
 DTB_NAMES := $(subst $\",,$(CONFIG_BUILD_ARM64_APPENDED_DTB_IMAGE_NAMES))
 ifneq ($(DTB_NAMES),)
-DTB_LIST := $(addsuffix .dtb,$(DTB_NAMES))
-DTB_OBJS := $(addprefix $(obj)/dts/,$(DTB_LIST))
+  DTB_LIST := $(addsuffix .dtb,$(DTB_NAMES))
+  DTB_OBJS := $(addprefix $(obj)/dts/,$(DTB_LIST))
 else
-DTB_OBJS := $(shell find $(obj)/dts/ -name \*.dtb)
+  ifneq ($(wildcard $(obj)/dts/),)
+    DTB_OBJS := $(shell find $(obj)/dts/ -name \*.dtb)
+  endif
 endif
 
 $(obj)/Image: vmlinux FORCE
