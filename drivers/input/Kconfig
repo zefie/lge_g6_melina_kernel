@@ -150,6 +150,7 @@ config INPUT_EVDEV
 
 config INPUT_EVBUG
 	tristate "Event debugging"
+	depends on !MELINA_ENHANCED_NDBG
 	help
 	  Say Y here if you have a problem with the input subsystem and
 	  want all events (keypresses, mouse movements), to be output to

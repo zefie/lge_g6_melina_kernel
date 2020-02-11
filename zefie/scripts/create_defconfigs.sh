@@ -15,22 +15,18 @@ ORIG_DEFCONFIG_H872="lucye_tmo_us-perf_defconfig"
 # run this script to get your custom defconfig with melina additions.
 # This can also override melina additions by setting the config value to n
 
-read -r -d '' CUSTOM_CONFIG << EOM
-# Add custom config below here, above EOM line
-
-"${@}"
-EOM
+# Add custom config here, defaults to cmdline arguments
+CUSTOM_CONFIG=( \
+	"${@}" \
+)
 
 ### Do not edit below this line ###
 
 if [ ! -z "${KERNEL_RECOVERY}" ]; then
-read -r -d '' EXTRA_CONFIG << EOM
-# NTFS read only support for recovery kernel
-CONFIG_NTFS_FS=y
-
-# Enable permissive selinux for recovery kernel
-CONFIG_SECURITY_SELINUX_DEVELOP=y
-EOM
+	EXTRA_CONFIG=( \
+		"CONFIG_NTFS_FS=y" \
+		"CONFIG_SECURITY_SELINUX_DEVELOP=y" \
+	)
 fi
 
 for m in "${SUPPORTED_MODELS[@]}"; do
@@ -57,10 +53,13 @@ for m in "${SUPPORTED_MODELS[@]}"; do
 		cat "${DEFCONFIG_DIR}/melina_${DEVMODEL_LOWER}_subconfig" >> "${TARGET_FILE}"
 	fi
 
-	if [ ! -z "${EXTRA_CONFIG}" ]; then
-		echo "${EXTRA_CONFIG}" >> "${TARGET_FILE}"
-	fi
-	echo "${CUSTOM_CONFIG}" >> "${TARGET_FILE}"
+	for l in "${EXTRA_CONFIG[@]}"; do
+		echo "${l}" >> "${TARGET_FILE}"
+	done
+
+	for l in "${CUSTOM_CONFIG[@]}"; do
+		echo "${l}" >> "${TARGET_FILE}"
+	done
 
 	if [ ! -z "${KERNEL_RECOVERY}" ]; then
 		sed -i -e '/CONFIG_MODULE/d' "${TARGET_FILE}"
