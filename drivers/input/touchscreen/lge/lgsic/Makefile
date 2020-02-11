@@ -23,6 +23,7 @@ obj-$(CONFIG_LGE_TOUCH_LGSIC_LG4946)		+= touch_filter_nos.o
 obj-$(CONFIG_LGE_TOUCH_LGSIC_SW49407)           += touch_sw49407.o
 obj-$(CONFIG_LGE_TOUCH_LGSIC_SW49407)           += touch_sw49407_watch.o
 obj-$(CONFIG_LGE_TOUCH_LGSIC_SW49407)           += touch_sw49407_prd.o
+
 obj-$(CONFIG_LGE_TOUCH_LGSIC_SW49407)           += touch_sw49407_abt.o
 #obj-$(CONFIG_LGE_TOUCH_LGSIC_SW49407)           += touch_sw49407_asc.o
 obj-$(CONFIG_LGE_TOUCH_LGSIC_SW49407)           += touch_filter_nos.o
@@ -36,6 +37,7 @@ obj-$(CONFIG_LGE_TOUCH_LGSIC_SW49407_LUCYE)           += touch_filter_nos.o
 
 obj-$(CONFIG_LGE_TOUCH_LGSIC_SW49408)           += touch_sw49408.o
 obj-$(CONFIG_LGE_TOUCH_LGSIC_SW49408)           += touch_sw49408_prd.o
+CFLAGS_touch_sw49408_prd.o += -Wframe-larger-than=2560 # override default 1024
 obj-$(CONFIG_LGE_TOUCH_LGSIC_SW49408)           += touch_sw49408_abt.o
 #obj-$(CONFIG_LGE_TOUCH_LGSIC_SW49408)           += touch_sw49408_asc.o
 #obj-$(CONFIG_LGE_TOUCH_LGSIC_SW49408)           += touch_filter_nos.o
