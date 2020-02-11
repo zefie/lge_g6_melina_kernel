@@ -75,6 +75,7 @@ obj-$(CONFIG_LGE_PM_BATTERY_ID_CHECKER) += lge_battery_id.o
 obj-$(CONFIG_QPNP_FG_GEN3)	+= qpnp-fg-gen3.o fg-memif.o fg-util.o pmic-voter.o
 ifndef CONFIG_MACH_MSM8996_H1
 obj-$(CONFIG_QPNP_SMBCHARGER)	+= qpnp-smbcharger.o pmic-voter.o
+CFLAGS_qpnp-smbcharger.o := $(call cc-disable-warning, enum-conversion)
 else
 obj-$(CONFIG_QPNP_SMBCHARGER)   += qpnp-smbcharger_alice.o pmic-voter_alice.o
 endif
