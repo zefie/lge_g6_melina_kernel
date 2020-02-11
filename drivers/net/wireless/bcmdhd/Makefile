@@ -762,6 +762,8 @@ DHDOFILES := src/dhd/sys/dhd_pno.o		src/dhd/sys/dhd_common.o\
 	src/wl/sys/wl_linux_mon.o		src/wl/sys/wl_roam.o \
 	src/dhd/sys/dhd_wlfc.o
 
+CFLAGS_wl_cfg80211.o := $(call cc-disable-warning, enum-conversion)
+
 ifeq ($(CONFIG_BCMDHD_SDIO),y)
 DHDOFILES += src/bcmsdio/sys/bcmsdh.o		src/bcmsdio/sys/bcmsdh_linux.o \
 	src/bcmsdio/sys/bcmsdh_sdmmc.o		src/bcmsdio/sys/bcmsdh_sdmmc_linux.o \
