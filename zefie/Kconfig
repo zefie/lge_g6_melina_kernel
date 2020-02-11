@@ -59,29 +59,31 @@ menuconfig MELINA_ENHANCED_NDBG
 
 if MELINA_ENHANCED_NDBG
 
+comment "Errors are not disabled, but some code apparently uses info as errors. Be warned."
+
 config MELINA_QUIET_DHD
-        bool "Silence DHD Wifi/BT Debug Logging"
+        bool "Silence DHD Wifi/BT Debug Info"
         default y
         depends on BCMDHD
         help
           Silences information from the DHD Wifi/BT driver, which is only useful for debugging.
 
 config MELINA_QUIET_MSMVIDEO
-        bool "Silence MSM Video Debug Logging"
+        bool "Silence MSM Video Debug Info"
         default y
         depends on PCI_MSM
         help
           Silences information from the graphics driver, which is only useful for debugging.
 
 config MELINA_QUIET_MSMPCI
-        bool "Silence MSM PCI Bus Debug Logging"
+        bool "Silence MSM PCI Bus Debug Info"
         default y
         depends on FB_MSM_MDSS || FB_MSM_MDP
         help
           Silences information from the MSM PCI Bus driver, which is only useful for debugging.
 
-config MELINA_QUIET_SMBCHG
-        bool "Silence SMB138x (Charger) Debug Logging"
+config MELINA_QUIET_POWER
+        bool "Silence Power (SMB138x Charger & LGE Battery) Debug Info"
         default y
         depends on QPNP_SMBCHARGER
         help
