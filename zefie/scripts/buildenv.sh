@@ -11,6 +11,11 @@ LG_OUT_DIRECTORY=$(realpath "${KERNEL_SOURCE_DIR}/../lg_out")
 CPUS=$(nproc)
 export KERNEL_SOURCE_DIR SCRIPTDIR CPUS
 
+Z_ANDROID="${Z_ANDROID:-/home/zefie/android}"
+Z_ANDROID_CLANG="${Z_ANDROID}/prebuilts/clang/host/linux-x86/clang-r353983c"
+Z_ANDROID_BINUTILS="${Z_ANDROID}/prebuilts/gcc/linux-x86/host/x86_64-linux-glibc2.17-4.8/x86_64-linux/bin"
+
+
 # Jenkins
 if [ ! -z "${WORKSPACE}" ]; then
 	export TOOLCHAIN="${WORKSPACE}/ubertc/aarch64-linux-android-6.x/bin/aarch64-linux-android-"
