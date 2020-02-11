@@ -1908,7 +1908,7 @@ static int si470x_vidioc_s_hw_freq_seek(struct file *file, void *priv,
 			pr_info("%s starting scan\n",__func__);
 		}
 		si470x_search(radio, 1);
-	} else if ((radio->g_search_mode == SEEK_STOP) ){
+	} else if (radio->g_search_mode == SEEK_STOP){
 		pr_info("%s seek stop\n", __func__);
 		radio->registers[POWERCFG] &= ~POWERCFG_SEEK;
 		retval = si470x_set_register(radio, POWERCFG);
