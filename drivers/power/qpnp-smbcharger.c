@@ -758,7 +758,7 @@ module_param_named(
 	int, S_IRUSR | S_IWUSR
 );
 
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 #define pr_smb(reason, fmt, ...)				\
 	do {							\
 		if (smbchg_debug_mask & (reason))		\
@@ -809,7 +809,7 @@ static int get_usb_adc(struct smbchg_chip *chip)
 		chip->vadc_usbin_dev =
 			qpnp_get_vadc(chip->dev, "usbin");
 		if (IS_ERR_OR_NULL(chip->vadc_usbin_dev)) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 			pr_smb(PR_LGE, "vadc is not init yet\n");
 #endif
 			return DEFAULT_VBUS_UV;
@@ -838,7 +838,7 @@ static int lgcc_set_ibat_current(struct smbchg_chip *chip,
 		int chg_current) {
 	int rc = 0;
 
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_LGE, "chg_current[%d]\n", chg_current);
 #endif
 
@@ -865,7 +865,7 @@ static int lgcc_set_charging_enable(struct smbchg_chip *chip,
 	int rc = 0;
 
 	vote(chip->battchg_suspend_votable, LGCC_EN_VOTER, !enable, 0);
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	if (rc < 0)
 		pr_smb(PR_LGE, "failed to set Charging Status \n");
 #endif
@@ -922,13 +922,13 @@ static int batt_life_cycle_set_fcc_ma (struct smbchg_chip *chip) {
     }
 
     if (MAX_CYCLE_STEP == i) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
         pr_smb(PR_LGE, "now DECCUR state %d \n", chip->vfloat_mv);
 #endif
         return rc;
     }
 
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
     pr_smb(PR_LGE, "vfloat %d fcc-ma %d",
         chip->vfloat_mv, chip->cfg_fastchg_current_ma);
 #endif
@@ -1020,7 +1020,7 @@ static int smbchg_masked_write_raw(struct smbchg_chip *chip, u16 base, u8 mask,
 	reg &= ~mask;
 	reg |= val & mask;
 
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_REGISTER, "addr = 0x%x writing 0x%x\n", base, reg);
 #endif
 
@@ -1096,7 +1096,7 @@ static void smbchg_stay_awake(struct smbchg_chip *chip, int reason)
 	mutex_lock(&chip->pm_lock);
 	reasons = chip->wake_reasons | reason;
 	if (reasons != 0 && chip->wake_reasons == 0) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_PM, "staying awake: 0x%02x (bit %d)\n",
 				reasons, reason);
 #endif
@@ -1113,7 +1113,7 @@ static void smbchg_relax(struct smbchg_chip *chip, int reason)
 	mutex_lock(&chip->pm_lock);
 	reasons = chip->wake_reasons & (~reason);
 	if (reasons == 0 && chip->wake_reasons != 0) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_PM, "relaxing: 0x%02x (bit %d)\n",
 				reasons, reason);
 #endif
@@ -1203,7 +1203,7 @@ static bool is_otg_present_schg(struct smbchg_chip *chip)
 	}
 
 	if ((reg & FMB_STS_MASK) != 0) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_STATUS, "IDEV_STS = %02x, not ground\n", reg);
 #endif
 		return false;
@@ -1217,7 +1217,7 @@ static bool is_otg_present_schg(struct smbchg_chip *chip)
 	usbid_val = (usbid_reg[0] << 8) | usbid_reg[1];
 
 	if (usbid_val > USBID_GND_THRESHOLD) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_STATUS, "USBID = 0x%04x, too high to be ground\n",
 				usbid_val);
 #endif
@@ -1231,7 +1231,7 @@ static bool is_otg_present_schg(struct smbchg_chip *chip)
 		return false;
 	}
 
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_STATUS, "RID_STS = %02x\n", reg);
 #endif
 
@@ -1368,7 +1368,7 @@ static void read_usb_type(struct smbchg_chip *chip, char **usb_type_name,
 	u8 reg;
 
 	if (!is_src_detect_high(chip)) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_MISC, "src det low\n");
 #endif
 		*usb_type_name = "Absent";
@@ -1499,7 +1499,7 @@ static int get_prop_batt_status(struct smbchg_chip *chip)
 	else
 		status = POWER_SUPPLY_STATUS_CHARGING;
 out:
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb_rt(PR_MISC, "CHGR_STS = 0x%02x\n", reg);
 #endif
 	return status;
@@ -1532,7 +1532,7 @@ static int set_property_on_bm(struct smbchg_chip *chip,
 	}
 
 	if (!chip->bm_psy) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_STATUS, "no bm psy found\n");
 #endif
 		return -EINVAL;
@@ -1540,7 +1540,7 @@ static int set_property_on_bm(struct smbchg_chip *chip,
 
 	ret.intval = val;
 	rc = chip->bm_psy->set_property(chip->bm_psy, prop, &ret);
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	if (rc)
 		pr_smb(PR_STATUS,
 			"bm psy does not allow updating prop %d rc = %d\n",
@@ -1586,7 +1586,7 @@ static int set_property_on_fg(struct smbchg_chip *chip,
 		chip->bms_psy =
 			power_supply_get_by_name((char *)chip->bms_psy_name);
 	if (!chip->bms_psy) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_STATUS, "no bms psy found\n");
 #endif
 		return -EINVAL;
@@ -1594,7 +1594,7 @@ static int set_property_on_fg(struct smbchg_chip *chip,
 
 	ret.intval = val;
 	rc = chip->bms_psy->set_property(chip->bms_psy, prop, &ret);
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	if (rc)
 		pr_smb(PR_STATUS,
 			"bms psy does not allow updating prop %d rc = %d\n",
@@ -1622,7 +1622,7 @@ static int get_property_from_fg(struct smbchg_chip *chip,
 		chip->bms_psy =
 			power_supply_get_by_name((char *)chip->bms_psy_name);
 	if (!chip->bms_psy) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_STATUS, "no bms psy found\n");
 #endif
 		return -EINVAL;
@@ -1630,7 +1630,7 @@ static int get_property_from_fg(struct smbchg_chip *chip,
 
 	rc = chip->bms_psy->get_property(chip->bms_psy, prop, &ret);
 	if (rc) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_STATUS,
 			"bms psy doesn't support reading prop %d rc = %d\n",
 			prop, rc);
@@ -1652,7 +1652,7 @@ static int get_prop_batt_capacity(struct smbchg_chip *chip)
 
 	rc = get_property_from_fg(chip, POWER_SUPPLY_PROP_CAPACITY, &capacity);
 	if (rc) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_STATUS, "Couldn't get capacity rc = %d\n", rc);
 #endif
 		capacity = DEFAULT_BATT_CAPACITY;
@@ -1677,7 +1677,7 @@ static int get_prop_batt_capacity_qct(struct smbchg_chip *chip)
 
 	rc = get_property_from_fg(chip, POWER_SUPPLY_PROP_CAPACITY_QCT, &capacity);
 	if (rc) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_STATUS, "Couldn't get capacity rc = %d\n", rc);
 #endif
 		capacity = DEFAULT_BATT_CAPACITY;
@@ -1700,7 +1700,7 @@ static int get_prop_batt_temp(struct smbchg_chip *chip)
 #endif
 	rc = get_property_from_fg(chip, POWER_SUPPLY_PROP_TEMP, &temp);
 	if (rc) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_STATUS, "Couldn't get temperature rc = %d\n", rc);
 #endif
 		temp = DEFAULT_BATT_TEMP;
@@ -1715,7 +1715,7 @@ static int get_prop_batt_current_now(struct smbchg_chip *chip)
 
 	rc = get_property_from_fg(chip, POWER_SUPPLY_PROP_CURRENT_NOW, &ua);
 	if (rc) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_STATUS, "Couldn't get current rc = %d\n", rc);
 #endif
 		ua = DEFAULT_BATT_CURRENT_NOW;
@@ -1732,7 +1732,7 @@ static int get_prop_batt_resistance_id(struct smbchg_chip *chip)
 	rc = get_property_from_fg(chip, POWER_SUPPLY_PROP_RESISTANCE_ID,
 			&rbatt);
 	if (rc) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_STATUS, "Couldn't get resistance id rc = %d\n", rc);
 #endif
 		rbatt = DEFAULT_BATT_RESISTANCE_ID;
@@ -1747,7 +1747,7 @@ static int get_prop_batt_full_charge(struct smbchg_chip *chip)
 
 	rc = get_property_from_fg(chip, POWER_SUPPLY_PROP_CHARGE_FULL, &bfc);
 	if (rc) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_STATUS, "Couldn't get charge_full rc = %d\n", rc);
 #endif
 		bfc = DEFAULT_BATT_FULL_CHG_CAPACITY;
@@ -1763,7 +1763,7 @@ static int get_prop_batt_voltage_now(struct smbchg_chip *chip)
 
 	rc = get_property_from_fg(chip, POWER_SUPPLY_PROP_VOLTAGE_NOW, &uv);
 	if (rc) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_STATUS, "Couldn't get voltage rc = %d\n", rc);
 #endif
 		uv = DEFAULT_BATT_VOLTAGE_NOW;
@@ -1779,7 +1779,7 @@ static int get_prop_batt_voltage_max_design(struct smbchg_chip *chip)
 	rc = get_property_from_fg(chip,
 			POWER_SUPPLY_PROP_VOLTAGE_MAX_DESIGN, &uv);
 	if (rc) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_STATUS, "Couldn't get voltage rc = %d\n", rc);
 #endif
 		uv = DEFAULT_BATT_VOLTAGE_MAX_DESIGN;
@@ -1818,7 +1818,7 @@ static int get_prop_battery_condition(struct smbchg_chip *chip)
 
 	rc = get_property_from_fg(chip, POWER_SUPPLY_PROP_BATTERY_CONDITION, &age);
 	if (rc) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_STATUS, "Couldn't get age rc = %d\n", rc);
 #endif
 		age = DEFAULT_BATT_AGE;
@@ -1837,7 +1837,7 @@ static void get_property_from_typec(struct smbchg_chip *chip,
 	if (!chip->typec_psy) {
 		chip->typec_psy = power_supply_get_by_name("usb_pd");
 		if (!chip->typec_psy) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 			pr_smb(PR_LGE, "typec psy doesn't prepared\n");
 #endif
 			prop->intval = 0;
@@ -1847,7 +1847,7 @@ static void get_property_from_typec(struct smbchg_chip *chip,
 #endif
 
 	rc = chip->typec_psy->get_property(chip->typec_psy, property, prop);
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	if (rc)
 		pr_smb(PR_TYPEC,
 			"typec psy doesn't support reading prop %d rc = %d\n",
@@ -1875,12 +1875,12 @@ static void update_typec_status(struct smbchg_chip *chip)
 			if (rc)
 				pr_err("typec failed to set current max rc=%d\n",
 					rc);
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 			pr_smb(PR_TYPEC, "SMB Type-C mode = %d, current=%d\n",
 					type.intval, capability.intval);
 #endif
 		}
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	} else {
 		pr_smb(PR_TYPEC,
 			"typec detection not completed continuing with USB update\n");
@@ -2190,7 +2190,7 @@ static int smbchg_set_dc_current_max(struct smbchg_chip *chip, int current_ma)
 	chip->dc_max_current_ma = chip->tables.dc_ilim_ma_table[i];
 	dc_cur_val = i & DCIN_INPUT_MASK;
 
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_STATUS, "dc current set to %d mA\n",
 			chip->dc_max_current_ma);
 #endif
@@ -2223,7 +2223,7 @@ static int smbchg_set_aicl_rerun_period_s(struct smbchg_chip *chip,
 
 	reg = i & mask;
 
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_STATUS, "aicl rerun period set to %ds\n",
 			chip->tables.aicl_rerun_period_table[i]);
 #endif
@@ -2240,7 +2240,7 @@ static struct power_supply *get_parallel_psy(struct smbchg_chip *chip)
 	if (chip->parallel.psy)
 		return chip->parallel.psy;
 	chip->parallel.psy = power_supply_get_by_name("usb-parallel");
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	if (!chip->parallel.psy)
 		pr_smb(PR_STATUS, "parallel charger not found\n");
 #endif
@@ -2266,7 +2266,7 @@ static void smbchg_usb_update_online_work(struct work_struct *work)
                 !chip->usb_psy->get_property(chip->usb_psy,
                         POWER_SUPPLY_PROP_ONLINE, &val)) {
 		if (!!val.intval && !online) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 			pr_smb(PR_LGE, "Updating by force\n");
 #endif
 			chip->usb_online = !!val.intval;
@@ -2277,7 +2277,7 @@ static void smbchg_usb_update_online_work(struct work_struct *work)
 #endif
 	mutex_lock(&chip->usb_set_online_lock);
 	if (chip->usb_online != online) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_MISC, "setting usb psy online = %d\n", online);
 #endif
 		power_supply_set_online(chip->usb_psy, online);
@@ -2320,7 +2320,7 @@ static int smbchg_set_high_usb_chg_current(struct smbchg_chip *chip,
 			return rc;
 		}
 
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_STATUS,
 			"Forcing 100mA current limit\n");
 #endif
@@ -2382,13 +2382,13 @@ static int smbchg_set_usb_current_max(struct smbchg_chip *chip,
 	 * order to avoid browning out the device during a hotswap.
 	 */
 	if (!chip->batt_present && current_ma < chip->usb_max_current_ma) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_info_ratelimited("Ignoring usb current->%d, battery is absent\n",
 				current_ma);
 #endif
 		return 0;
 	}
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_STATUS, "USB current_ma = %d\n", current_ma);
 #endif
 
@@ -2431,7 +2431,7 @@ static int smbchg_set_usb_current_max(struct smbchg_chip *chip,
 				/* default to 500mA */
 				current_ma = CURRENT_500_MA;
 			}
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 			pr_smb(PR_STATUS,
 				"override_usb_current=%d current_ma set to %d\n",
 				chip->cfg_override_usb_current, current_ma);
@@ -2532,7 +2532,7 @@ static int smbchg_set_usb_current_max(struct smbchg_chip *chip,
 	}
 
 out:
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_STATUS, "usb type = %d current set to %d mA\n",
 			chip->usb_supply_type, chip->usb_max_current_ma);
 #endif
@@ -2587,7 +2587,7 @@ static bool is_hvdcp_present(struct smbchg_chip *chip)
 		return false;
 	}
 
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_STATUS, "HVDCP_STS = 0x%02x\n", reg);
 #endif
 	/*
@@ -2645,7 +2645,7 @@ static int smbchg_set_fastchg_current_raw(struct smbchg_chip *chip,
 	}
 
 	if (chip->tables.usb_ilim_ma_table[i] == chip->fastchg_current_ma) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_STATUS, "skipping fastchg current request: %d\n",
 				chip->fastchg_current_ma);
 #endif
@@ -2659,7 +2659,7 @@ static int smbchg_set_fastchg_current_raw(struct smbchg_chip *chip,
 		dev_err(chip->dev, "cannot write to fcc cfg rc = %d\n", rc);
 		return rc;
 	}
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_STATUS, "fastcharge current requested %d, set to %d\n",
 			current_ma, chip->tables.usb_ilim_ma_table[cur_val]);
 #endif
@@ -2734,7 +2734,7 @@ static int smbchg_sw_esr_pulse_en(struct smbchg_chip *chip, bool en)
 	rc = get_property_from_fg(chip, POWER_SUPPLY_PROP_CURRENT_NOW,
 						&fg_current_now);
 	if (rc) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_STATUS, "bms psy does not support OCV\n");
 #endif
 		return 0;
@@ -2765,7 +2765,7 @@ static void smbchg_rerun_aicl(struct smbchg_chip *chip)
 #endif
 #endif
 
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_STATUS, "Rerunning AICL...\n");
 #endif
 	smbchg_sec_masked_write(chip, chip->usb_chgpth_base + USB_AICL_CFG,
@@ -2892,7 +2892,7 @@ static int smbchg_run_parallel_aicl(struct smbchg_chip *chip)
 	}
 
 	chip->parallel.parallel_aicl_ma = min(icl_ma, CURRENT_100_MA + aicl_ma);
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_STATUS, "parallel AICL = %d mA\n",
 				chip->parallel.parallel_aicl_ma);
 #endif
@@ -2924,7 +2924,7 @@ static void smbchg_parallel_usb_disable(struct smbchg_chip *chip)
 
 	if (!parallel_psy || !chip->parallel_charger_detected)
 		return;
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_STATUS, "disabling parallel charger\n");
 #endif
 	chip->parallel.last_disabled = ktime_get_boottime();
@@ -2977,7 +2977,7 @@ static void smbchg_parallel_usb_taper(struct smbchg_chip *chip)
 try_again:
 	mutex_lock(&chip->parallel.lock);
 	if (chip->parallel.current_max_ma == 0) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_STATUS, "Not parallel charging, skipping\n");
 #endif
 		goto done;
@@ -2986,7 +2986,7 @@ try_again:
 			POWER_SUPPLY_PROP_CONSTANT_CHARGE_CURRENT_MAX, &pval);
 	tries += 1;
 	parallel_fcc_ma = pval.intval / 1000;
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_STATUS, "try #%d parallel charger fcc = %d\n",
 			tries, parallel_fcc_ma);
 #endif
@@ -3001,7 +3001,7 @@ try_again:
 	pval.intval = ((parallel_fcc_ma
 			* PARALLEL_FCC_PERCENT_REDUCTION) / 100);
 #endif
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_STATUS, "reducing FCC of parallel charger to %d\n",
 		pval.intval);
 #endif
@@ -3018,7 +3018,7 @@ try_again:
 
 	mutex_lock(&chip->parallel.lock);
 	if (chip->parallel.current_max_ma == 0) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_STATUS, "Not parallel charging, skipping\n");
 #endif
 		goto done;
@@ -3049,7 +3049,7 @@ static void smbchg_parallel_usb_taper_work(struct work_struct *work)
 	int main_fcc_current_ma, parallel_fcc_ma;
 
 	if (chip->parallel.current_max_ma == 0) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_STATUS, "Not parallel charging, unvote\n");
 #endif
 		vote(chip->fcc_votable, TAPER_FCC_VOTER, false, 0);
@@ -3082,7 +3082,7 @@ static void smbchg_parallel_usb_taper_work(struct work_struct *work)
 	fastchg_current_ma = main_fcc_current_ma + parallel_fcc_ma;
 
 	/* trigger re-split main / parallel fast charge current */
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_LGE, "TOTAL IBAT[%d (%d + %d)] vote for split current\n",
 			fastchg_current_ma,
 			main_fcc_current_ma, parallel_fcc_ma);
@@ -3121,7 +3121,7 @@ static void smbchg_battchg_protect_work(struct work_struct *work)
 #else
 		if (!fcc_voter || strcmp(fcc_voter, TAPER_FCC_VOTER) == 0) {
 #endif
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 			pr_smb(PR_LGE, "battery voltage too low, unvote %s\n",
 					TAPER_FCC_VOTER);
 #endif
@@ -3132,7 +3132,7 @@ static void smbchg_battchg_protect_work(struct work_struct *work)
 		}
 #endif
 		if (!fcc_voter || strcmp(fcc_voter, BATTCHG_PROTECT_FCC_VOTER) == 0) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 			pr_smb(PR_LGE, "battery voltage too low, unvote %s\n",
 					BATTCHG_PROTECT_FCC_VOTER);
 #endif
@@ -3159,7 +3159,7 @@ static void smbchg_battchg_protect_work(struct work_struct *work)
 		goto reschedule;
 
 	fastchg_current_ma -= BATTCHG_PROTECT_FCC_MA_REDUCTION;
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_LGE, "battery voltage reached threshold (%d > %d), "\
 			"reducing fcc to %d\n",
 			vbatt,
@@ -3204,7 +3204,7 @@ static void smbchg_parallel_usb_enable(struct smbchg_chip *chip,
 	if (!parallel_psy || !chip->parallel_charger_detected)
 		return;
 
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_STATUS, "Attempting to enable parallel charger\n");
 #endif
 
@@ -3224,7 +3224,7 @@ static void smbchg_parallel_usb_enable(struct smbchg_chip *chip,
 	smbchg_main_chg_icl_percent = MAIN_CHG_ICL_PERCENT_MAX - (fcc_ma / 100);
 	if (smbchg_main_chg_icl_percent < MAIN_CHG_ICL_PERCENT_MIN)
 		smbchg_main_chg_icl_percent = MAIN_CHG_ICL_PERCENT_MIN;
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_LGE, "New main ICL percent = %d\n", smbchg_main_chg_icl_percent);
 #endif
 #endif
@@ -3251,12 +3251,12 @@ static void smbchg_parallel_usb_enable(struct smbchg_chip *chip,
 			POWER_SUPPLY_PROP_CURRENT_MAX, &pval);
 	set_parallel_cl_ma = pval.intval / 1000;
 	chip->parallel.current_max_ma = new_parallel_cl_ma;
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_MISC, "Requested ICL = %d from parallel, got %d\n",
 		new_parallel_cl_ma, set_parallel_cl_ma);
 #endif
 	new_pmi_cl_ma = max(0, target_icl_ma - set_parallel_cl_ma);
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_STATUS, "New Total USB current = %d[%d, %d]\n",
 		total_current_ma, new_pmi_cl_ma,
 		set_parallel_cl_ma);
@@ -3284,7 +3284,7 @@ static void smbchg_parallel_usb_enable(struct smbchg_chip *chip,
 	parallel_psy->get_property(parallel_psy,
 			POWER_SUPPLY_PROP_CONSTANT_CHARGE_CURRENT_MAX, &pval);
 	supplied_parallel_fcc_ma = pval.intval / 1000;
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_MISC, "Requested FCC = %d from parallel, got %d\n",
 		target_parallel_fcc_ma, supplied_parallel_fcc_ma);
 #endif
@@ -3296,7 +3296,7 @@ static void smbchg_parallel_usb_enable(struct smbchg_chip *chip,
 	main_fastchg_current_ma =
 		chip->tables.usb_ilim_ma_table[current_table_index];
 	smbchg_set_fastchg_current_raw(chip, main_fastchg_current_ma);
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_STATUS, "FCC = %d[%d, %d]\n", fcc_ma, main_fastchg_current_ma,
 					supplied_parallel_fcc_ma);
 #endif
@@ -3320,7 +3320,7 @@ static bool smbchg_is_parallel_usb_ok(struct smbchg_chip *chip,
 
 	if (!parallel_psy || !smbchg_parallel_en
 			|| !chip->parallel_charger_detected) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_STATUS, "Parallel charging not enabled\n");
 #endif
 		return false;
@@ -3341,7 +3341,7 @@ static bool smbchg_is_parallel_usb_ok(struct smbchg_chip *chip,
 		&& chip->parallel.enabled_once
 		&& ktime_to_ms(kt_since_last_disable)
 			< PARALLEL_REENABLE_TIMER_MS) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_STATUS, "Only been %lld since disable, skipping\n",
 				ktime_to_ms(kt_since_last_disable));
 #endif
@@ -3360,14 +3360,14 @@ static bool smbchg_is_parallel_usb_ok(struct smbchg_chip *chip,
 	if (get_prop_charge_type(chip) != POWER_SUPPLY_CHARGE_TYPE_FAST
 			&& (get_prop_batt_present(chip)
 				|| chip->parallel.current_max_ma == 0)) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_STATUS, "Not in fast charge, skipping\n");
 #endif
 		return false;
 	}
 
 	if (get_prop_batt_health(chip) != POWER_SUPPLY_HEALTH_GOOD) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_STATUS, "JEITA active, skipping\n");
 #endif
 		return false;
@@ -3380,7 +3380,7 @@ static bool smbchg_is_parallel_usb_ok(struct smbchg_chip *chip,
 	 */
 	if (chip->typec_psy &&
 			chip->typec_current_ma >= smbchg_default_dcp_icl_ma) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_LGE, "typec_current_ma is %d, continuing\n",
 				chip->typec_current_ma);
 #endif
@@ -3396,14 +3396,14 @@ static bool smbchg_is_parallel_usb_ok(struct smbchg_chip *chip,
 
 	type = get_type(reg);
 	if (get_usb_supply_type(type) == POWER_SUPPLY_TYPE_USB_CDP) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_STATUS, "CDP adapter, skipping\n");
 #endif
 		return false;
 	}
 
 	if (get_usb_supply_type(type) == POWER_SUPPLY_TYPE_USB) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_STATUS, "SDP adapter, skipping\n");
 #endif
 		return false;
@@ -3412,7 +3412,7 @@ static bool smbchg_is_parallel_usb_ok(struct smbchg_chip *chip,
 #ifdef CONFIG_LGE_PM_PARALLEL_CHARGING
 	if (chip->usb_supply_type == POWER_SUPPLY_TYPE_USB_DCP &&
 			chip->very_weak_charger) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_LGE, "DCP adapter is weak, skipping\n");
 #endif
 		return false;
@@ -3428,7 +3428,7 @@ skip_usb_supply_type:
 	 * parallel charging. The device may be charging off of DCIN.
 	 */
 	if (!smbchg_is_usbin_active_pwr_src(chip)) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_STATUS, "USB not active power source: %02x\n", reg);
 #endif
 		return false;
@@ -3436,7 +3436,7 @@ skip_usb_supply_type:
 
 	min_current_thr_ma = smbchg_get_min_parallel_current_ma(chip);
 	if (min_current_thr_ma <= 0) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_STATUS, "parallel charger unavailable for thr: %d\n",
 				min_current_thr_ma);
 #endif
@@ -3444,7 +3444,7 @@ skip_usb_supply_type:
 	}
 
 	if (usb_icl_ma < min_current_thr_ma) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_STATUS, "Weak USB chg skip enable: %d < %d\n",
 			usb_icl_ma, min_current_thr_ma);
 #endif
@@ -3457,7 +3457,7 @@ skip_usb_supply_type:
 	 */
 	if ((!fcc_voter || strcmp(fcc_voter, ESR_PULSE_FCC_VOTER) != 0)
 			&& fcc_ma < PARALLEL_CHG_THRESHOLD_CURRENT) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_STATUS, "FCC %d lower than %d\n",
 			fcc_ma,
 			PARALLEL_CHG_THRESHOLD_CURRENT);
@@ -3471,7 +3471,7 @@ skip_usb_supply_type:
 
 	if (chip->parallel.initial_aicl_ma == 0) {
 		if (current_limit_ma < min_current_thr_ma) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 			pr_smb(PR_STATUS, "Initial AICL very low: %d < %d\n",
 				current_limit_ma, min_current_thr_ma);
 #endif
@@ -3505,7 +3505,7 @@ skip_usb_supply_type:
 			return false;
 		}
 		total_current_ma = chip->parallel.parallel_aicl_ma;
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_STATUS, "use parallel AICL result: %dmA\n",
 						total_current_ma);
 #endif
@@ -3521,7 +3521,7 @@ skip_usb_supply_type:
 
 	if (total_current_ma < chip->parallel.initial_aicl_ma
 			- chip->parallel.allowed_lowering_ma) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_STATUS,
 			"Total current reduced a lot: %d (%d + %d) < %d - %d\n",
 			total_current_ma,
@@ -3547,7 +3547,7 @@ static void smbchg_parallel_usb_en_work(struct work_struct *work)
 	bool in_progress;
 	int rc, tries = 3;
 
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_MISC, "started\n");
 #endif
 	chip->parallel.parallel_en_in_progress = true;
@@ -3572,12 +3572,12 @@ static void smbchg_parallel_usb_en_work(struct work_struct *work)
 				&chip->hvdcp_det_done,
 				msecs_to_jiffies(HVDCP_DETECTION_DONE_MS));
 			if (rc >= 0) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 				pr_smb(PR_STATUS, "hvdcp detection done\n");
 #endif
 				break;
 			}
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 			pr_smb(PR_STATUS, "wait hvdcp_det_done interrupted\n");
 #endif
 		}
@@ -3588,14 +3588,14 @@ static void smbchg_parallel_usb_en_work(struct work_struct *work)
 	msleep(PARALLEL_CHARGER_EN_DELAY_MS);
 	aicl_ma = smbchg_get_aicl_level_ma(chip);
 	if (previous_aicl_ma != aicl_ma) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_STATUS,
 			"AICL changed [%d -> %d], recheck %d ms\n",
 			previous_aicl_ma, aicl_ma,
 			PARALLEL_CHARGER_EN_DELAY_MS);
 #endif
 		goto recheck;
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	} else {
 		pr_smb(PR_STATUS, "AICL at %d\n", aicl_ma);
 #endif
@@ -3607,14 +3607,14 @@ static void smbchg_parallel_usb_en_work(struct work_struct *work)
 		smbchg_parallel_usb_enable(chip, total_current_ma);
 	} else {
 		if (in_progress) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 			pr_smb(PR_STATUS, "parallel charging unavailable\n");
 #endif
 			smbchg_parallel_usb_disable(chip);
 		}
 	}
 	mutex_unlock(&chip->parallel.lock);
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_STATUS, "Parallel check complete!\n");
 #endif
 
@@ -3635,7 +3635,7 @@ static void smbchg_parallel_usb_check_ok(struct smbchg_chip *chip)
 		return;
 
 	if (chip->parallel.parallel_en_in_progress) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_MISC, "parallel logic run in progress, ignore\n");
 #endif
 		return;
@@ -3658,7 +3658,7 @@ static int charging_suspend_vote_cb(struct votable *votable, void *data,
 	}
 
 #ifdef CONFIG_LGE_PM_PARALLEL_CHARGING
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_LGE, "client[%s], suspend[%d]\n",client,suspend);
 #endif
 #endif
@@ -3790,7 +3790,7 @@ static int smbchg_set_fastchg_current_user(struct smbchg_chip *chip,
 {
 	int rc = 0;
 
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_STATUS, "User setting FCC to %d\n", current_ma);
 #endif
 
@@ -3900,7 +3900,7 @@ static int smbchg_wipower_dcin_btm_configure(struct smbchg_chip *chip,
 	} else {
 		chip->current_ilim.vmin_uv = ilim->vmin_uv;
 		chip->current_ilim.vmax_uv = ilim->vmax_uv;
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_STATUS, "btm ilim = (%duV %duV %dmA %dmA %dmA)\n",
 			ilim->vmin_uv, ilim->vmax_uv,
 			ilim->icl_pt_ma, ilim->icl_lv_ma, ilim->icl_hv_ma);
@@ -3961,7 +3961,7 @@ static void smbchg_wipower_icl_deconfigure(struct smbchg_chip *chip)
 	chip->current_ilim.icl_pt_ma = ilim->icl_pt_ma;
 	chip->current_ilim.icl_lv_ma = ilim->icl_lv_ma;
 	chip->current_ilim.icl_hv_ma = ilim->icl_hv_ma;
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_WIPOWER, "De config btm\n");
 #endif
 }
@@ -3992,7 +3992,7 @@ static void __smbchg_wipower_check(struct smbchg_chip *chip)
 			&& chip->dc_psy_type == POWER_SUPPLY_TYPE_WIPOWER) {
 		rc = qpnp_vadc_read(chip->vadc_dev, DCIN, &adc_result);
 		if (rc) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 			pr_smb(PR_STATUS, "error DCIN read rc = %d\n", rc);
 #endif
 			return;
@@ -4002,14 +4002,14 @@ static void __smbchg_wipower_check(struct smbchg_chip *chip)
 		/* check div_by_2 */
 		rc = smbchg_read(chip, &reg, chip->chgr_base + FV_STS, 1);
 		if (rc) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 			pr_smb(PR_STATUS, "error DCIN read rc = %d\n", rc);
 #endif
 			return;
 		}
 		div2 = !!(reg & DIV2_ACTIVE);
 
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_WIPOWER,
 			"config ICL chg_type = %d usb = %d dc = %d dcin_uv(adc_code) = %d (0x%x) div2 = %d\n",
 			chg_type, usb_present, dc_present, dcin_uv,
@@ -4017,7 +4017,7 @@ static void __smbchg_wipower_check(struct smbchg_chip *chip)
 #endif
 		smbchg_wipower_icl_configure(chip, dcin_uv, div2);
 	} else {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_WIPOWER,
 			"deconfig ICL chg_type = %d usb = %d dc = %d\n",
 			chg_type, usb_present, dc_present);
@@ -4041,7 +4041,7 @@ static void btm_notify_dcin(enum qpnp_tm_state state, void *ctx)
 	struct smbchg_chip *chip = ctx;
 
 	mutex_lock(&chip->wipower_config);
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_WIPOWER, "%s state\n",
 			state  == ADC_TM_LOW_STATE ? "low" : "high");
 #endif
@@ -4245,7 +4245,7 @@ static int smbchg_calc_max_flash_current(struct smbchg_chip *chip)
 
 	rc = get_property_from_fg(chip, POWER_SUPPLY_PROP_VOLTAGE_OCV, &ocv_uv);
 	if (rc) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_STATUS, "bms psy does not support OCV\n");
 #endif
 		return 0;
@@ -4254,7 +4254,7 @@ static int smbchg_calc_max_flash_current(struct smbchg_chip *chip)
 	rc = get_property_from_fg(chip, POWER_SUPPLY_PROP_RESISTANCE,
 			&esr_uohm);
 	if (rc) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_STATUS, "bms psy does not support resistance\n");
 #endif
 		return 0;
@@ -4262,7 +4262,7 @@ static int smbchg_calc_max_flash_current(struct smbchg_chip *chip)
 
 	rc = msm_bcl_read(BCL_PARAM_CURRENT, &ibat_now);
 	if (rc) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_STATUS, "BCL current read failed: %d\n", rc);
 #endif
 		return 0;
@@ -4304,7 +4304,7 @@ static int smbchg_calc_max_flash_current(struct smbchg_chip *chip)
 	 * before collapsing the battery. (available power/ flash input voltage)
 	 */
 	avail_flash_ua = div64_s64(avail_flash_power_fw, vin_flash_uv * MCONV);
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_MISC,
 		"avail_iflash=%lld, ocv=%d, ibat=%d, rbatt=%d\n",
 		avail_flash_ua, ocv_uv, ibat_now, rbatt_uohm);
@@ -4357,7 +4357,7 @@ static int smbchg_iterm_set(struct smbchg_chip *chip, int iterm_ma)
 			"Couldn't set iterm rc = %d\n", rc);
 		return rc;
 	}
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_STATUS, "set tcc (%d) to 0x%02x\n",
 			iterm_ma, reg);
 #endif
@@ -4513,7 +4513,7 @@ static int smbchg_switch_buck_frequency(struct smbchg_chip *chip,
 		return 0;
 
 	if (chip->flash_active == flash_active) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_STATUS, "Fsw not changed, flash_active: %d\n",
 			flash_active);
 #endif
@@ -4541,7 +4541,7 @@ static int smbchg_switch_buck_frequency(struct smbchg_chip *chip,
 		return rc;
 	}
 
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_STATUS, "Fsw @ %sHz\n", flash_active ? "1M" : "750K");
 #endif
 	chip->flash_active = flash_active;
@@ -4558,7 +4558,7 @@ static int smbchg_otg_pulse_skip_disable(struct smbchg_chip *chip,
 	bool disabled;
 
 	disabled = !!chip->otg_pulse_skip_dis;
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_STATUS, "%s pulse skip, reason %d\n",
 			disable ? "disabling" : "enabling", reason);
 #endif
@@ -4578,7 +4578,7 @@ static int smbchg_otg_pulse_skip_disable(struct smbchg_chip *chip,
 			disabled ? "disable" : "enable", rc);
 		return rc;
 	}
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_STATUS, "%s pulse skip\n", disabled ? "disabled" : "enabled");
 #endif
 	return 0;
@@ -4640,7 +4640,7 @@ static void smbchg_vfloat_adjust_check(struct smbchg_chip *chip)
 		return;
 
 	smbchg_stay_awake(chip, PM_REASON_VFLOAT_ADJUST);
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_STATUS, "Starting vfloat adjustments\n");
 #endif
 	schedule_delayed_work(&chip->vfloat_adjust_work, 0);
@@ -4671,21 +4671,21 @@ static void smbchg_cc_esr_wa_check(struct smbchg_chip *chip)
 		return;
 
 	if (!is_usb_present(chip) && !is_dc_present(chip)) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_STATUS, "No inputs present, skipping\n");
 #endif
 		return;
 	}
 
 	if (get_prop_charge_type(chip) != POWER_SUPPLY_CHARGE_TYPE_FAST) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_STATUS, "Not in fast charge, skipping\n");
 #endif
 		return;
 	}
 
 	if (!smbchg_is_input_current_limited(chip)) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_STATUS, "Not input current limited, skipping\n");
 #endif
 		return;
@@ -4695,7 +4695,7 @@ static void smbchg_cc_esr_wa_check(struct smbchg_chip *chip)
 	rc = get_property_from_fg(chip,
 			POWER_SUPPLY_PROP_ESR_COUNT, &esr_count);
 	if (rc) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_STATUS,
 			"could not read ESR counter rc = %d\n", rc);
 #endif
@@ -4718,19 +4718,19 @@ static void smbchg_cc_esr_wa_check(struct smbchg_chip *chip)
 	 * 0.
 	 */
 	if (esr_count != 0) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_STATUS, "ESR count is not zero, skipping\n");
 #endif
 		return;
 	}
 
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_STATUS, "Lowering charge current for ESR pulse\n");
 #endif
 	smbchg_stay_awake(chip, PM_ESR_PULSE);
 	smbchg_sw_esr_pulse_en(chip, true);
 	msleep(SW_ESR_PULSE_MS);
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_STATUS, "Raising charge current for ESR pulse\n");
 #endif
 	smbchg_relax(chip, PM_ESR_PULSE);
@@ -4843,7 +4843,7 @@ static void smbchg_aicl_deglitch_wa_en(struct smbchg_chip *chip, bool en)
 				en ? "short" : "long", rc);
 		return;
 	}
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_STATUS, "AICL deglitch set to %s\n", en ? "short" : "long");
 #endif
 
@@ -4866,7 +4866,7 @@ static void smbchg_aicl_deglitch_wa_check(struct smbchg_chip *chip)
 		return;
 
 	if (!is_usb_present(chip) && !is_dc_present(chip)) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_STATUS, "Charger removed\n");
 #endif
 		smbchg_aicl_deglitch_wa_en(chip, false);
@@ -4887,7 +4887,7 @@ static void smbchg_aicl_deglitch_wa_check(struct smbchg_chip *chip)
 	}
 
 	if (!low_volt_chgr) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_STATUS, "High volt charger! Don't set deglitch\n");
 #endif
 		smbchg_aicl_deglitch_wa_en(chip, false);
@@ -4960,7 +4960,7 @@ static int smbchg_config_chg_battery_type(struct smbchg_chip *chip)
 			rc = chip->lge_batt_id_lpc->get_property(chip->lge_batt_id_lpc,
 				LGE_POWER_PROP_BATT_INFO, &lge_val);
 			sprintf(chip->battery_name,"%s", lge_val.strval);
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 			pr_err("BATTERY FULL NAME : %s\n", chip->battery_name);
 #endif
 		}
@@ -4972,7 +4972,7 @@ static int smbchg_config_chg_battery_type(struct smbchg_chip *chip)
 	if (!strcmp(chip->battery_name, UNKNOWN_BATT_TYPE) ||
 		!strcmp(chip->battery_name, LOADING_BATT_TYPE) ||
 		!strcmp(chip->battery_name, MEM_ERR_BATT_TYPE)) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_MISC, "Battery-type not identified\n");
 #endif
 		return 0;
@@ -4985,7 +4985,7 @@ static int smbchg_config_chg_battery_type(struct smbchg_chip *chip)
 
 	batt_node = of_parse_phandle(node, "qcom,battery-data", 0);
 	if (!batt_node) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_MISC, "No batterydata available\n");
 #endif
 		return 0;
@@ -5006,14 +5006,14 @@ static int smbchg_config_chg_battery_type(struct smbchg_chip *chip)
 	rc = chip->bms_psy->get_property(chip->bms_psy,
 			POWER_SUPPLY_PROP_BATTERY_TYPE, &prop);
 	if (rc) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_STATUS, "Unable to read battery-type rc=%d\n", rc);
 #endif
 		return 0;
 	}
 	if (!strcmp(prop.strval, UNKNOWN_BATT_TYPE) ||
 		!strcmp(prop.strval, LOADING_BATT_TYPE)) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_MISC, "Battery-type not identified\n");
 #endif
 		return 0;
@@ -5024,7 +5024,7 @@ static int smbchg_config_chg_battery_type(struct smbchg_chip *chip)
 
 	batt_node = of_parse_phandle(node, "qcom,battery-data", 0);
 	if (!batt_node) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_MISC, "No batterydata available\n");
 #endif
 		return 0;
@@ -5046,7 +5046,7 @@ static int smbchg_config_chg_battery_type(struct smbchg_chip *chip)
 		ret = rc;
 	} else {
 		if (chip->vfloat_mv != (max_voltage_uv / 1000)) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 			pr_info("Vfloat changed from %dmV to %dmV for battery-type %s\n",
 				chip->vfloat_mv, (max_voltage_uv / 1000),
 				chip->battery_type);
@@ -5070,7 +5070,7 @@ static int smbchg_config_chg_battery_type(struct smbchg_chip *chip)
 	} else if (!rc) {
 		if (chip->iterm_ma != (iterm_ua / 1000)
 				&& !chip->iterm_disabled) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 			pr_info("Term current changed from %dmA to %dmA for battery-type %s\n",
 				chip->iterm_ma, (iterm_ua / 1000),
 				chip->battery_type);
@@ -5097,7 +5097,7 @@ static int smbchg_config_chg_battery_type(struct smbchg_chip *chip)
 		if (rc) {
 			ret = rc;
 		} else {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 			pr_smb(PR_MISC,
 				"fastchg-ma changed from to %dma for battery-type %s\n",
 				fastchg_ma, chip->battery_type);
@@ -5184,7 +5184,7 @@ static void smbchg_rerun_apsd(struct smbchg_chip *chip)
 	enum power_supply_type usb_supply_type;
 	char *usb_type_name = "null";
 
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_MISC, "Disable AICL\n");
 #endif
 	smbchg_sec_masked_write(chip, chip->usb_chgpth_base + USB_AICL_CFG,
@@ -5208,7 +5208,7 @@ static void smbchg_rerun_apsd(struct smbchg_chip *chip)
 	if (rc < 0)
 		pr_err("Couldn't write usb allowance rc=%d\n", rc);
 
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_MISC, "Enable AICL\n");
 #endif
 	smbchg_sec_masked_write(chip, chip->usb_chgpth_base + USB_AICL_CFG,
@@ -5240,7 +5240,7 @@ static void smbchg_set_vbat_low_thr(struct smbchg_chip *chip)
 					chip->bat_if_base + VBL_CFG, VBL_MASK, 0x01);
 			if (rc < 0)
 				pr_err("fail to set vbat_low to 2.5V rc = %d\n", rc);
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 			else
 				pr_smb(PR_LGE, "set vbat low threshold to 2.5V\n");
 #endif
@@ -5253,7 +5253,7 @@ static void smbchg_set_vbat_low_thr(struct smbchg_chip *chip)
 			if (rc < 0)
 				pr_err("fail to set vbat low to 0x%x rc = %d\n",
 						chip->vbat_low_thr, rc);
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 			else
 				pr_smb(PR_LGE, "set vbat low threshold to 0x%x\n",
 						chip->vbat_low_thr);
@@ -5376,7 +5376,7 @@ skip_current_config1:
 
 		chip->otp_ibat_current = lge_val.intval;
 
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_info("[LGE-CC] fcc %d, otp set %d\n", fcc_ma,
 				chip->otp_ibat_current);
 #endif
@@ -5413,7 +5413,7 @@ skip_current_config1:
 
 		before_cur = current_limit;
 
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_MISC, "usb type = %s current_limit = %d\n",
 				usb_type_name, current_limit);
 #endif
@@ -5571,7 +5571,7 @@ static int smbchg_otg_regulator_enable(struct regulator_dev *rdev)
 		dev_err(chip->dev, "Couldn't enable OTG mode rc=%d\n", rc);
 	else
 		chip->otg_enable_time = ktime_get();
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_STATUS, "Enabling OTG Boost\n");
 #endif
 
@@ -5616,7 +5616,7 @@ static int smbchg_otg_regulator_disable(struct regulator_dev *rdev)
 			rc);
 		rc = 0;
 	}
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_STATUS, "Disabling OTG Boost\n");
 #endif
 	return rc;
@@ -5686,7 +5686,7 @@ static int smbchg_external_otg_regulator_enable(struct regulator_dev *rdev)
 		return rc;
 	}
 
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_STATUS, "Enabling OTG Boost\n");
 #endif
 	return rc;
@@ -5722,7 +5722,7 @@ static int smbchg_external_otg_regulator_disable(struct regulator_dev *rdev)
 		return rc;
 	}
 
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_STATUS, "Disabling OTG Boost\n");
 #endif
 	return rc;
@@ -5847,13 +5847,13 @@ static ssize_t at_chg_status_show(struct device *dev,
 	if (chg_type != POWER_SUPPLY_CHARGE_TYPE_NONE) {
 		b_chg_ok = true;
 		r = snprintf(buf, 3, "%d\n", b_chg_ok);
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_info("[Diag] true ! buf = %s, charging = 1\n", buf);
 #endif
 	} else {
 		b_chg_ok = false;
 		r = snprintf(buf, 3, "%d\n", b_chg_ok);
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_info("[Diag] false ! buf = %s, charging = 0\n", buf);
 #endif
 	}
@@ -5881,14 +5881,14 @@ static ssize_t at_chg_status_store(struct device *dev,
 
 	if (strncmp(buf, "0", 1) == 0) {
 		/* stop charging */
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_info("[Diag] stop charging\n");
 #endif
 		vote(chip->battchg_suspend_votable,
 			BATTCHG_ATCMD_EN_VOTER, true, 0);
 	} else if (strncmp(buf, "1", 1) == 0) {
 		/* start charging */
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_info("[Diag] start charging\n");
 #endif
 		vote(chip->battchg_suspend_votable,
@@ -5949,14 +5949,14 @@ static ssize_t at_chg_complete_store(struct device *dev,
 
 	if (strncmp(buf, "0", 1) == 0) {
 		/* charging not complete */
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_info("[Diag] charging not complete start\n");
 #endif
 		vote(chip->battchg_suspend_votable,
 			BATTCHG_ATCMD_EN_VOTER, true, 0);
 	} else if (strncmp(buf, "1", 1) == 0) {
 		/* charging complete */
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_info("[Diag] charging complete start\n");
 #endif
 		vote(chip->battchg_suspend_votable,
@@ -6082,7 +6082,7 @@ static void smbchg_chg_led_brightness_set(struct led_classdev *cdev,
 	else
 		power_supply_set_hi_power_state(chip->bms_psy, 0);
 
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_STATUS,
 			"set the charger led brightness to value=%d\n",
 			value);
@@ -6114,7 +6114,7 @@ led_brightness smbchg_chg_led_brightness_get(struct led_classdev *cdev)
 
 	chg_led_sts = (reg_val & LED_BLINKING_CFG_MASK) >> CHG_LED_SHIFT;
 
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_STATUS, "chg_led_sts = %02x\n", chg_led_sts);
 #endif
 
@@ -6232,7 +6232,7 @@ static int smbchg_trim_add_steps(int prev_trim, int delta_steps)
 	int scale_code = (prev_trim & ~VF_TRIM_OFFSET_MASK) >> SCALE_SHIFT;
 
 	if (abs(delta_steps) > 1) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_STATUS,
 			"Cant trim multiple steps delta_steps = %d\n",
 			delta_steps);
@@ -6267,7 +6267,7 @@ static int smbchg_trim_add_steps(int prev_trim, int delta_steps)
 
 	if (linear_scale + scale_steps < 0
 			|| linear_scale + scale_steps > MAX_LIN_CODE) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_STATUS,
 			"Cant trim scale_steps = %d delta_steps = %d\n",
 			scale_steps, delta_steps);
@@ -6323,7 +6323,7 @@ static int smbchg_adjust_vfloat_mv_trim(struct smbchg_chip *chip,
 		new_trim = (u8)smbchg_trim_add_steps(prev_trim,
 				delta_steps > 0 ? 1 : -1);
 		if (new_trim == prev_trim) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 			pr_smb(PR_STATUS,
 				"VFloat trim unchanged from %02x\n", prev_trim);
 #endif
@@ -6337,7 +6337,7 @@ static int smbchg_adjust_vfloat_mv_trim(struct smbchg_chip *chip,
 			dev_err(chip->dev,
 				"Couldn't change vfloat trim rc=%d\n", rc);
 		}
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_STATUS,
 			"VFlt trim %02x to %02x, delta steps: %d\n",
 			prev_trim, new_trim, delta_steps);
@@ -6363,7 +6363,7 @@ static void smbchg_vfloat_adjust_work(struct work_struct *work)
 	enable = taper && (chip->parallel.current_max_ma == 0);
 
 	if (!enable) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_MISC,
 			"Stopping vfloat adj taper=%d parallel_ma = %d\n",
 			taper, chip->parallel.current_max_ma);
@@ -6372,7 +6372,7 @@ static void smbchg_vfloat_adjust_work(struct work_struct *work)
 	}
 
 	if (get_prop_batt_health(chip) != POWER_SUPPLY_HEALTH_GOOD) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_STATUS, "JEITA active, skipping\n");
 #endif
 		goto stop;
@@ -6382,7 +6382,7 @@ static void smbchg_vfloat_adjust_work(struct work_struct *work)
 	rc = get_property_from_fg(chip,
 			POWER_SUPPLY_PROP_VOLTAGE_NOW, &vbat_uv);
 	if (rc) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_STATUS,
 			"bms psy does not support voltage rc = %d\n", rc);
 #endif
@@ -6391,7 +6391,7 @@ static void smbchg_vfloat_adjust_work(struct work_struct *work)
 	vbat_mv = vbat_uv / 1000;
 
 	if ((vbat_mv - chip->vfloat_mv) < -1 * vf_adjust_max_delta_mv) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_STATUS, "Skip vbat out of range: %d\n", vbat_mv);
 #endif
 		goto reschedule;
@@ -6400,7 +6400,7 @@ static void smbchg_vfloat_adjust_work(struct work_struct *work)
 	rc = get_property_from_fg(chip,
 			POWER_SUPPLY_PROP_CURRENT_NOW, &ibat_ua);
 	if (rc) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_STATUS,
 			"bms psy does not support current_now rc = %d\n", rc);
 #endif
@@ -6408,13 +6408,13 @@ static void smbchg_vfloat_adjust_work(struct work_struct *work)
 	}
 
 	if (ibat_ua / 1000 > -chip->iterm_ma) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_STATUS, "Skip ibat too high: %d\n", ibat_ua);
 #endif
 		goto reschedule;
 	}
 
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_STATUS, "sample number = %d vbat_mv = %d ibat_ua = %d\n",
 		chip->n_vbat_samples,
 		vbat_mv,
@@ -6423,7 +6423,7 @@ static void smbchg_vfloat_adjust_work(struct work_struct *work)
 	chip->max_vbat_sample = max(chip->max_vbat_sample, vbat_mv);
 	chip->n_vbat_samples += 1;
 	if (chip->n_vbat_samples < vf_adjust_n_samples) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_STATUS, "Skip %d samples; max = %d\n",
 			chip->n_vbat_samples, chip->max_vbat_sample);
 #endif
@@ -6431,7 +6431,7 @@ static void smbchg_vfloat_adjust_work(struct work_struct *work)
 	}
 	/* if max vbat > target vfloat, delta_vfloat_mv could be negative */
 	delta_vfloat_mv = chip->vfloat_mv - chip->max_vbat_sample;
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_STATUS, "delta_vfloat_mv = %d, samples = %d, mvbat = %d\n",
 		delta_vfloat_mv, chip->n_vbat_samples, chip->max_vbat_sample);
 #endif
@@ -6443,7 +6443,7 @@ static void smbchg_vfloat_adjust_work(struct work_struct *work)
 			|| delta_vfloat_mv < -1 * vf_adjust_low_threshold) {
 		rc = smbchg_adjust_vfloat_mv_trim(chip, delta_vfloat_mv);
 		if (rc) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 			pr_smb(PR_STATUS,
 				"Stopping vfloat adj after trim adj rc = %d\n",
 				 rc);
@@ -6583,7 +6583,7 @@ static int smbchg_change_usb_supply_type(struct smbchg_chip *chip,
 #else
 	if (is_factory_cable(chip) && chip->usb_present) {
 #endif
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_LGE, "factory cable.. set to %dmA\n", FACTORY_ICL_MA);
 #endif
 		current_limit_ma = FACTORY_ICL_MA;
@@ -6592,7 +6592,7 @@ static int smbchg_change_usb_supply_type(struct smbchg_chip *chip,
 #endif
 #endif
 
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_STATUS, "Type %d: setting mA = %d\n",
 		type, current_limit_ma);
 #endif
@@ -6697,7 +6697,7 @@ static int smbchg_evp_det_start(struct smbchg_chip *chip, int start)
 	union power_supply_propval val = {start, };
 	int rc;
 
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	if (start)
 		pr_smb(PR_LGE, "Start EVP detection\n");
 #endif
@@ -6725,7 +6725,7 @@ static void smbchg_hvdcp_det_prepare_work(struct work_struct *work)
 	char *usb_type_name;
 	int rc;
 
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_LGE, "start prepare hvdcp (%d)\n", chip->hvdcp_det_retry);
 #endif
 
@@ -6742,7 +6742,7 @@ static void smbchg_hvdcp_det_prepare_work(struct work_struct *work)
 	if (lge_get_boot_mode() == LGE_BOOT_MODE_QEM_56K ||
 			lge_get_boot_mode() == LGE_BOOT_MODE_QEM_130K ||
 			lge_get_boot_mode() == LGE_BOOT_MODE_QEM_910K) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_LGE, "MiniOS boot, enable HVDCP\n");
 #endif
 		goto prepare_hvdcp_detection;
@@ -6755,7 +6755,7 @@ static void smbchg_hvdcp_det_prepare_work(struct work_struct *work)
 	 */
 	get_property_from_typec(chip, POWER_SUPPLY_PROP_VOLTAGE_MAX, &prop);
 	if (prop.intval > 5000) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_LGE, "HV PD charger detected. ignore HVDCP\n");
 #endif
 		goto out;
@@ -6773,7 +6773,7 @@ static void smbchg_hvdcp_det_prepare_work(struct work_struct *work)
 	 *  By the reasons of 1, 2, LUCYE removes below skip routine.
 	 */
 	if (chip->hvdcp_uv_recovery) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_LGE, "recover under voltage, enable HVDCP\n");
 #endif
 		goto prepare_hvdcp_detection;
@@ -6783,7 +6783,7 @@ static void smbchg_hvdcp_det_prepare_work(struct work_struct *work)
 #ifdef CONFIG_LGE_USB_ANX7688_ADC
 	if (!chip->ctype_rp) {
 		if (chip->hvdcp_det_retry >= HVDCP_RETRY_MAX) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 			pr_smb(PR_LGE, "invalid voltage on CC, ignore HVDCP\n");
 #endif
 			goto out;
@@ -6798,7 +6798,7 @@ static void smbchg_hvdcp_det_prepare_work(struct work_struct *work)
 #ifndef CONFIG_MACH_MSM8996_LUCYE
 	/* Lucye can support HVDCP with Rp 10K */
 	if (chip->ctype_rp == RP_10K) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_LGE, "Rp = %dk, ignore HVDCP\n",
 					chip->ctype_rp);
 #endif
@@ -6807,7 +6807,7 @@ static void smbchg_hvdcp_det_prepare_work(struct work_struct *work)
 #endif
 	if (chip->ctype_rp == RP_NONE) {
 		if (chip->hvdcp_det_retry >= HVDCP_RETRY_MAX) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 			pr_smb(PR_LGE, "Rp = %dk, do not enable HVDCP\n",
 						chip->ctype_rp);
 #endif
@@ -6828,7 +6828,7 @@ prepare_hvdcp_detection:
 	if (rc < 0)
 		pr_err("Couldn't enable HVDCP rc=%d\n", rc);
 
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_MISC, "Disable AICL\n");
 #endif
 	rc = smbchg_sec_masked_write(chip,
@@ -6853,7 +6853,7 @@ prepare_hvdcp_detection:
 
 		read_usb_type(chip, &usb_type_name, &usb_supply_type);
 		if (usb_supply_type != POWER_SUPPLY_TYPE_USB_DCP) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 			pr_smb(PR_LGE, "final inserted type = %d (%s)\n",
 					usb_supply_type, usb_type_name);
 #endif
@@ -6866,7 +6866,7 @@ prepare_hvdcp_detection:
 		}
 	}
 
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_MISC, "Enable AICL\n");
 #endif
 	rc = smbchg_sec_masked_write(chip,
@@ -6941,7 +6941,7 @@ static void smbchg_hvdcp_recovery_work(struct work_struct *work)
 	}
 
 	chip->hvdcp_uv_count++;
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_LGE, "check recover hvdcp (%d). voltage = %dmV\n",
 			chip->hvdcp_uv_count, usbin_vol);
 #endif
@@ -6952,7 +6952,7 @@ static void smbchg_hvdcp_recovery_work(struct work_struct *work)
 		return;
 	}
 
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_LGE, "start recover hvdcp\n");
 #endif
 
@@ -6963,7 +6963,7 @@ static void smbchg_hvdcp_recovery_work(struct work_struct *work)
 	rc = fake_insertion_removal_for_uv(chip, true);
 
 	if (rc) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_LGE, "error during fake insertion removal\n");
 #endif
 		chip->hvdcp_uv_recovery = false;
@@ -6972,7 +6972,7 @@ static void smbchg_hvdcp_recovery_work(struct work_struct *work)
 
 	read_usb_type(chip, &usb_type_name, &usb_supply_type);
 	if (usb_supply_type != POWER_SUPPLY_TYPE_USB_DCP) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_LGE, "error during recovery. inserted type = %d (%s)\n",
 				usb_supply_type, usb_type_name);
 #endif
@@ -7002,7 +7002,7 @@ static void smbchg_vfloat_trim_check_ok(struct smbchg_chip *chip)
 #endif
 
 	if (chip->vfloat_trim_restore_status){
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_STATUS, "VFLOAT_TRIM restored recharge finish. \n");
 #endif
 		chip->vfloat_trim_restore_status = false;
@@ -7025,7 +7025,7 @@ static void smbchg_vfloat_trim_check_work(struct work_struct *work)
 
 #ifdef CONFIG_LGE_PM_CYCLE_BASED_CHG_VOLTAGE
 	if (chip->vfloat_mv == DECCUR_FLOAT_VOLTAGE) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_LGE,
                         "Skip checkng vfloat trim at DECCUR state of OTP\n");
 #endif
@@ -7036,7 +7036,7 @@ static void smbchg_vfloat_trim_check_work(struct work_struct *work)
 	rc = get_property_from_fg(chip,
 			POWER_SUPPLY_PROP_CAPACITY, &capacity);
 	if (rc) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_STATUS,
 			"bms psy does not support capacity rc = %d\n", rc);
 #endif
@@ -7044,7 +7044,7 @@ static void smbchg_vfloat_trim_check_work(struct work_struct *work)
 	}
 
 	if (capacity == FULL_CHARGED_CAPACITY ) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_STATUS, "Skip, SOC (%d) is Full. \n", capacity);
 #endif
 		goto out;
@@ -7053,7 +7053,7 @@ static void smbchg_vfloat_trim_check_work(struct work_struct *work)
 	rc = get_property_from_fg(chip,
 			POWER_SUPPLY_PROP_VOLTAGE_NOW, &vbat_uv);
 	if (rc) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_STATUS,
 			"bms psy does not support voltage rc = %d\n", rc);
 #endif
@@ -7075,14 +7075,14 @@ static void smbchg_vfloat_trim_check_work(struct work_struct *work)
 			(vbat_mv < FULL_BATTERY_MIN_VOLTAGE ) &&
 #endif
 			(vfloat_trim_reg != chip->initial_vfloat_trim_reg) ){
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_STATUS, "Restore VFLOAT_TRIM register.\n");
 		pr_smb(PR_STATUS, "SOC = %d VBAT = %d mV vfloat_trim_reg %x\n",
 			capacity, vbat_mv, vfloat_trim_reg);
 #endif
 		goto restore;
 	}else {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_STATUS, "Not restored. SOC %d VBAT %d trim_reg %x\n",
 			capacity, vbat_mv, vfloat_trim_reg);
 #endif
@@ -7090,7 +7090,7 @@ static void smbchg_vfloat_trim_check_work(struct work_struct *work)
 		}
 
 restore:
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_STATUS, "start recover VFLOAT_TRIM & recharging \n");
 #endif
 
@@ -7101,7 +7101,7 @@ restore:
 			"Couldn't change vfloat trim rc=%d\n", rc);
 		goto reschedule;
 	}
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_STATUS, "VFlt trim restored. 0x%02x \n",
 		chip->initial_vfloat_trim_reg);
 #endif
@@ -7111,7 +7111,7 @@ restore:
 		BATTCHG_VFLT_TRIM_EN_VOTER, false, 0);
 
 	if (rc < 0) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_STATUS, "error during restart charging.\n");
 #endif
 		goto reschedule;
@@ -7122,13 +7122,13 @@ restore:
 
 	if (chip->psy_registered) {
 		if (!chip->enable_aicl_wake) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 			pr_smb(PR_STATUS, "enable aicl_done_irq\n");
 #endif
 			enable_irq_wake(chip->aicl_done_irq);
 			chip->enable_aicl_wake = true;
 		}
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	} else {
 		pr_smb(PR_STATUS, "smbchg irqs are not registered\n");
 #endif
@@ -7139,14 +7139,14 @@ restore:
 	smbchg_charging_status_change(chip);
 
 out:
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_STATUS, "End of vfloat trim check. \n");
 #endif
 	smbchg_relax(chip, PM_VFLOAT_TRIM_RESTORE);
 	return;
 
 reschedule:
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_STATUS, "Rescheduled vfloat trim check. \n");
 #endif
 	schedule_delayed_work(&chip->vfloat_trim_check_work,
@@ -7163,14 +7163,14 @@ static void hvdcp_disable_work(struct work_struct *work){
 				hvdcp_disable_work.work);
 	int rc;
 	int usb_present;
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_LGE, "Disable hvdcp. Forced to 5V charge.\n");
 #endif
 	/* disable HVDCP */
 	cancel_delayed_work(&chip->hvdcp_recovery_work);
 
 	if(chip->incompatible_hvdcp_detected != INCOMPATIBLE_DETECTED){
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_LGE, "Not Incompatible case. Force out.");
 #endif
 		return;
@@ -7179,7 +7179,7 @@ static void hvdcp_disable_work(struct work_struct *work){
 	usb_present = is_usb_present(chip);
 
 	if(!usb_present){
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_LGE, "USB present false. Force out.\n");
 #endif
 		return;
@@ -7214,7 +7214,7 @@ static void smbchg_hvdcp_det_work(struct work_struct *work)
 	int rc;
 
 #ifdef CONFIG_LGE_PM
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_LGE, "start detect hvdcp\n");
 #endif
 #endif
@@ -7222,7 +7222,7 @@ static void smbchg_hvdcp_det_work(struct work_struct *work)
 	if (chip->parallel.use_parallel_aicl) {
 		if (!chip->hvdcp3_supported || !is_hvdcp_present(chip)) {
 			complete_all(&chip->hvdcp_det_done);
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 			pr_smb(PR_MISC, "hvdcp_det_done complete\n");
 #endif
 		}
@@ -7294,13 +7294,13 @@ static int set_usb_psy_dp_dm(struct smbchg_chip *chip, int state)
 	 */
 	rc = smbchg_read(chip, &reg, chip->usb_chgpth_base + RT_STS, 1);
 	if (!rc && !(reg & USBIN_UV_BIT) && !(reg & USBIN_SRC_DET_BIT)) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_MISC, "overwriting state = %d with %d\n",
 				state, POWER_SUPPLY_DP_DM_DPF_DMF);
 #endif
 		state = POWER_SUPPLY_DP_DM_DPF_DMF;
 	}
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_MISC, "setting usb psy dp dm = %d\n", state);
 #endif
 	return power_supply_set_dp_dm(chip->usb_psy, state);
@@ -7362,7 +7362,7 @@ static void restore_from_hvdcp_detection(struct smbchg_chip *chip)
 
 	if ((chip->schg_version == QPNP_SCHG_LITE)
 				&& is_hvdcp_present(chip)) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_MISC, "Forcing 9V HVDCP 2.0\n");
 #endif
 		rc = force_9v_hvdcp(chip);
@@ -7370,7 +7370,7 @@ static void restore_from_hvdcp_detection(struct smbchg_chip *chip)
 			pr_err("Failed to force 9V HVDCP=%d\n",	rc);
 	}
 
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_MISC, "Retracting HVDCP vote for ICL\n");
 #endif
 	rc = vote(chip->usb_icl_votable, HVDCP_ICL_VOTER, false, 0);
@@ -7397,7 +7397,7 @@ static int smbchg_restricted_charging(struct smbchg_chip *chip, bool enable)
 	rc = vote(chip->fcc_votable, RESTRICTED_CHG_FCC_VOTER, enable,
 			fastchg_current);
 
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_STATUS, "restricted_charging set to %d\n", enable);
 #endif
 	chip->restricted_charging = enable;
@@ -7443,20 +7443,20 @@ static void weak_batt_pack_check_work(struct work_struct *work)
 
 	if (is_usb_present(chip)) {
 		chip->batt_pack_verify_cnt++;
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_LGE, "weak battery pack is detected, count = %d\n",
 				chip->batt_pack_verify_cnt);
 #endif
 		if (chip->batt_pack_verify_cnt >= WEAK_CHG_DET_CNT
 				&& is_usb_present(chip)) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 			pr_smb(PR_LGE, "weak batt pack detected, set ICL to 1A\n");
 #endif
 			rc = vote(chip->usb_icl_votable,
 					WEAK_CHARGER_ICL_VOTER, true, DEFAULT_WEAK_ICL_MA);
 		}
 	} else {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_LGE, "usb is removed. reset count\n");
 #endif
 		chip->batt_pack_verify_cnt = 1;
@@ -7469,7 +7469,7 @@ static void handle_usb_removal(struct smbchg_chip *chip)
 	struct power_supply *parallel_psy = get_parallel_psy(chip);
 	int rc;
 
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_STATUS, "triggered\n");
 #endif
 	smbchg_aicl_deglitch_wa_check(chip);
@@ -7489,13 +7489,13 @@ static void handle_usb_removal(struct smbchg_chip *chip)
 
 	if (chip->parallel.use_parallel_aicl) {
 		complete_all(&chip->hvdcp_det_done);
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_MISC, "complete hvdcp_det_done\n");
 #endif
 	}
 
 	if (!chip->skip_usb_notification) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_MISC, "setting usb psy present = %d\n",
 				chip->usb_present);
 #endif
@@ -7518,12 +7518,12 @@ static void handle_usb_removal(struct smbchg_chip *chip)
 	}
 	set_usb_psy_dp_dm(chip, POWER_SUPPLY_DP_DM_DPR_DMR);
 	schedule_work(&chip->usb_set_online_work);
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_MISC, "setting usb psy health UNKNOWN\n");
 #endif
 	rc = power_supply_set_health_state(chip->usb_psy,
 			POWER_SUPPLY_HEALTH_UNKNOWN);
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	if (rc < 0)
 		pr_smb(PR_STATUS,
 			"usb psy does not allow updating prop %d rc = %d\n",
@@ -7561,7 +7561,7 @@ static void handle_usb_removal(struct smbchg_chip *chip)
 #endif
 #ifdef CONFIG_LGE_PM_VFLOAT_TRIM_RESTORE
 	if (chip->vfloat_trim_restore_status){
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_STATUS, "VFLOAT_TRIM wakelock released. \n");
 #endif
 		chip->vfloat_trim_restore_status = false;
@@ -7615,7 +7615,7 @@ static void handle_usb_insertion(struct smbchg_chip *chip)
 	int rc;
 	char *usb_type_name = "null";
 
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_STATUS, "triggered\n");
 #endif
 
@@ -7626,7 +7626,7 @@ static void handle_usb_insertion(struct smbchg_chip *chip)
 	if(factory_mode)
 		usb_supply_type = POWER_SUPPLY_TYPE_USB;
 #endif
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_STATUS,
 		"inserted type = %d (%s)\n", usb_supply_type, usb_type_name);
 #endif
@@ -7636,7 +7636,7 @@ static void handle_usb_insertion(struct smbchg_chip *chip)
 
 	smbchg_change_usb_supply_type(chip, usb_supply_type);
 	if (!chip->skip_usb_notification) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_MISC, "setting usb psy present = %d\n",
 				chip->usb_present);
 #endif
@@ -7663,7 +7663,7 @@ static void handle_usb_insertion(struct smbchg_chip *chip)
 		 * if the handle_usb_insertion was triggered from
 		 * the falling edge of an USBIN_OV interrupt
 		 */
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_MISC, "setting usb psy health %s\n",
 				chip->very_weak_charger
 				? "UNSPEC_FAILURE" : "GOOD");
@@ -7672,7 +7672,7 @@ static void handle_usb_insertion(struct smbchg_chip *chip)
 				chip->very_weak_charger
 				? POWER_SUPPLY_HEALTH_UNSPEC_FAILURE
 				: POWER_SUPPLY_HEALTH_GOOD);
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		if (rc < 0)
 			pr_smb(PR_STATUS,
 				"usb psy does not allow updating prop %d rc = %d\n",
@@ -7714,7 +7714,7 @@ static void handle_usb_insertion(struct smbchg_chip *chip)
 #endif
 		if (chip->parallel.use_parallel_aicl) {
 			reinit_completion(&chip->hvdcp_det_done);
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 			pr_smb(PR_MISC, "init hvdcp_det_done\n");
 #endif
 		}
@@ -7734,7 +7734,7 @@ static void handle_usb_insertion(struct smbchg_chip *chip)
 
 #ifdef CONFIG_LGE_PM_WATERPROOF_PROTECTION
 	if (chip->input_blocked) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_STATUS, "sending waterproof signal for UI update\n");
 #endif
 		power_supply_changed(&chip->batt_psy);
@@ -7775,7 +7775,7 @@ static void lge_cc_work_enable_check(struct work_struct *work)
 			chip->lge_sm_lpc = lge_power_get_by_name("lge_sm");
 #endif
 
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_info("Start lge_cc_work_enable\n");
 #endif
 		schedule_delayed_work(&chip->lge_cc_enable_work,
@@ -7840,7 +7840,7 @@ static int otg_oc_reset(struct smbchg_chip *chip)
 	 * should not enable OTG in such cases.
 	 */
 	if (!is_otg_present(chip)) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_STATUS,
 			"OTG is not present, not enabling OTG_EN_BIT\n");
 #endif
@@ -7899,7 +7899,7 @@ static void increment_aicl_count(struct smbchg_chip *chip)
 	long elapsed_seconds;
 	unsigned long now_seconds;
 
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_INTERRUPT, "aicl count c:%d dgltch:%d first:%ld\n",
 			chip->aicl_irq_count, chip->aicl_deglitch_short,
 			chip->first_aicl_seconds);
@@ -7920,7 +7920,7 @@ static void increment_aicl_count(struct smbchg_chip *chip)
 				- chip->first_aicl_seconds;
 
 		if (elapsed_seconds > AICL_IRQ_LIMIT_SECONDS) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 			pr_smb(PR_INTERRUPT,
 				"resetting: elp:%ld first:%ld now:%ld c=%d\n",
 				elapsed_seconds, chip->first_aicl_seconds,
@@ -7939,7 +7939,7 @@ static void increment_aicl_count(struct smbchg_chip *chip)
 		chip->aicl_irq_count++;
 
 		if (chip->aicl_irq_count > max_aicl_count) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 			pr_smb(PR_INTERRUPT, "elp:%ld first:%ld now:%ld c=%d\n",
 				elapsed_seconds, chip->first_aicl_seconds,
 				now_seconds, chip->aicl_irq_count);
@@ -7983,7 +7983,7 @@ static void increment_aicl_count(struct smbchg_chip *chip)
 			bad_charger = true;
 		}
 		if (bad_charger) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 			pr_smb(PR_MISC,
 				"setting usb psy health UNSPEC_FAILURE\n");
 #endif
@@ -8085,7 +8085,7 @@ static int fake_insertion_removal(struct smbchg_chip *chip, bool insertion)
 		return -EINVAL;
 	}
 
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_MISC, "Allow only %s charger\n",
 			insertion ? "5-9V" : "9V only");
 #endif
@@ -8099,7 +8099,7 @@ static int fake_insertion_removal(struct smbchg_chip *chip, bool insertion)
 		return rc;
 	}
 
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_MISC, "Waiting on %s usbin uv\n",
 			insertion ? "falling" : "rising");
 #endif
@@ -8109,7 +8109,7 @@ static int fake_insertion_removal(struct smbchg_chip *chip, bool insertion)
 		return rc;
 	}
 
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_MISC, "Waiting on %s src det\n",
 			insertion ? "rising" : "falling");
 #endif
@@ -8133,7 +8133,7 @@ static int fake_insertion_removal_for_uv(
 		reinit_completion(&chip->usbin_uv_lowered);
 	}
 
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_MISC, "Allow only %s charger\n",
 			insertion ? "5-9V" : "9V only");
 #endif
@@ -8147,7 +8147,7 @@ static int fake_insertion_removal_for_uv(
 		return rc;
 	}
 
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_MISC, "Waiting on %s usbin uv\n",
 			insertion ? "falling" : "rising");
 #endif
@@ -8157,7 +8157,7 @@ static int fake_insertion_removal_for_uv(
 		return rc;
 	}
 
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_MISC, "Waiting on %s src det\n",
 			insertion ? "rising" : "falling");
 #endif
@@ -8202,7 +8202,7 @@ static void smbchg_handle_hvdcp3_disable(struct smbchg_chip *chip)
 #endif
 			if (chip->parallel.use_parallel_aicl) {
 				reinit_completion(&chip->hvdcp_det_done);
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 				pr_smb(PR_MISC, "init hvdcp_det_done\n");
 #endif
 			}
@@ -8218,7 +8218,7 @@ static int smbchg_prepare_for_pulsing(struct smbchg_chip *chip)
 	u8 reg;
 
 	/* switch to 5V HVDCP */
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_MISC, "Switch to 5V HVDCP\n");
 #endif
 	rc = smbchg_sec_masked_write(chip, chip->usb_chgpth_base + CHGPTH_CFG,
@@ -8235,14 +8235,14 @@ static int smbchg_prepare_for_pulsing(struct smbchg_chip *chip)
 	 * high and that we are still in 5V hvdcp
 	 */
 	if (!is_src_detect_high(chip)) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_MISC, "src det low after 500mS sleep\n");
 #endif
 		goto out;
 	}
 
 	/* disable HVDCP */
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_MISC, "Disable HVDCP\n");
 #endif
 	rc = vote(chip->hvdcp_enable_votable, HVDCP_PULSING_VOTER, true, 0);
@@ -8251,7 +8251,7 @@ static int smbchg_prepare_for_pulsing(struct smbchg_chip *chip)
 		goto out;
 	}
 
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_MISC, "HVDCP voting for 300mA ICL\n");
 #endif
 	rc = vote(chip->usb_icl_votable, HVDCP_ICL_VOTER, true, 300);
@@ -8260,7 +8260,7 @@ static int smbchg_prepare_for_pulsing(struct smbchg_chip *chip)
 		goto out;
 	}
 
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_MISC, "Disable AICL\n");
 #endif
 	smbchg_sec_masked_write(chip, chip->usb_chgpth_base + USB_AICL_CFG,
@@ -8268,7 +8268,7 @@ static int smbchg_prepare_for_pulsing(struct smbchg_chip *chip)
 
 	chip->hvdcp_3_det_ignore_uv = true;
 	/* fake a removal */
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_MISC, "Faking Removal\n");
 #endif
 	rc = fake_insertion_removal(chip, false);
@@ -8280,7 +8280,7 @@ static int smbchg_prepare_for_pulsing(struct smbchg_chip *chip)
 	set_usb_psy_dp_dm(chip, POWER_SUPPLY_DP_DM_DP0P6_DMF);
 
 	/* disable APSD */
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_MISC, "Disabling APSD\n");
 #endif
 	rc = smbchg_sec_masked_write(chip,
@@ -8292,7 +8292,7 @@ static int smbchg_prepare_for_pulsing(struct smbchg_chip *chip)
 	}
 
 	/* fake an insertion */
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_MISC, "Faking Insertion\n");
 #endif
 	rc = fake_insertion_removal(chip, true);
@@ -8302,7 +8302,7 @@ static int smbchg_prepare_for_pulsing(struct smbchg_chip *chip)
 	}
 	chip->hvdcp_3_det_ignore_uv = false;
 
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_MISC, "Enable AICL\n");
 #endif
 	smbchg_sec_masked_write(chip, chip->usb_chgpth_base + USB_AICL_CFG,
@@ -8318,7 +8318,7 @@ static int smbchg_prepare_for_pulsing(struct smbchg_chip *chip)
 	 * high and the usb type should be none since APSD was disabled
 	 */
 	if (!is_src_detect_high(chip)) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_MISC, "src det low after 2s sleep\n");
 #endif
 		rc = -EINVAL;
@@ -8327,7 +8327,7 @@ static int smbchg_prepare_for_pulsing(struct smbchg_chip *chip)
 
 	smbchg_read(chip, &reg, chip->misc_base + IDEV_STS, 1);
 	if ((reg >> TYPE_BITS_OFFSET) != 0) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_MISC, "type bits set after 2s sleep - abort\n");
 #endif
 		rc = -EINVAL;
@@ -8356,7 +8356,7 @@ static int smbchg_unprepare_for_pulsing(struct smbchg_chip *chip)
 	set_usb_psy_dp_dm(chip, POWER_SUPPLY_DP_DM_DPF_DMF);
 
 	/* switch to 9V HVDCP */
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_MISC, "Switch to 9V HVDCP\n");
 #endif
 	rc = smbchg_sec_masked_write(chip, chip->usb_chgpth_base + CHGPTH_CFG,
@@ -8367,7 +8367,7 @@ static int smbchg_unprepare_for_pulsing(struct smbchg_chip *chip)
 	}
 
 	/* enable HVDCP */
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_MISC, "Enable HVDCP\n");
 #endif
 	rc = vote(chip->hvdcp_enable_votable, HVDCP_PULSING_VOTER, false, 1);
@@ -8377,7 +8377,7 @@ static int smbchg_unprepare_for_pulsing(struct smbchg_chip *chip)
 	}
 
 	/* enable APSD */
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_MISC, "Enabling APSD\n");
 #endif
 	rc = smbchg_sec_masked_write(chip,
@@ -8389,7 +8389,7 @@ static int smbchg_unprepare_for_pulsing(struct smbchg_chip *chip)
 	}
 
 	/* Disable AICL */
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_MISC, "Disable AICL\n");
 #endif
 	rc = smbchg_sec_masked_write(chip, chip->usb_chgpth_base + USB_AICL_CFG,
@@ -8401,7 +8401,7 @@ static int smbchg_unprepare_for_pulsing(struct smbchg_chip *chip)
 
 	/* fake a removal */
 	chip->hvdcp_3_det_ignore_uv = true;
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_MISC, "Faking Removal\n");
 #endif
 	rc = fake_insertion_removal(chip, false);
@@ -8418,7 +8418,7 @@ static int smbchg_unprepare_for_pulsing(struct smbchg_chip *chip)
 	chip->parallel.enabled_once = false;
 
 	/* Enable AICL */
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_MISC, "Enable AICL\n");
 #endif
 	rc = smbchg_sec_masked_write(chip, chip->usb_chgpth_base + USB_AICL_CFG,
@@ -8429,7 +8429,7 @@ static int smbchg_unprepare_for_pulsing(struct smbchg_chip *chip)
 	}
 
 	/* fake an insertion */
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_MISC, "Faking Insertion\n");
 #endif
 	rc = fake_insertion_removal(chip, true);
@@ -8451,7 +8451,7 @@ out:
 	if (rc < 0)
 		pr_err("Couldn't reduce aicl deglitch rc=%d\n", rc);
 
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_MISC, "Retracting HVDCP vote for ICL\n");
 #endif
 	rc = vote(chip->usb_icl_votable, HVDCP_ICL_VOTER, false, 0);
@@ -8460,7 +8460,7 @@ out:
 
 	chip->hvdcp_3_det_ignore_uv = false;
 	if (!is_src_detect_high(chip)) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_MISC, "HVDCP removed\n");
 #endif
 		update_usb_status(chip, 0, 0);
@@ -8469,7 +8469,7 @@ out:
 	smbchg_handle_hvdcp3_disable(chip);
 
 	if (chip->parallel.use_parallel_aicl) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_MISC, "complete hvdcp_det_done\n");
 #endif
 		complete_all(&chip->hvdcp_det_done);
@@ -8487,7 +8487,7 @@ static int rerun_apsd(struct smbchg_chip *chip)
 	chip->hvdcp_3_det_ignore_uv = true;
 
 	if (chip->schg_version == QPNP_SCHG_LITE) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_STATUS, "Re-running APSD\n");
 #endif
 		reinit_completion(&chip->src_det_raised);
@@ -8504,7 +8504,7 @@ static int rerun_apsd(struct smbchg_chip *chip)
 			goto out;
 		}
 
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_MISC, "Waiting on rising usbin uv\n");
 #endif
 		rc = wait_for_usbin_uv(chip, true);
@@ -8513,7 +8513,7 @@ static int rerun_apsd(struct smbchg_chip *chip)
 			goto out;
 		}
 
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_MISC, "Waiting on falling src det\n");
 #endif
 		rc = wait_for_src_detect(chip, false);
@@ -8522,7 +8522,7 @@ static int rerun_apsd(struct smbchg_chip *chip)
 			goto out;
 		}
 
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_MISC, "Waiting on falling usbin uv\n");
 #endif
 		rc = wait_for_usbin_uv(chip, false);
@@ -8531,7 +8531,7 @@ static int rerun_apsd(struct smbchg_chip *chip)
 			goto out;
 		}
 
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_MISC, "Waiting on rising src det\n");
 #endif
 		rc = wait_for_src_detect(chip, true);
@@ -8540,12 +8540,12 @@ static int rerun_apsd(struct smbchg_chip *chip)
 			goto out;
 		}
 	} else {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_STATUS, "Faking Removal\n");
 #endif
 		rc = fake_insertion_removal(chip, false);
 		msleep(500);
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_STATUS, "Faking Insertion\n");
 #endif
 		rc = fake_insertion_removal(chip, true);
@@ -8571,7 +8571,7 @@ static bool is_hvdcp_5v_cont_mode(struct smbchg_chip *chip)
 		return false;
 	}
 
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_STATUS, "HVDCP status = %x\n", reg);
 #endif
 
@@ -8582,7 +8582,7 @@ static bool is_hvdcp_5v_cont_mode(struct smbchg_chip *chip)
 			pr_err("Unable to read INPUT status rc=%d\n", rc);
 			return false;
 		}
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_STATUS, "INPUT status = %x\n", reg);
 #endif
 		if ((reg & SCHG_LITE_USBIN_HVDCP_5_9V_SEL_MASK) ==
@@ -8596,7 +8596,7 @@ static int smbchg_prepare_for_pulsing_lite(struct smbchg_chip *chip)
 {
 	int rc = 0;
 
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_MISC, "HVDCP voting for 300mA ICL\n");
 #endif
 	rc = vote(chip->usb_icl_votable, HVDCP_ICL_VOTER, true, 300);
@@ -8607,14 +8607,14 @@ static int smbchg_prepare_for_pulsing_lite(struct smbchg_chip *chip)
 
 	/* check if HVDCP is already in 5V continuous mode */
 	if (is_hvdcp_5v_cont_mode(chip)) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_MISC, "HVDCP by default is in 5V continuous mode\n");
 #endif
 		return 0;
 	}
 
 	/* switch to 5V HVDCP */
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_MISC, "Switch to 5V HVDCP\n");
 #endif
 	rc = smbchg_sec_masked_write(chip, chip->usb_chgpth_base + CHGPTH_CFG,
@@ -8631,13 +8631,13 @@ static int smbchg_prepare_for_pulsing_lite(struct smbchg_chip *chip)
 	 * high and that we are still in 5V hvdcp
 	 */
 	if (!is_src_detect_high(chip)) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_MISC, "src det low after 500mS sleep\n");
 #endif
 		goto out;
 	}
 
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_MISC, "Disable AICL\n");
 #endif
 	smbchg_sec_masked_write(chip, chip->usb_chgpth_base + USB_AICL_CFG,
@@ -8650,7 +8650,7 @@ static int smbchg_prepare_for_pulsing_lite(struct smbchg_chip *chip)
 		goto out;
 	}
 
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_MISC, "Enable AICL\n");
 #endif
 	smbchg_sec_masked_write(chip, chip->usb_chgpth_base + USB_AICL_CFG,
@@ -8665,7 +8665,7 @@ static int smbchg_prepare_for_pulsing_lite(struct smbchg_chip *chip)
 	 * high and the usb type should be none since APSD was disabled
 	 */
 	if (!is_src_detect_high(chip)) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_MISC, "src det low after 2s sleep\n");
 #endif
 		rc = -EINVAL;
@@ -8683,7 +8683,7 @@ out:
 	chip->hvdcp_3_det_ignore_uv = false;
 	restore_from_hvdcp_detection(chip);
 	if (!is_src_detect_high(chip)) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_MISC, "HVDCP removed - force removal\n");
 #endif
 		update_usb_status(chip, 0, true);
@@ -8695,7 +8695,7 @@ static int smbchg_unprepare_for_pulsing_lite(struct smbchg_chip *chip)
 {
 	int rc = 0;
 
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_MISC, "Forcing 9V HVDCP 2.0\n");
 #endif
 	rc = force_9v_hvdcp(chip);
@@ -8704,7 +8704,7 @@ static int smbchg_unprepare_for_pulsing_lite(struct smbchg_chip *chip)
 		return rc;
 	}
 
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_MISC, "Retracting HVDCP vote for ICL\n");
 #endif
 	rc = vote(chip->usb_icl_votable, HVDCP_ICL_VOTER, false, 0);
@@ -8712,7 +8712,7 @@ static int smbchg_unprepare_for_pulsing_lite(struct smbchg_chip *chip)
 		pr_err("Couldn't retract HVDCP ICL vote rc=%d\n", rc);
 
 	if (!is_src_detect_high(chip)) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_MISC, "HVDCP removed\n");
 #endif
 		update_usb_status(chip, 0, 0);
@@ -8720,7 +8720,7 @@ static int smbchg_unprepare_for_pulsing_lite(struct smbchg_chip *chip)
 	smbchg_handle_hvdcp3_disable(chip);
 
 	if (chip->parallel.use_parallel_aicl) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_MISC, "complete hvdcp_det_done\n");
 #endif
 		complete_all(&chip->hvdcp_det_done);
@@ -8736,7 +8736,7 @@ static int smbchg_dp_pulse_lite(struct smbchg_chip *chip)
 {
 	int rc = 0;
 
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_MISC, "Increment DP\n");
 #endif
 	rc = smbchg_masked_write(chip, chip->usb_chgpth_base + CMD_HVDCP_2,
@@ -8751,7 +8751,7 @@ static int smbchg_dm_pulse_lite(struct smbchg_chip *chip)
 {
 	int rc = 0;
 
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_MISC, "Decrement DM\n");
 #endif
 	rc = smbchg_masked_write(chip, chip->usb_chgpth_base + CMD_HVDCP_2,
@@ -8772,7 +8772,7 @@ static int smbchg_hvdcp3_confirmed(struct smbchg_chip *chip)
 	 */
 	chip->parallel.enabled_once = false;
 
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_MISC, "Retracting HVDCP vote for ICL\n");
 #endif
 	rc = vote(chip->usb_icl_votable, HVDCP_ICL_VOTER, false, 0);
@@ -8783,7 +8783,7 @@ static int smbchg_hvdcp3_confirmed(struct smbchg_chip *chip)
 
 	if (chip->parallel.use_parallel_aicl) {
 		complete_all(&chip->hvdcp_det_done);
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_MISC, "hvdcp_det_done complete\n");
 #endif
 	}
@@ -8824,7 +8824,7 @@ static int smbchg_dp_dm(struct smbchg_chip *chip, int val)
 			rc = smbchg_dp_pulse_lite(chip);
 		if (!rc)
 			chip->pulse_cnt++;
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_MISC, "pulse_cnt = %d\n", chip->pulse_cnt);
 #endif
 		break;
@@ -8836,13 +8836,13 @@ static int smbchg_dp_dm(struct smbchg_chip *chip, int val)
 			rc = smbchg_dm_pulse_lite(chip);
 		if (!rc && chip->pulse_cnt)
 			chip->pulse_cnt--;
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_MISC, "pulse_cnt = %d\n", chip->pulse_cnt);
 #endif
 		break;
 	case POWER_SUPPLY_DP_DM_HVDCP3_SUPPORTED:
 		chip->hvdcp3_supported = true;
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_MISC, "HVDCP3 supported\n");
 #endif
 		break;
@@ -8878,7 +8878,7 @@ static int smbchg_get_prop_batt_charge_counter(struct smbchg_chip *chip)
 	rc = power_supply_get_property(chip->bms_psy,
 				POWER_SUPPLY_PROP_CHARGE_COUNTER, &val);
 	if (rc < 0) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_STATUS, "Couldn't get charge count rc = %d\n", rc);
 #endif
 		return rc;
@@ -8898,7 +8898,7 @@ static int smbchg_get_prop_batt_current_max(struct smbchg_chip *chip)
 	rc = power_supply_get_property(chip->usb_psy,
 				POWER_SUPPLY_PROP_CURRENT_MAX, &val);
 	if (rc < 0) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_STATUS, "Couldn't get current max rc = %d\n", rc);
 #endif
 		return rc;
@@ -8912,7 +8912,7 @@ static void update_typec_capability_status(struct smbchg_chip *chip,
 {
 	int rc;
 
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_TYPEC, "typec capability = %dma\n", val->intval);
 #endif
 
@@ -8932,7 +8932,7 @@ static void update_typec_capability_status(struct smbchg_chip *chip,
 static void update_typec_otg_status(struct smbchg_chip *chip, int mode,
 					bool force)
 {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_TYPEC, "typec mode = %d\n", mode);
 #endif
 
@@ -8969,7 +8969,7 @@ static int smbchg_get_iusb(struct smbchg_chip *chip)
 		rc = qpnp_vadc_read(chip->vchg_vadc_dev,
 				chip->vchg_adc_channel, &adc_result);
 		if (rc) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 			pr_smb(PR_STATUS,
 				"error in VCHG (channel-%d) read rc = %d\n",
 						chip->vchg_adc_channel, rc);
@@ -9039,7 +9039,7 @@ static void smbchg_external_power_changed(struct power_supply *psy)
 			}
 
 			rc = smbchg_config_chg_battery_type(chip);
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 			if (rc)
 				pr_smb(PR_MISC,
 					"Couldn't update charger configuration rc=%d\n",
@@ -9059,7 +9059,7 @@ static void smbchg_external_power_changed(struct power_supply *psy)
 	if (chip->lge_cd_lpc){
 		rc = chip->lge_cd_lpc->get_property(chip->lge_cd_lpc,
 				LGE_POWER_PROP_CURRENT_MAX, &lge_val);
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_info("current_limit from cd : %d\n", lge_val.intval);
 #endif
 		if (rc == 0)
@@ -9098,7 +9098,7 @@ static void smbchg_external_power_changed(struct power_supply *psy)
 			pr_err("Couldn't update USB PSY ICL vote rc=%d\n", rc);
 
 		lgcc_set_ibat_current(chip, chip->otp_ibat_current);
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_LGE, "factory cable.. skipping setting current\n");
 #endif
 
@@ -9173,7 +9173,7 @@ static void smbchg_external_power_changed(struct power_supply *psy)
 				LGE_POWER_PROP_CURRENT_MAX, &lge_val);
 			if (rc == 0) {
 				current_limit = lge_val.intval / 1000;
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 				pr_smb(PR_LGE, "usb current max. setting current %d\n",
 						current_limit);
 #endif
@@ -9186,14 +9186,14 @@ static void smbchg_external_power_changed(struct power_supply *psy)
 #ifdef CONFIG_LGE_PM
 	if (!chip->usb_psy || !chip->usb_psy->get_property ||
 		chip->usb_psy->get_property(chip->usb_psy, POWER_SUPPLY_PROP_APSD_RERUN_NEED, &prop)) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_LGE, "failed to get apsd_rerun_need\n");
 #endif
 		prop.intval = 0;
 	}
 
 	if (chip->typec_psy && chip->typec_current_ma && !prop.intval) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_LGE, "skip_current_for_non_sdp, typec_current_ma(%d), apsd_rerun_need(%d)\n",
 			chip->typec_current_ma, prop.intval);
 #endif
@@ -9212,7 +9212,7 @@ static void smbchg_external_power_changed(struct power_supply *psy)
 			chip->usb_psy->get_property(chip->usb_psy,
 					POWER_SUPPLY_PROP_APSD_RERUN_NEED, &prop);
 			if (prop.intval == 1) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 				pr_smb(PR_LGE, "rerun apsd\n");
 #endif
 				prop.intval = 0;
@@ -9227,7 +9227,7 @@ static void smbchg_external_power_changed(struct power_supply *psy)
 			chip->usb_psy->get_property(chip->usb_psy,
 					POWER_SUPPLY_PROP_APSD_RERUN_NEED, &prop);
 			if (prop.intval == 1) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 				pr_smb(PR_LGE, "set HC mode\n");
 #endif
 				rc = smbchg_masked_write(chip,
@@ -9248,7 +9248,7 @@ static void smbchg_external_power_changed(struct power_supply *psy)
 	}
 #endif
 
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_MISC, "usb type = %s current_limit = %d\n",
 			usb_type_name, current_limit);
 #endif
@@ -9297,14 +9297,14 @@ skip_current_for_non_sdp:
 			}
 			rc = chip->typec_psy->get_property(chip->typec_psy,
 					POWER_SUPPLY_PROP_TYPE, &prop);
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 			pr_info("usbc_type : %d, usb_supply_type : %d\n",
 					prop.intval, usb_supply_type);
 #endif
 			if (rc == 0) {
 				if ((prop.intval != 0) && (usb_supply_type !=
 							POWER_SUPPLY_TYPE_USB)) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 					pr_info ("cd_current_limit is %d\n", chip->cd_current_limit);
 #endif
 					if (chip->cd_current_limit != 0){
@@ -9470,7 +9470,7 @@ static int smbchg_battery_set_property(struct power_supply *psy,
 		 * rerun aicl caused by hvdcp3 optimization.
 		 * so clear aicl count to prevent disable AICL rerun
 		 */
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_LGE, "rerun aicl triggered in userspace.\n");
 #endif
 		chip->aicl_irq_count = 0;
@@ -9505,7 +9505,7 @@ static int smbchg_battery_set_property(struct power_supply *psy,
 #ifdef CONFIG_LGE_PM_MAXIM_EVP_CONTROL
 	case POWER_SUPPLY_PROP_ENABLE_EVP_CHG:
 		chip->is_evp_ta = val->intval;
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_LGE, "is_evp_ta = %d\n", chip->is_evp_ta);
 #endif
 		schedule_delayed_work(&chip->enable_evp_chg_work, 0);
@@ -9514,7 +9514,7 @@ static int smbchg_battery_set_property(struct power_supply *psy,
 #ifdef CONFIG_LGE_USB_TYPE_C
 	case POWER_SUPPLY_PROP_DP_ALT_MODE:
 		chip->dp_alt_mode = val->intval;
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_LGE, "dp_alt_mode = %d\n", chip->dp_alt_mode);
 #endif
 		break;
@@ -9523,14 +9523,14 @@ static int smbchg_battery_set_property(struct power_supply *psy,
 	case POWER_SUPPLY_PROP_CTYPE_RP:
 #ifndef CONFIG_LGE_USB_ANX7688_ADC
 		if (chip->ctype_rp != RP_NONE && val->intval != RP_NONE) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 			pr_smb(PR_LGE, "Ignore rp = %d\n", val->intval);
 #endif
 			break;
 		}
 #endif
 		chip->ctype_rp = val->intval;
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_LGE, "usb typec rp check = %d\n", chip->ctype_rp);
 #endif
 		break;
@@ -9548,7 +9548,7 @@ static int smbchg_battery_set_property(struct power_supply *psy,
 		if (chip->input_blocked != !!val->intval) {
 			chip->input_blocked = !!val->intval;
 			rc = vote(chip->usb_suspend_votable, WATERPROOF_EN_VOTER, chip->input_blocked, 0);
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 			pr_smb(PR_LGE, "waterproof : USBIN is %s.\n", chip->input_blocked ? "blocked" : "released");
 #endif
 		}
@@ -9900,7 +9900,7 @@ static irqreturn_t batt_hot_handler(int irq, void *_chip)
 
 	smbchg_read(chip, &reg, chip->bat_if_base + RT_STS, 1);
 	chip->batt_hot = !!(reg & HOT_BAT_HARD_BIT);
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_INTERRUPT, "triggered: 0x%02x\n", reg);
 #endif
 	smbchg_parallel_usb_check_ok(chip);
@@ -9920,7 +9920,7 @@ static irqreturn_t batt_cold_handler(int irq, void *_chip)
 
 	smbchg_read(chip, &reg, chip->bat_if_base + RT_STS, 1);
 	chip->batt_cold = !!(reg & COLD_BAT_HARD_BIT);
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_INTERRUPT, "triggered: 0x%02x\n", reg);
 #endif
 	smbchg_parallel_usb_check_ok(chip);
@@ -9940,7 +9940,7 @@ static irqreturn_t batt_warm_handler(int irq, void *_chip)
 
 	smbchg_read(chip, &reg, chip->bat_if_base + RT_STS, 1);
 	chip->batt_warm = !!(reg & HOT_BAT_SOFT_BIT);
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_INTERRUPT, "triggered: 0x%02x\n", reg);
 #endif
 	smbchg_parallel_usb_check_ok(chip);
@@ -9958,7 +9958,7 @@ static irqreturn_t batt_cool_handler(int irq, void *_chip)
 
 	smbchg_read(chip, &reg, chip->bat_if_base + RT_STS, 1);
 	chip->batt_cool = !!(reg & COLD_BAT_SOFT_BIT);
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_INTERRUPT, "triggered: 0x%02x\n", reg);
 #endif
 	smbchg_parallel_usb_check_ok(chip);
@@ -9977,7 +9977,7 @@ static irqreturn_t batt_pres_handler(int irq, void *_chip)
 
 	smbchg_read(chip, &reg, chip->bat_if_base + RT_STS, 1);
 	chip->batt_present = !(reg & BAT_MISSING_BIT);
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_INTERRUPT, "triggered: 0x%02x\n", reg);
 #endif
 	if (chip->psy_registered)
@@ -10001,7 +10001,7 @@ static irqreturn_t chg_error_handler(int irq, void *_chip)
 	int rc = 0;
 	u8 reg;
 
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_INTERRUPT, "chg-error triggered\n");
 #endif
 
@@ -10009,7 +10009,7 @@ static irqreturn_t chg_error_handler(int irq, void *_chip)
 	if (rc < 0) {
 		dev_err(chip->dev, "Unable to read RT_STS rc = %d\n", rc);
 	} else {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_INTERRUPT, "triggered: 0x%02x\n", reg);
 #endif
 		if (reg & CHG_COMP_SFT_BIT)
@@ -10033,12 +10033,12 @@ static irqreturn_t fastchg_handler(int irq, void *_chip)
 	union lge_power_propval lge_val = {0,};
 #endif
 
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_INTERRUPT, "p2f triggered\n");
 #endif
 #ifdef CONFIG_LGE_PM
 	if (!chip->usb_present) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_LGE, "illegal interrupt triggered, ignore\n");
 #endif
 		return IRQ_HANDLED;
@@ -10083,7 +10083,7 @@ static irqreturn_t chg_term_handler(int irq, void *_chip)
 	union lge_power_propval lge_val = {0,};
 	int rc;
 #endif
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_INTERRUPT, "tcc triggered\n");
 #endif
 	/*
@@ -10098,13 +10098,13 @@ static irqreturn_t chg_term_handler(int irq, void *_chip)
 #ifdef CONFIG_LGE_PM_DIS_AICL_IRQ_WAKE
 	if (chip->psy_registered) {
 		if (chip->enable_aicl_wake) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 			pr_smb(PR_LGE, "disable aicl_done_irq\n");
 #endif
 			disable_irq_wake(chip->aicl_done_irq);
 			chip->enable_aicl_wake = false;
 		}
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	} else {
 		pr_smb(PR_LGE, "smbchg irqs are not registered\n");
 #endif
@@ -10148,7 +10148,7 @@ static irqreturn_t taper_handler(int irq, void *_chip)
 
 	taper_irq_en(chip, false);
 	smbchg_read(chip, &reg, chip->chgr_base + RT_STS, 1);
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_INTERRUPT, "triggered: 0x%02x\n", reg);
 #endif
 	smbchg_parallel_usb_taper(chip);
@@ -10165,19 +10165,19 @@ static irqreturn_t recharge_handler(int irq, void *_chip)
 	u8 reg = 0;
 
 	smbchg_read(chip, &reg, chip->chgr_base + RT_STS, 1);
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_INTERRUPT, "triggered: 0x%02x\n", reg);
 #endif
 #ifdef CONFIG_LGE_PM_DIS_AICL_IRQ_WAKE
 	if (chip->psy_registered) {
 		if (!chip->enable_aicl_wake) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 			pr_smb(PR_LGE, "enable aicl_done_irq\n");
 #endif
 			enable_irq_wake(chip->aicl_done_irq);
 			chip->enable_aicl_wake = true;
 		}
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	} else {
 		pr_smb(PR_LGE, "smbchg irqs are not registered\n");
 #endif
@@ -10214,7 +10214,7 @@ static irqreturn_t power_ok_handler(int irq, void *_chip)
 	u8 reg = 0;
 
 	smbchg_read(chip, &reg, chip->misc_base + RT_STS, 1);
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_INTERRUPT, "triggered: 0x%02x\n", reg);
 #endif
 	return IRQ_HANDLED;
@@ -10231,7 +10231,7 @@ static irqreturn_t dcin_uv_handler(int irq, void *_chip)
 	struct smbchg_chip *chip = _chip;
 	bool dc_present = is_dc_present(chip);
 
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_STATUS, "chip->dc_present = %d dc_present = %d\n",
 			chip->dc_present, dc_present);
 #endif
@@ -10276,12 +10276,12 @@ static irqreturn_t usbin_ov_handler(int irq, void *_chip)
 	if (reg & USBIN_OV_BIT) {
 		chip->usb_ov_det = true;
 		if (chip->usb_psy) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 			pr_smb(PR_MISC, "setting usb psy health OV\n");
 #endif
 			rc = power_supply_set_health_state(chip->usb_psy,
 					POWER_SUPPLY_HEALTH_OVERVOLTAGE);
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 			if (rc)
 				pr_smb(PR_STATUS,
 					"usb psy does not allow updating prop %d rc = %d\n",
@@ -10307,13 +10307,13 @@ static void increment_uv_irq_count(struct smbchg_chip *chip)
 	int rc;
 
 	chip->uv_irq_count++;
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_LGE, "uv_irq_count[%d]\n", chip->uv_irq_count);
 #endif
 
 	if (chip->uv_irq_count >= 10) {
 		prop.intval = CURRENT_100_MA * 1000;
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_LGE, "icl set 100 mA by weak VBUS\n");
 #endif
 		rc = chip->usb_psy->set_property(chip->usb_psy,
@@ -10325,7 +10325,7 @@ static void increment_uv_irq_count(struct smbchg_chip *chip)
 		}
 		chip->uv_irq_count = 0;
 	}else if(chip->usb_max_current_ma <= CURRENT_150_MA){
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_LGE, "usb suspend by weak charger\n");
 #endif
 		rc = vote(chip->usb_suspend_votable,
@@ -10362,7 +10362,7 @@ static irqreturn_t usbin_uv_handler(int irq, void *_chip)
 		goto out;
 	}
 
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_STATUS,
 		"%s chip->usb_present = %d rt_sts = 0x%02x hvdcp_3_det_ignore_uv = %d aicl = %d\n",
 		chip->hvdcp_3_det_ignore_uv ? "Ignoring":"",
@@ -10375,7 +10375,7 @@ static irqreturn_t usbin_uv_handler(int irq, void *_chip)
 	 */
 	if (!(reg & USBIN_UV_BIT) && !(reg & USBIN_SRC_DET_BIT) &&
 		!chip->hvdcp_3_det_ignore_uv) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_MISC, "setting usb psy dp=f dm=f\n");
 #endif
 		power_supply_set_dp_dm(chip->usb_psy,
@@ -10391,7 +10391,7 @@ static irqreturn_t usbin_uv_handler(int irq, void *_chip)
 		goto out;
 
 	if ((reg & USBIN_UV_BIT) && (reg & USBIN_SRC_DET_BIT)) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 #ifdef CONFIG_LGE_PM_DEBUG
 		pr_smb(PR_STATUS, "Very weak charger detected. VBUS[%d]\n",
 				get_usb_adc(chip));
@@ -10448,7 +10448,7 @@ static irqreturn_t usbin_uv_handler(int irq, void *_chip)
 				POWER_SUPPLY_PROP_USB_CURRENT_MAX_MODE,	&lge_val);
 			if (rc >= 0)
 				current_max_mode = lge_val.intval;
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 			else
 				pr_smb(PR_LGE, "could not get current_max mode,"
 					" rc=%d\n", rc);
@@ -10457,7 +10457,7 @@ static irqreturn_t usbin_uv_handler(int irq, void *_chip)
 
 		read_usb_type(chip, &usb_type_name, &usb_supply_type);
 
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_LGE, "usb_type[%s], current_max_mode[%d]\n",
 			usb_type_name,  current_max_mode);
 #endif
@@ -10465,7 +10465,7 @@ static irqreturn_t usbin_uv_handler(int irq, void *_chip)
 		if (usb_supply_type == POWER_SUPPLY_TYPE_USB ||
 			usb_supply_type == POWER_SUPPLY_TYPE_USB_CDP) {
 			if (current_max_mode) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 				pr_smb(PR_LGE, "skip usb_suspend votable\n");
 #endif
 				goto out;
@@ -10492,7 +10492,7 @@ static irqreturn_t usbin_uv_handler(int irq, void *_chip)
 						rc);
 #endif
 		}
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_MISC, "setting usb psy health UNSPEC_FAILURE\n");
 #endif
 		rc = power_supply_set_health_state(chip->usb_psy,
@@ -10522,7 +10522,7 @@ static irqreturn_t src_detect_handler(int irq, void *_chip)
 	bool src_detect = is_src_detect_high(chip);
 	int rc;
 
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_STATUS,
 		"%s chip->usb_present = %d usb_present = %d src_detect = %d hvdcp_3_det_ignore_uv=%d\n",
 		chip->hvdcp_3_det_ignore_uv ? "Ignoring":"",
@@ -10589,7 +10589,7 @@ static irqreturn_t otg_oc_handler(int irq, void *_chip)
 	struct smbchg_chip *chip = _chip;
 	s64 elapsed_us = ktime_us_delta(ktime_get(), chip->otg_enable_time);
 
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_INTERRUPT, "triggered\n");
 #endif
 
@@ -10611,7 +10611,7 @@ static irqreturn_t otg_oc_handler(int irq, void *_chip)
 	 */
 	if (chip->otg_retries < NUM_OTG_RETRIES) {
 		chip->otg_retries += 1;
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_STATUS,
 			"Retrying OTG enable. Try #%d, elapsed_us %lld\n",
 						chip->otg_retries, elapsed_us);
@@ -10638,7 +10638,7 @@ static irqreturn_t otg_fail_handler(int irq, void *_chip)
 	if (chip->bms_psy) {
 		rc = chip->bms_psy->get_property(chip->bms_psy,
 			POWER_SUPPLY_PROP_VOLTAGE_NOW, &ret);
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		if (rc < 0)
 			pr_smb(PR_LGE, "failed to read Battery Volatge\n");
 		else
@@ -10648,7 +10648,7 @@ static irqreturn_t otg_fail_handler(int irq, void *_chip)
 #endif
 	}
 #endif
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_INTERRUPT, "triggered\n");
 #endif
 	return IRQ_HANDLED;
@@ -10663,7 +10663,7 @@ static irqreturn_t aicl_done_handler(int irq, void *_chip)
 	struct smbchg_chip *chip = _chip;
 	bool usb_present = is_usb_present(chip);
 
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	int aicl_level = smbchg_get_aicl_level_ma(chip);
 
 	pr_smb(PR_INTERRUPT, "triggered, aicl: %d\n", aicl_level);
@@ -10689,19 +10689,19 @@ static irqreturn_t usbid_change_handler(int irq, void *_chip)
 	struct smbchg_chip *chip = _chip;
 	bool otg_present;
 
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_INTERRUPT, "triggered\n");
 #endif
 
 	otg_present = is_otg_present(chip);
 	if (chip->usb_psy) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_MISC, "setting usb psy OTG = %d\n",
 				otg_present ? 1 : 0);
 #endif
 		power_supply_set_usb_otg(chip->usb_psy, otg_present ? 1 : 0);
 	}
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	if (otg_present)
 		pr_smb(PR_STATUS, "OTG detected\n");
 #endif
@@ -10774,14 +10774,14 @@ static void lgcc_charger_reginfo(struct work_struct *work) {
 	struct power_supply *parallel_psy = get_parallel_psy(chip);
 	int rc, batt_volt, batt_temp;
 	union power_supply_propval ret = {0, };
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	bool usb_present = is_usb_present(chip);
 #endif
 	bool wireless_present = is_dc_present(chip);
 	int parallel_status = 0;
 	char *usb_type_name = "null";
 	char *cable_type_name = "NOT_INIT";
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	int usbin_vol = get_usb_adc(chip);
 #endif
 	int pmi_iusb_aicl = 0;
@@ -10817,7 +10817,7 @@ static void lgcc_charger_reginfo(struct work_struct *work) {
 	u8 reg_icl_sts_1, reg_icl_sts_2, reg_chgpth_cmd_il;
 #endif
 	if (!chip->bms_psy || !chip->usb_psy || !parallel_psy) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_LGE, "failed to get power_supply\n");
 #endif
 		return;
@@ -10863,7 +10863,7 @@ static void lgcc_charger_reginfo(struct work_struct *work) {
 
 	rc = parallel_psy->get_property(parallel_psy,
 		POWER_SUPPLY_PROP_STATUS, &ret);
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	if (rc < 0)
 		pr_smb(PR_LGE, "failed to read Parallel STATUS\n");
 #endif
@@ -10915,7 +10915,7 @@ static void lgcc_charger_reginfo(struct work_struct *work) {
 		usb_ctype_name = "Type-c PD";
 	else
 		usb_ctype_name = "NONE";
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_info("usb ctype is %d\n", ret.intval);
 #endif
 #endif
@@ -10925,7 +10925,7 @@ static void lgcc_charger_reginfo(struct work_struct *work) {
 		total_ibat = chip->cfg_fastchg_current_ma;
 	rc = chip->batt_psy.get_property(&chip->batt_psy,
 		POWER_SUPPLY_PROP_INPUT_CURRENT_MAX, &ret);
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	if (rc < 0)
 		pr_smb(PR_LGE, "failed to read PMI ICL\n");
 #endif
@@ -10935,7 +10935,7 @@ static void lgcc_charger_reginfo(struct work_struct *work) {
 
 	rc = parallel_psy->get_property(parallel_psy,
 		POWER_SUPPLY_PROP_CONSTANT_CHARGE_CURRENT_MAX, &ret);
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	if (rc < 0)
 		pr_smb(PR_LGE, "failed to read SMB IBAT\n");
 #endif
@@ -10943,7 +10943,7 @@ static void lgcc_charger_reginfo(struct work_struct *work) {
 
 	rc = parallel_psy->get_property(parallel_psy,
 		POWER_SUPPLY_PROP_CURRENT_MAX, &ret);
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	if (rc < 0)
 		pr_smb(PR_LGE, "failed to read SMB IBAT\n");
 #endif
@@ -10951,7 +10951,7 @@ static void lgcc_charger_reginfo(struct work_struct *work) {
 
 	rc = chip->batt_psy.get_property(&chip->batt_psy,
 		POWER_SUPPLY_PROP_CAPACITY, &ret);
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	if (rc < 0)
 		pr_smb(PR_LGE, "failed to read Battery SOC\n");
 #endif
@@ -10959,7 +10959,7 @@ static void lgcc_charger_reginfo(struct work_struct *work) {
 
 	rc = chip->usb_psy->get_property(chip->usb_psy,
 		POWER_SUPPLY_PROP_CURRENT_MAX, &ret);
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	if (rc < 0)
 		pr_smb(PR_LGE, "failed to read TOTAL IUSB\n");
 #endif
@@ -10967,7 +10967,7 @@ static void lgcc_charger_reginfo(struct work_struct *work) {
 
 	rc = chip->batt_psy.get_property(&chip->batt_psy,
 		POWER_SUPPLY_PROP_CURRENT_NOW, &ret);
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	if (rc < 0)
 		pr_smb(PR_LGE, "failed to read Total IBAT NOW\n");
 #endif
@@ -10975,7 +10975,7 @@ static void lgcc_charger_reginfo(struct work_struct *work) {
 
 	rc = chip->bms_psy->get_property(chip->bms_psy,
 		POWER_SUPPLY_PROP_VOLTAGE_NOW, &ret);
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	if (rc < 0)
 		pr_smb(PR_LGE, "failed to read Battery Volatge\n");
 #endif
@@ -10983,7 +10983,7 @@ static void lgcc_charger_reginfo(struct work_struct *work) {
 
 	rc = chip->bms_psy->get_property(chip->bms_psy,
 		POWER_SUPPLY_PROP_TEMP, &ret);
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	if (rc < 0)
 		pr_smb(PR_LGE, "failed to read Battery temperature\n");
 #endif
@@ -11089,7 +11089,7 @@ static void lgcc_charger_reginfo(struct work_struct *work) {
 		pr_err("fail to read CMD_IL, %d\n", rc);
 #endif
 
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_info ("[STATUS] USB_PRESENT[%d], PARALLEL_STATUS[%d], USB_TYPE[%s]\n",
 			usb_present, parallel_status, usb_type_name);
 	if (usb_present) {
@@ -11117,7 +11117,7 @@ static void lgcc_charger_reginfo(struct work_struct *work) {
 	pr_info("[STATS] ICL_STS_1[0x%02x] ICL_STS_2[0x%02x] CHGPTH_CMDIL[0x%02x]\n",
 			reg_icl_sts_1, reg_icl_sts_2, reg_chgpth_cmd_il);
 #endif
-#endif // CONFIG_MELINA_QUIET_SMBCHG
+#endif // CONFIG_MELINA_QUIET_POWER
 
 	if (chip->usb_present) {
 		delay_time = CHARGING_INFORM_NORMAL_TIME / 2;
@@ -11166,7 +11166,7 @@ static int determine_initial_status(struct smbchg_chip *chip)
 	chip->dc_present = is_dc_present(chip);
 
 	if (chip->usb_present) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_MISC, "setting usb psy dp=f dm=f\n");
 #endif
 		power_supply_set_dp_dm(chip->usb_psy,
@@ -11345,7 +11345,7 @@ static int smbchg_hw_init(struct smbchg_chip *chip)
 				rc);
 		return rc;
 	}
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_STATUS, "Charger Revision DIG: %d.%d; ANA: %d.%d\n",
 			chip->revision[DIG_MAJOR], chip->revision[DIG_MINOR],
 			chip->revision[ANA_MAJOR], chip->revision[ANA_MINOR]);
@@ -11514,7 +11514,7 @@ static int smbchg_hw_init(struct smbchg_chip *chip)
 				"Couldn't set float voltage rc = %d\n", rc);
 			return rc;
 		}
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_STATUS, "set vfloat to %d\n", chip->vfloat_mv);
 #endif
 	}
@@ -11528,7 +11528,7 @@ static int smbchg_hw_init(struct smbchg_chip *chip)
 				rc);
 			return rc;
 		}
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_STATUS, "set fastchg current comp to %d\n",
 			chip->fastchg_current_comp);
 #endif
@@ -11543,7 +11543,7 @@ static int smbchg_hw_init(struct smbchg_chip *chip)
 				rc);
 			return rc;
 		}
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_STATUS, "set float voltage comp to %d\n",
 			chip->float_voltage_comp);
 #endif
@@ -11820,7 +11820,7 @@ static int smbchg_hw_init(struct smbchg_chip *chip)
 
 #ifdef CONFIG_LGE_PM
 	/* enable APSD */
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_MISC, "Enabling APSD\n");
 #endif
 	rc = smbchg_sec_masked_write(chip,
@@ -11840,7 +11840,7 @@ static int smbchg_hw_init(struct smbchg_chip *chip)
 	}
 	chip->initial_vfloat_trim_reg = reg;
 	chip->vfloat_trim_restore_status = false;
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_STATUS, "Initial VFLOAT_TRIM reg = 0x%x\n",
 		chip->initial_vfloat_trim_reg);
 #endif
@@ -12132,7 +12132,7 @@ static int smb_parse_dt(struct smbchg_chip *chip)
 	of_property_read_u32(chip->spmi->dev.of_node,
 					"qcom,parallel-main-chg-icl-percent",
 					&smbchg_main_chg_icl_percent);
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_STATUS, "parallel usb thr: %d, 9v thr: %d\n",
 			chip->parallel.min_current_thr_ma,
 			chip->parallel.min_9v_current_thr_ma);
@@ -12558,7 +12558,7 @@ static inline void dump_reg(struct smbchg_chip *chip, u16 addr,
 	u8 reg;
 
 	smbchg_read(chip, &reg, addr, 1);
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_DUMP, "%s - %04X = %02X\n", name, addr, reg);
 #endif
 }
@@ -12685,7 +12685,7 @@ static int smbchg_check_chg_version(struct smbchg_chip *chip)
 				pmic_rev_id->pmic_subtype);
 	}
 
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_STATUS, "pmic=%s, wa_flags=0x%x, hvdcp_supported=%s\n",
 			pmic_rev_id->pmic_name, chip->wa_flags,
 			chip->hvdcp_not_supported ? "false" : "true");
@@ -12719,12 +12719,12 @@ static void rerun_hvdcp_det_if_necessary(struct smbchg_chip *chip)
 	read_usb_type(chip, &usb_type_name, &usb_supply_type);
 	if (lge_get_boot_mode() == LGE_BOOT_MODE_CHARGERLOGO &&
 			usb_supply_type == POWER_SUPPLY_TYPE_USB) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_STATUS, "Faking Removal\n");
 #endif
 		rc = fake_insertion_removal(chip, false);
 		msleep(50);
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_STATUS, "Faking Insertion\n");
 #endif
 		rc = fake_insertion_removal(chip, true);
@@ -12740,7 +12740,7 @@ static void rerun_hvdcp_det_if_necessary(struct smbchg_chip *chip)
 	read_usb_type(chip, &usb_type_name, &usb_supply_type);
 	if (usb_supply_type == POWER_SUPPLY_TYPE_USB_DCP
 		&& !is_hvdcp_present(chip)) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_STATUS, "DCP found rerunning APSD\n");
 #endif
 #ifdef CONFIG_LGE_PM
@@ -12771,7 +12771,7 @@ static void rerun_hvdcp_det_if_necessary(struct smbchg_chip *chip)
 		read_usb_type(chip, &usb_type_name, &usb_supply_type);
 		if (usb_supply_type != POWER_SUPPLY_TYPE_USB_DCP) {
 			msleep(500);
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 			pr_smb(PR_STATUS, "Rerun APSD as type !=DCP\n");
 #endif
 
@@ -12835,7 +12835,7 @@ static int smbchg_probe(struct spmi_device *spmi)
 
 	usb_psy = power_supply_get_by_name("usb");
 	if (!usb_psy) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_STATUS, "USB supply not found, deferring probe\n");
 #endif
 		return -EPROBE_DEFER;
@@ -12854,7 +12854,7 @@ static int smbchg_probe(struct spmi_device *spmi)
 
 		typec_psy = power_supply_get_by_name(typec_psy_name);
 		if (!typec_psy) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 			pr_smb(PR_STATUS,
 				"Type-C supply not found, deferring probe\n");
 #endif
@@ -13333,7 +13333,7 @@ static int smbchg_probe(struct spmi_device *spmi)
 #endif
 
 	if (!chip->skip_usb_notification) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_MISC, "setting usb psy present = %d\n",
 			chip->usb_present);
 #endif
@@ -13382,7 +13382,7 @@ static int smbchg_probe(struct spmi_device *spmi)
 	if (psy_usb_pd && psy_usb_pd->get_property &&
 		!psy_usb_pd->get_property(psy_usb_pd,
 			POWER_SUPPLY_PROP_INPUT_SUSPEND, &prop)) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_LGE, "The initial value of input_blocked = %d\n",
 			chip->input_blocked);
 	}
@@ -13403,7 +13403,7 @@ static int smbchg_probe(struct spmi_device *spmi)
 }
 #endif
 #ifdef CONFIG_LGE_PM
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_LGE, "smbchg_probe end\n");
 #endif
 #endif
@@ -13518,7 +13518,7 @@ static void smbchg_shutdown(struct spmi_device *spmi)
 	if (!is_hvdcp_present(chip))
 		return;
 
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_MISC, "Reducing to 500mA\n");
 #endif
 	rc = vote(chip->usb_icl_votable, SHUTDOWN_WORKAROUND_ICL_VOTER, true,
@@ -13526,7 +13526,7 @@ static void smbchg_shutdown(struct spmi_device *spmi)
 	if (rc < 0)
 		pr_err("Couldn't vote 500mA ICL\n");
 
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_MISC, "Disable Parallel\n");
 #endif
 	mutex_lock(&chip->parallel.lock);
@@ -13534,7 +13534,7 @@ static void smbchg_shutdown(struct spmi_device *spmi)
 	smbchg_parallel_usb_disable(chip);
 	mutex_unlock(&chip->parallel.lock);
 
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_MISC, "Disable all interrupts\n");
 #endif
 	disable_irq(chip->aicl_done_irq);
@@ -13581,7 +13581,7 @@ static void smbchg_shutdown(struct spmi_device *spmi)
 		pr_err("Couldn't vote to enable AICL rerun\n");
 
 	/* switch to 5V HVDCP */
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_MISC, "Switch to 5V HVDCP\n");
 #endif
 	rc = smbchg_sec_masked_write(chip, chip->usb_chgpth_base + CHGPTH_CFG,
@@ -13591,7 +13591,7 @@ static void smbchg_shutdown(struct spmi_device *spmi)
 		return;
 	}
 
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_MISC, "Wait 500mS to lower to 5V\n");
 #endif
 	/* wait for HVDCP to lower to 5V */
@@ -13601,14 +13601,14 @@ static void smbchg_shutdown(struct spmi_device *spmi)
 	 * high and that we are still in 5V hvdcp
 	 */
 	if (!is_src_detect_high(chip)) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_MISC, "src det low after 500mS sleep\n");
 #endif
 		return;
 	}
 
 	/* disable HVDCP */
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_MISC, "Disable HVDCP\n");
 #endif
 	rc = vote(chip->hvdcp_enable_votable, HVDCP_PMIC_VOTER, true, 0);
@@ -13617,7 +13617,7 @@ static void smbchg_shutdown(struct spmi_device *spmi)
 
 	chip->hvdcp_3_det_ignore_uv = true;
 	/* fake a removal */
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_MISC, "Faking Removal\n");
 #endif
 	rc = fake_insertion_removal(chip, false);
@@ -13625,7 +13625,7 @@ static void smbchg_shutdown(struct spmi_device *spmi)
 		pr_err("Couldn't fake removal HVDCP Removed rc=%d\n", rc);
 
 	/* fake an insertion */
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_MISC, "Faking Insertion\n");
 #endif
 	rc = fake_insertion_removal(chip, true);
@@ -13635,13 +13635,13 @@ static void smbchg_shutdown(struct spmi_device *spmi)
 	disable_irq(chip->src_detect_irq);
 	disable_irq(chip->usbin_uv_irq);
 
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_MISC, "Wait 1S to settle\n");
 #endif
 	msleep(1000);
 	chip->hvdcp_3_det_ignore_uv = false;
 
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_STATUS, "wrote power off configurations\n");
 #endif
 }
