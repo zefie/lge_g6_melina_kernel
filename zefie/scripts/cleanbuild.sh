@@ -3,5 +3,6 @@
 
 SCRIPTDIR=$(realpath "$(dirname "${0}")")
 source "${SCRIPTDIR}/buildenv.sh"
+
 errchk "${SCRIPTDIR}/clean.sh"
-errchk "${SCRIPTDIR}/build.sh"
+errchk "${SCRIPTDIR}/build.sh" "${@}"
