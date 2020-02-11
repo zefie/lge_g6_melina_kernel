@@ -158,7 +158,7 @@ static int smbchg_battery_set_property_pre(struct power_supply *psy,
 		int battery_health_psy = val->intval;
 		chip->btm_state = (battery_health_psy==POWER_SUPPLY_HEALTH_OVERHEAT) ? BTM_HEALTH_OVERHEAT :
 			(battery_health_psy==POWER_SUPPLY_HEALTH_COLD) ? BTM_HEALTH_COLD : BTM_HEALTH_GOOD;
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_smb(PR_STATUS, "Update btm_state to %d\n", chip->btm_state);
 #endif
 	}
@@ -227,13 +227,13 @@ enum power_supply_property* smbchg_battery_properties_ext(void) {
 			smbchg_battery_properties_append,
 			size_appended * sizeof(enum power_supply_property));
 
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_smb(PR_STATUS, "show extended properties\n");
 #endif
 
 	{	int i;
 		for (i = 0; i < ARRAY_SIZE(_smbchg_battery_properties_ext); ++i) {
-#ifndef CONFIG_MELINA_QUIET_SMBCHG
+#ifndef CONFIG_MELINA_QUIET_POWER
 			pr_smb(PR_STATUS, "%d : %d\n", i,
 					_smbchg_battery_properties_ext[i]);
 #endif

@@ -580,7 +580,9 @@ static bool batt_mngr_get_charging_data(struct batt_mngr *bm){
 			batt_mngr_get_fg_prop(bm->batt_psy, POWER_SUPPLY_PROP_BATTERY_CHARGING_ENABLED, &bm->ref->chg_data.chg_enabled) ||
 			batt_mngr_get_fg_prop(bm->usb_psy, POWER_SUPPLY_PROP_REAL_TYPE, &bm->ref->chg_data.source_type) ||
 			bm->ref->count[COUNT_OC] == -1) {
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_bm(PR_INFO, "Invalid adc or no count: %d\n", bm->ref->count[COUNT_OC]);
+#endif
 		return false;
 	}
 	batt_mngr_set_fg_prop(bm->bms_psy, POWER_SUPPLY_PROP_UPDATE_NOW, 1);
@@ -680,7 +682,9 @@ static void batt_mngr_parameter_track_work(struct work_struct *work)
 	struct batt_mngr *bm = container_of(work,
 				struct batt_mngr,
 				parameter_track_work.work);
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_bm(PR_INFO, "monitoring\n");
+#endif
 	batt_mngr_parameter_logger(bm);
 
 	if (bm->ref->check_abvd && work_started == true) {
@@ -747,7 +751,9 @@ static int batt_mngr_stop_work(struct batt_mngr *bm)
 	cancel_delayed_work_sync(&bm->parameter_track_work);
 	cancel_delayed_work_sync(&bm->bm_monitor_set_work);
 	work_started = false;
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_bm(PR_INFO,"Stop work\n");
+#endif
 	return 1;
 }
 
@@ -765,7 +771,9 @@ static int batt_mngr_start_work(struct batt_mngr *bm)
 		cancel_delayed_work_sync(&bm->bm_monitor_set_work);
 		schedule_delayed_work(&bm->bm_monitor_set_work,
 				round_jiffies_relative(msecs_to_jiffies(BM_MONITOR_SET_TIME)));
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_bm(PR_INFO,"Start work\n");
+#endif
 	}
 	return 1;
 }
@@ -804,8 +812,10 @@ static int batt_mngr_set_property(struct power_supply *psy,
 			if (work_started == false) {
 				work_started = true;
 				batt_mngr_start_work(bm);
+#ifndef CONFIG_MELINA_QUIET_POWER
 			} else {
 				pr_bm(PR_INFO, "work started\n");
+#endif
 			}
 		} else {
 			batt_mngr_stop_work(bm);
@@ -911,7 +921,9 @@ static int batt_mngr_probe(struct platform_device *pdev)
 
 	work_started = true;
 	bm->condition = 0;
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_bm(PR_INFO, "Probe done\n");
+#endif
 	return ret;
 
 error:

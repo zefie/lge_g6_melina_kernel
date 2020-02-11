@@ -390,13 +390,17 @@ static int batt_mngr_calc_current(struct batt_mngr *bm,
 #ifdef BM_LDB_LOG
 					batt_mngr_battery_status(bm, WARN, log);
 #else
+#ifndef CONFIG_MELINA_QUIET_POWER
 					pr_bm(PR_INFO, "status(%d)\n", status);
+#endif
 #endif
 				} else {
 #ifdef BM_LDB_LOG
 					batt_mngr_battery_status(bm, ABNOR, log);
 #else
+#ifndef CONFIG_MELINA_QUIET_POWER
 					pr_bm(PR_INFO, "status(%d)\n", status);
+#endif
 #endif
 				}
 				bm->ref->count[COUNT_ABNORMAL]--;
@@ -405,7 +409,9 @@ static int batt_mngr_calc_current(struct batt_mngr *bm,
 #ifdef BM_LDB_LOG
 				batt_mngr_battery_status(bm, ABNOR, log);
 #else
+#ifndef CONFIG_MELINA_QUIET_POWER
 				pr_bm(PR_INFO, "status(%d)\n", status);
+#endif
 #endif
 				bm->ref->count[COUNT_ABNORMAL]--;
 				break;
@@ -414,7 +420,9 @@ static int batt_mngr_calc_current(struct batt_mngr *bm,
 #ifdef BM_LDB_LOG
 					batt_mngr_battery_status(bm, ABNOR, log);
 #else
+#ifndef CONFIG_MELINA_QUIET_POWER
 					pr_bm(PR_INFO, "status(%d)\n", status);
+#endif
 #endif
 					bm->ref->count[COUNT_ABNORMAL]--;
 				}
@@ -485,7 +493,9 @@ static int batt_mngr_abnormal_voltage_monitor(struct batt_mngr *bm)
 			batt_mngr_get_fg_prop(bm->bms_psy, POWER_SUPPLY_PROP_VOLTAGE_OCV, &ocv) ||
 			batt_mngr_get_fg_prop(bm->batt_psy, POWER_SUPPLY_PROP_CHARGE_TYPE, &chg_type) ||
 			bm->ref->count[COUNT_OC] == -1) {
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_bm(PR_INFO, "Invalid adc or no count: %d\n", bm->ref->count[COUNT_OC]);
+#endif
 		return 0;
 	}
 	val = ocv - ((resist / ADC_SCALE) * (curr / ADC_SCALE));
@@ -562,7 +572,9 @@ static void batt_mngr_voltage_track_work(struct work_struct *work)
 				voltage_track_work.work);
 	int rc = 0;
 
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_bm(PR_INFO, "monitoring\n");
+#endif
 
 	rc = batt_mngr_abnormal_voltage_monitor(bm);
 	if (rc && work_started == true) {
@@ -595,7 +607,9 @@ static void batt_mngr_pulsing_work(struct work_struct *work)
 
 	if (count == 0) {
 		batt_mngr_set_fg_prop(bm->batt_psy, POWER_SUPPLY_PROP_CHARGING_ENABLED, 0);
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_bm(PR_INFO, "charging stop, count: %d\n", count);
+#endif
 		count++;
 		schedule_delayed_work(&bm->pulsing_work,
 			round_jiffies_relative(msecs_to_jiffies(PULSING_PERIOD_1)));
@@ -679,7 +693,9 @@ static int batt_mngr_stop_work(struct batt_mngr *bm)
 	cancel_delayed_work_sync(&bm->voltage_track_work);
 	cancel_delayed_work_sync(&bm->bm_ocv_set_work);
 	work_started = false;
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_bm(PR_INFO,"Stop work\n");
+#endif
 	return 1;
 }
 
@@ -704,7 +720,9 @@ static int batt_mngr_start_work(struct batt_mngr *bm)
 		cancel_delayed_work_sync(&bm->bm_ocv_set_work);
 		schedule_delayed_work(&bm->bm_ocv_set_work,
 				round_jiffies_relative(msecs_to_jiffies(BM_OCV_SET_TIME)));
+#ifndef CONFIG_MELINA_QUIET_POWER
 		pr_bm(PR_INFO,"Start work\n");
+#endif
 	}
 	return 1;
 }
@@ -753,8 +771,10 @@ static int batt_mngr_set_property(struct power_supply *psy,
 			if(work_started == false) {
 				work_started = true;
 				batt_mngr_start_work(bm);
+#ifndef CONFIG_MELINA_QUIET_POWER
 			} else {
 				pr_bm(PR_INFO, "work started\n");
+#endif
 			}
 		} else {
 			batt_mngr_stop_work(bm);
@@ -867,7 +887,9 @@ static int batt_mngr_probe(struct platform_device *pdev)
 			round_jiffies_relative(msecs_to_jiffies(BM_MONITOR_WORK_TIME)));
 	work_started = true;
 
+#ifndef CONFIG_MELINA_QUIET_POWER
 	pr_bm(PR_INFO, "Probe done\n");
+#endif
 	return ret;
 
 error:
