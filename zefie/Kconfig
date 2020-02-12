@@ -48,7 +48,8 @@ config MELINA_DEBUG_ENABLE
 	default y
 	select EMBEDDED
 	select EXPERT
-	select TRACING
+	select GENERIC_TRACER
+	select EVENT_TRACING
 	select DEBUG
 	select DEBUG_INFO
 	select DEBUG_KERNEL
