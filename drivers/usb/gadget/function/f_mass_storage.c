@@ -3303,7 +3303,7 @@ static ssize_t file_store(struct device *dev, struct device_attribute *attr,
 static DEVICE_ATTR_RW(ro);
 static DEVICE_ATTR_RW(nofua);
 static DEVICE_ATTR_RW(file);
-#ifdef CONFIG_DRIVEDROID_CDROM
+#ifdef CONFIG_MELINA_DRIVEDROID_CDROM
 static DEVICE_ATTR(cdrom, 0644, fsg_show_cdrom_dd, fsg_store_cdrom_dd);
 #endif
 DEVICE_ATTR(perf, 0644, fsg_show_perf, fsg_store_perf);
@@ -3432,7 +3432,7 @@ EXPORT_SYMBOL_GPL(fsg_common_set_num_buffers);
 
 static inline void fsg_common_remove_sysfs(struct fsg_lun *lun)
 {
-#ifdef CONFIG_DRIVEDROID_CDROM
+#ifdef CONFIG_MELINA_DRIVEDROID_CDROM
 	device_remove_file(&lun->dev, &dev_attr_cdrom);
 #endif
 	device_remove_file(&lun->dev, &dev_attr_nofua);
@@ -3615,7 +3615,7 @@ static inline int fsg_common_add_sysfs(struct fsg_common *common,
 	if (rc)
 		pr_err("failed to create sysfs entry: %d\n", rc);
 
-#ifdef CONFIG_DRIVEDROID_CDROM
+#ifdef CONFIG_MELINA_DRIVEDROID_CDROM
 	rc = device_create_file(&lun->dev, &dev_attr_cdrom);
 	if (rc)
 		pr_err("failed to create sysfs entry: %d\n", rc);
