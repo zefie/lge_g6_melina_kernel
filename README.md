@@ -1,4 +1,4 @@
-# Melina Reborn Kernel for LG G6 modern AOSP ROMs (Oreo Edition)
+# Melina Reborn Kernel for LG G6 modern AOSP ROMs
 
 Based on LGE OpenSource H870 v30a Kernel ([commit cff8191](https://github.com/zefie/lge_g6_melina_kernel/tree/cff81912fd72dc07746be77663b6cba73ebd5938))
 
@@ -9,31 +9,40 @@ only compile them and let you try them. Keep that in mind.
 
 ## Information
 
- * For use on modern AOSP ROMs (Pie/Q) 
- * Developer tested on HavocOS-v3.2 (Android Q)
+ * For use on modern AOSP ROMs (Pie/10) 
+ * Developer tested on HavocOS-v3.2 (Android 10)
  * Uses [osm0sis's AnyKernel2](https://forum.xda-developers.com/showthread.php?t=2670512) system
 
-## Features (rel_r1):
-
- * Previous security updates from past Melina Kernels
+## Features:
+ * No (or less, still testing) random reboots compared other V30A based kernels
+ * Release builds have significantly reduced debugging messages/routines for slight performance & battery enhancements
+ * Optimize compiler flags with Kyro optimizations
+ * Updated AnyKernel to v3, now retains Magisk [zefie/recovery_zip_template](zefie/recovery_zip_template)
+ * Previous security updates from past Melina Kernels and new security updates
  * Optimize for performance rather than size
  * Binary releases built with ubertc aarch64-linux-android-6.x
  * DriveDroid CD-ROM Emulation Support
- * Open source compatible replacement for Tuxera exFAT driver
  * zzmove and elementalx governors
  * Higher performance with lower battery usage
  * Various other improvements
 
+## Features for Developers:
+ * [zefie/scripts](zefie/scripts) build helper scripts
+ * Moduleless Kernel, don't need to work about modules and paths
+ * Most Melina Reborn tweaks are enabled via a custom Kconfig menu, so you can choose which features are enabled
+ * Can select a different CPU optimization target via kernel config (for experimentation or exotic use cases)
+ * Re-enable debug via 2 kernel config options (`CONFIG_MELINA_DEBUG_DISABLE=n` `CONFIG_MELINA_DEBUG_ENABLE=y`)
+ * Kernel is ready to compile in-tree or out of tree with clang or gcc (the clang build currently has an issue that breaks Bluetooth)
+
 ## How to build:
 
  * [Prepare your toolchain](ubertc-guide.md)
- * Clone repo
- * Run ```git submodule init && git submodule update```
- * Edit .zefie/scripts/buildenv.sh, and set TOOLCHAIN, KERNEL_DEV and KERNEL_NAME path for your local setup
- * Run .zefie/scripts/cleanbuild.sh
+ * Clone this git repository and enter the directory
+ * Edit `.zefie/scripts/buildenv.sh`, and set `TOOLCHAIN`, `KERNEL_DEV` and `KERNEL_NAME` path for your local setup
+ * Run `.zefie/scripts/build.sh clean build zip`
 
-If all goes well, output will be in build/out/,
-and you can also use .zefie/scripts/sideload.sh to automatically sideload the most recent zip to TWRP.
+If all goes well, output will be in `build/out/`,
+and you can also use `.zefie/scripts/sideload.sh` to automatically sideload the most recent zip to TWRP.
 
 ## Credits
 
