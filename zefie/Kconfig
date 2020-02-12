@@ -113,6 +113,14 @@ config MELINA_QUIET_POWER
           Silences information from the charging driver curcuit, which is only useful for debugging.
 
 
+config MELINA_QUIET_TOUCH
+        bool "Silence Touchscreen (sw49048) Debug Info"
+        default y
+        depends on QPNP_SMBCHARGER
+        help
+          Silences information from the touchscreen driver, which is only useful for debugging.
+
+
 endif # MELINA_ENHANCED_NDBG
 
 config DRIVEDROID_CDROM

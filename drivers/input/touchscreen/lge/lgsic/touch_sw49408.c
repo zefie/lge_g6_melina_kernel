@@ -40,6 +40,8 @@ static const char *debug_type[] = {
 	"Buffer Type",
 	"Always Report Type"
 };
+
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 #define TCI_FAIL_NUM 17
 static const char *tci_debug_str[TCI_FAIL_NUM] = {
 	"NONE",
@@ -80,6 +82,7 @@ static const char *swipe_debug_str[SWIPE_FAIL_NUM] = {
 	"DEBUG15",
 	"DEBUG16"
 };
+#endif
 
 int sw49408_xfer_msg(struct device *dev, struct touch_xfer_msg *xfer)
 {
@@ -244,16 +247,17 @@ int sw49408_reg_write(struct device *dev, u16 addr, void *data, int size)
 static int sw49408_fb_notifier_callback(struct notifier_block *self,
 		unsigned long event, void *data)
 {
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 	struct fb_event *ev = (struct fb_event *)data;
 
 	if (ev && ev->data && event == FB_EVENT_BLANK) {
 		int *blank = (int *)ev->data;
-
 		if (*blank == FB_BLANK_UNBLANK)
 			TOUCH_I("FB_UNBLANK\n");
 		else if (*blank == FB_BLANK_POWERDOWN)
 			TOUCH_I("FB_BLANK\n");
 	}
+#endif
 
 	return 0;
 }
@@ -268,7 +272,9 @@ static int sw49408_reset_ctrl(struct device *dev, int ctrl)
 	switch (ctrl) {
 	default :
         case SW_RESET:
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 		TOUCH_I("%s : SW Reset\n", __func__);
+#endif
 	        data = 0;
 	        sw49408_reg_write(dev, SPI_RST_CTL, &data, sizeof(int));
 	        data = 1;
@@ -277,7 +283,9 @@ static int sw49408_reset_ctrl(struct device *dev, int ctrl)
 		break;
 
 	case HW_RESET:
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 		TOUCH_I("%s : HW Reset\n", __func__);
+#endif
 		touch_gpio_direction_output(ts->reset_pin, 0);
 		touch_msleep(1);
 		touch_gpio_direction_output(ts->reset_pin, 1);
@@ -297,7 +305,9 @@ static int sw49408_power(struct device *dev, int ctrl)
 
 	switch (ctrl) {
 	case POWER_OFF:
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 		TOUCH_I("%s, off\n", __func__);
+#endif
 		atomic_set(&d->init, IC_INIT_NEED);
 		touch_gpio_direction_output(ts->reset_pin, 0);
 		touch_power_vio(dev, 0);
@@ -306,12 +316,15 @@ static int sw49408_power(struct device *dev, int ctrl)
 		break;
 
 	case POWER_ON:
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 		TOUCH_I("%s, on\n", __func__);
+#endif
 		touch_power_vdd(dev, 1);
 		touch_power_vio(dev, 1);
 		touch_gpio_direction_output(ts->reset_pin, 1);
 		break;
 
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 	case POWER_SLEEP:
 		TOUCH_I("%s, sleep\n", __func__);
 		break;
@@ -319,6 +332,7 @@ static int sw49408_power(struct device *dev, int ctrl)
 	case POWER_WAKE:
 		TOUCH_I("%s, wake\n", __func__);
 		break;
+#endif
 	}
 
 	return 0;
@@ -484,6 +498,7 @@ int sw49408_ic_info(struct device *dev)
 			d->ic_info.version.major, d->ic_info.version.minor);
 	}
 
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 	TOUCH_I("==Print PT info Data==\n");
 	TOUCH_I("version : %s, chip : %d, protocol : %d\n",
 		ver_str, (version >> 16) & 0xFF, (version >> 24) & 0xFF);
@@ -494,10 +509,12 @@ int sw49408_ic_info(struct device *dev)
 		(bootmode >> 1 & 0x1) ? "BUSY" : "idle",
 		(bootmode >> 2 & 0x1) ? "done" : "BOOTING",
 		(bootmode >> 3 & 0x1) ? "ERROR" : "ok");
-
+#endif
 	if ((((version >> 16) & 0xFF) != 9) ||
 			(((version >> 24) & 0xFF) != 4)) {
-		TOUCH_I("FW is in abnormal state because of ESD or something.\n");
+#ifndef CONFIG_MELINA_QUIET_TOUCH
+		TOUCH_E("FW is in abnormal state because of ESD or something.\n");
+#endif
 		ret = -EAGAIN;
 	}
 
@@ -533,7 +550,9 @@ int sw49408_te_info(struct device *dev, char *buf)
 			"%s : %d, %d.%02d ms, %d.%02d hz\n", __func__, count,
 			ms / 100, ms % 100, hz / 100, hz % 100);
 
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 		TOUCH_I("%s", buf);
+#endif
 	}
 
 	return ret;
@@ -547,7 +566,9 @@ static void sw49408_clear_q_sensitivity(struct device *dev)
 	sw49408_reg_write(dev, d->reg_info.r_abt_cmd_spi_addr +
 			QCOVER_SENSITIVITY, &d->q_sensitivity, sizeof(u32));
 
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 	TOUCH_I("%s : %s(%d)\n", __func__, "NORMAL", d->q_sensitivity);
+#endif
 }
 
 static int sw49408_get_tci_data(struct device *dev, int count)
@@ -568,12 +589,14 @@ static int sw49408_get_tci_data(struct device *dev, int count)
 		ts->lpwg.code[i].x = rdata[i] & 0xffff;
 		ts->lpwg.code[i].y = (rdata[i] >> 16) & 0xffff;
 
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 		if ((ts->lpwg.mode >= LPWG_PASSWORD) &&
 				(ts->role.hide_coordinate))
 			TOUCH_I("LPWG data xxxx, xxxx\n");
 		else
 			TOUCH_I("LPWG data %d, %d\n",
 				ts->lpwg.code[i].x, ts->lpwg.code[i].y);
+#endif
 	}
 	ts->lpwg.code[count].x = -1;
 	ts->lpwg.code[count].y = -1;
@@ -592,11 +615,12 @@ static int sw49408_get_swipe_data(struct device *dev)
 	/* start (X, Y), end (X, Y), time = 2bytes * 5 = 10 bytes */
 	memcpy(&rdata, d->info.data, sizeof(u32) * 3);
 
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 	TOUCH_I("Swipe Gesture: start(%4d,%4d) end(%4d,%4d) swipe_time(%dms)\n",
 			rdata[0] & 0xffff, rdata[0] >> 16,
 			rdata[1] & 0xffff, rdata[1] >> 16,
 			rdata[2] & 0xffff);
-
+#endif
 	ts->lpwg.code_num = count;
 	ts->lpwg.code[0].x = rdata[1] & 0xffff;
 	ts->lpwg.code[0].y = rdata[1]  >> 16;
@@ -621,13 +645,17 @@ static void set_debug_reason(struct device *dev, int type)
 		swipe_data = d->swipe_debug_type;
 		ret = sw49408_reg_write(dev, d->reg_info.r_abt_cmd_spi_addr +
 			SWIPE_FAIL_DEBUG_W, &swipe_data, sizeof(swipe_data));
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 		if (ret < 0)
 			TOUCH_I("set swipe fail reason : %d\n", ret);
+#endif
 	} else {
 		wdata[0] = (u32)type;
 		wdata[0] |= (d->tci_debug_type == 1) ? 0x01 << 2 : 0x01 << 3;
 		wdata[1] = TCI_DEBUG_ALL;
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 		TOUCH_I("TCI%d-type:%d\n", type + 1, wdata[0]);
+#endif
 
 		sw49408_xfer_msg_ready(dev, 2);
 		start_addr = d->reg_info.r_abt_cmd_spi_addr + TCI_FAIL_DEBUG_W;
@@ -712,10 +740,14 @@ static void sw49408_tci_area_set(struct device *dev, int cover_status)
 {
 	if (cover_status == QUICKCOVER_CLOSE) {
 		sw49408_tci_active_area(dev, 0, 0, 0, 0);
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 		TOUCH_I("LPWG Active Area - QUICKCOVER_CLOSE\n");
+#endif
 	} else {
 		sw49408_tci_active_area(dev, 80, 0, 1359, 2780);
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 		TOUCH_I("LPWG Active Area - NORMAL\n");
+#endif
 	}
 }
 
@@ -822,12 +854,16 @@ static int sw49408_lpwg_control(struct device *dev, int mode)
 		ret = sw49408_tci_password(dev);
 		break;
 
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 	default:
 		TOUCH_I("Unknown lpwg control case\n");
 		break;
+#endif
 	}
 
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 	TOUCH_I("sw49408_lpwg_control mode = %d\n", mode);
+#endif
 
 	return ret;
 }
@@ -950,7 +986,9 @@ static int sw49408_swipe_mode(struct device *dev, u8 lcd_mode)
 
 	if (lcd_mode == LCD_MODE_U3) {
 		ret = sw49408_swipe_control(dev, SWIPE_DISABLE_CTRL);
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 		TOUCH_I("swipe disable\n");
+#endif
 	} else {
 		swipe_data[0] = d->swipe.mode;
 		swipe_data[1] = (right->distance) | (down->distance << 8) |
@@ -1023,7 +1061,9 @@ static int sw49408_swipe_mode(struct device *dev, u8 lcd_mode)
 		if (d->swipe_debug_type)
 			set_debug_reason(dev, SWIPE);
 
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 		TOUCH_I("swipe enable\n");
+#endif
 	}
 
 	return ret;
@@ -1048,8 +1088,10 @@ static int sw49408_clock(struct device *dev, u32 onoff)
 		}
 	}
 
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 	TOUCH_I("sw49408_clock -> %s\n",
 		onoff ? "ON" : d->lcd_mode == LCD_MODE_U0 ? "OFF" : "SKIP");
+#endif
 
 	return 0;
 }
@@ -1096,13 +1138,19 @@ int sw49408_tc_driving(struct device *dev, int mode)
 	sw49408_swipe_mode(dev, mode);
 
 	touch_msleep(20);
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 	TOUCH_I("sw49408_tc_driving = %d, %x\n", mode, ctrl);
+#endif
 	sw49408_reg_read(dev, spr_subdisp_st, (u8 *)&rdata, sizeof(u32));
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 	TOUCH_I("DDI Display Mode = %d\n", rdata);
+#endif
 	sw49408_reg_write(dev, d->reg_info.r_tc_cmd_spi_addr + tc_driving_ctl,
 				&ctrl, sizeof(ctrl));
 	sw49408_reg_read(dev, rst_cnt_addr, &rst_cnt, sizeof(u32));
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 	TOUCH_I("Reset Cnt : %d\n", rst_cnt);
+#endif
 
 	return 0;
 }
@@ -1113,6 +1161,7 @@ static void sw49408_deep_sleep(struct device *dev)
 	sw49408_clock(dev, 0);
 }
 
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 static void sw49408_debug_tci(struct device *dev)
 {
 	struct sw49408_data *d = to_sw49408_data(dev);
@@ -1159,6 +1208,7 @@ static void sw49408_debug_tci(struct device *dev)
 				(buf > 0 && buf < TCI_FAIL_NUM) ?
 					tci_debug_str[buf] :
 					tci_debug_str[0]);
+
 		}
 	}
 }
@@ -1232,6 +1282,7 @@ static void sw49408_debug_swipe(struct device *dev)
 		}
 	}
 }
+#endif
 
 
 static int sw49408_lpwg_mode(struct device *dev)
@@ -1240,7 +1291,9 @@ static int sw49408_lpwg_mode(struct device *dev)
 	struct sw49408_data *d = to_sw49408_data(dev);
 
 	if (atomic_read(&d->init) == IC_INIT_NEED) {
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 		TOUCH_I("Not Ready, Need IC init\n");
+#endif
 		return 0;
 	}
 
@@ -1251,12 +1304,18 @@ static int sw49408_lpwg_mode(struct device *dev)
 			return 0;
 		}
 		if (ts->lpwg.screen) {
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 			TOUCH_I("Skip lpwg_mode\n");
 			sw49408_debug_tci(dev);
 			sw49408_debug_swipe(dev);
+#else
+			return 0;
+#endif
 		} else if (ts->lpwg.sensor == PROX_NEAR) {
 			/* deep sleep */
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 			TOUCH_I("suspend ts->lpwg.sensor == PROX_NEAR\n");
+#endif
 			sw49408_deep_sleep(dev);
 		} else if (ts->lpwg.qcover == HALL_NEAR) {
 			/* knock on/code disable */
@@ -1285,18 +1344,24 @@ static int sw49408_lpwg_mode(struct device *dev)
 	touch_report_all_event(ts);
 	if (ts->lpwg.screen) {
 		/* normal */
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 		TOUCH_I("resume ts->lpwg.screen on\n");
+#endif
 		sw49408_lpwg_control(dev, LPWG_NONE);
 		if (ts->lpwg.qcover == HALL_NEAR)
 			sw49408_tc_driving(dev, LCD_MODE_U3_QUICKCOVER);
 		else
 			sw49408_tc_driving(dev, d->lcd_mode);
 	} else if (ts->lpwg.sensor == PROX_NEAR) {
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 		TOUCH_I("resume ts->lpwg.sensor == PROX_NEAR\n");
+#endif
 		sw49408_deep_sleep(dev);
 	} else {
 		/* partial */
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 		TOUCH_I("resume Partial\n");
+#endif
 		if (ts->lpwg.qcover == HALL_NEAR)
 			sw49408_tci_area_set(dev, QUICKCOVER_CLOSE);
 		else
@@ -1319,8 +1384,10 @@ static int sw49408_lpwg(struct device *dev, u32 code, void *param)
 		ts->tci.area.x2 = value[1];
 		ts->tci.area.y1 = value[2];
 		ts->tci.area.y2 = value[3];
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 		TOUCH_I("LPWG_ACTIVE_AREA: x0[%d], x1[%d], x2[%d], x3[%d]\n",
 			value[0], value[1], value[2], value[3]);
+#endif
 		break;
 
 	case LPWG_TAP_COUNT:
@@ -1342,12 +1409,14 @@ static int sw49408_lpwg(struct device *dev, u32 code, void *param)
 		ts->lpwg.sensor = value[2];
 		ts->lpwg.qcover = value[3];
 
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 		TOUCH_I(
 			"LPWG_UPDATE_ALL: mode[%d], screen[%s], sensor[%s], qcover[%s]\n",
 			ts->lpwg.mode,
 			ts->lpwg.screen ? "ON" : "OFF",
 			ts->lpwg.sensor ? "FAR" : "NEAR",
 			ts->lpwg.qcover ? "CLOSE" : "OPEN");
+#endif
 
 		sw49408_lpwg_mode(dev);
 
@@ -1385,7 +1454,9 @@ static void sw49408_connect(struct device *dev)
 	/* code for TA simulator */
 	if (atomic_read(&ts->state.debug_option_mask)
 			& DEBUG_OPTION_4) {
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 		TOUCH_I("TA Simulator mode, Set CONNECT_TA\n");
+#endif
 		d->charger = CONNECT_TA;
 	}
 
@@ -1393,9 +1464,13 @@ static void sw49408_connect(struct device *dev)
 	if (wireless_state)
 		d->charger = d->charger | CONNECT_WIRELESS;
 
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 	TOUCH_I("%s: write charger_state = 0x%02X\n", __func__, d->charger);
+#endif
 	if (atomic_read(&ts->state.pm) > DEV_PM_RESUME) {
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 		TOUCH_I("DEV_PM_SUSPEND - Don't try SPI\n");
+#endif
 		return;
 	}
 
@@ -1409,7 +1484,9 @@ static void sw49408_lcd_mode(struct device *dev, u32 mode)
 
 	d->prev_lcd_mode = d->lcd_mode;
 	d->lcd_mode = mode;
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 	TOUCH_I("lcd_mode: %d (prev: %d)\n", d->lcd_mode, d->prev_lcd_mode);
+#endif
 }
 
 static int sw49408_check_mode(struct device *dev)
@@ -1420,28 +1497,40 @@ static int sw49408_check_mode(struct device *dev)
 	if (d->lcd_mode != LCD_MODE_U3) {
 		if (d->lcd_mode == LCD_MODE_U2) {
 			if (d->prev_lcd_mode == LCD_MODE_U2_UNBLANK) {
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 				TOUCH_I("U2 UNBLANK -> U2\n");
+#endif
 				ret = 1;
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 			} else {
 				TOUCH_I("U2 mode change\n");
+#endif
 			}
 		} else if (d->lcd_mode == LCD_MODE_U2_UNBLANK) {
 			switch (d->prev_lcd_mode) {
 			case LCD_MODE_U2:
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 				TOUCH_I("U2 -> U2 UNBLANK\n");
+#endif
 				ret = 1;
 				break;
 			case LCD_MODE_U0:
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 				TOUCH_I("U0 -> U2 UNBLANK mode change\n");
+#endif
 				break;
 			default:
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 				TOUCH_I("%s - Not Defined Mode\n", __func__);
+#endif
 				break;
 			}
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 		} else if (d->lcd_mode == LCD_MODE_U0) {
 			TOUCH_I("U0 mode change\n");
 		} else {
 			TOUCH_I("%s - Not defined mode\n", __func__);
+#endif
 		}
 	}
 
@@ -1477,40 +1566,51 @@ static void sw49408_lcd_event_read_reg(struct device *dev)
 
 	sw49408_xfer_msg(dev, ts->xfer);
 
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 	TOUCH_I(
 		"reg[%x] = 0x%x reg[%x] = 0x%x reg[%x] = 0x%x reg[%x] = 0x%x reg[%x] = 0x%x\n",
 		tc_ic_status, rdata[0], tc_status, rdata[1],
 		spr_subdisp_st, rdata[2], tc_version, rdata[3],
 		0x0, rdata[4]);
 	TOUCH_I("v%d.%02d\n", (rdata[3] >> 8) & 0xF, rdata[3] & 0xFF);
+#endif
 }
 
 static int sw49408_usb_status(struct device *dev, u32 mode)
 {
+
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 	struct touch_core_data *ts = to_touch_core(dev);
 
 	TOUCH_TRACE();
 	TOUCH_I("TA Type: %d\n", atomic_read(&ts->state.connect));
+#endif
 	sw49408_connect(dev);
 	return 0;
 }
 
 static int sw49408_wireless_status(struct device *dev, u32 onoff)
 {
+
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 	struct touch_core_data *ts = to_touch_core(dev);
 
 	TOUCH_TRACE();
 	TOUCH_I("Wireless charger: 0x%02X\n", atomic_read(&ts->state.wireless));
+#endif
 	sw49408_connect(dev);
 	return 0;
 }
 
 static int sw49408_earjack_status(struct device *dev, u32 onoff)
 {
+
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 	struct touch_core_data *ts = to_touch_core(dev);
 
 	TOUCH_TRACE();
 	TOUCH_I("Earjack Type: 0x%02X\n", atomic_read(&ts->state.earjack));
+#endif
 	return 0;
 }
 
@@ -1526,6 +1626,8 @@ static int sw49408_debug_tool(struct device *dev, u32 value)
 
 	return 0;
 }
+
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 static int sw49408_debug_option(struct device *dev, u32 *data)
 {
 	struct sw49408_data *d = to_sw49408_data(dev);
@@ -1557,6 +1659,7 @@ static int sw49408_debug_option(struct device *dev, u32 *data)
 
 	return 0;
 }
+#endif
 
 static void sw49408_fb_notify_work_func(struct work_struct *fb_notify_work)
 {
@@ -1589,7 +1692,9 @@ static void sw49408_te_test_work_func(struct work_struct *te_test_work)
 	memset(d->te_test_log, 0x0, sizeof(d->te_test_log));
 	d->te_ret = 0;
 	d->te_write_log = DO_WRITE_LOG;
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 	TOUCH_I("DDIC Test Start\n");
+#endif
 
 	if (d->lcd_mode != LCD_MODE_U3) {
 		ret = snprintf(d->te_test_log + ret, 63, "not support on u%d\n",
@@ -1607,7 +1712,9 @@ static void sw49408_te_test_work_func(struct work_struct *te_test_work)
 				"[%d] : 0, 0 ms, 0 hz\n", i + 1);
 			d->te_ret = 1;
 			hz_min = 0;
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 			TOUCH_I("%s\n", d->te_test_log);
+#endif
 			break;
 		}
 
@@ -1622,15 +1729,19 @@ static void sw49408_te_test_work_func(struct work_struct *te_test_work)
 				"[%d] : %d, %d.%02d ms, %d.%02d hz\n", i + 1, count,
 				ms / 100, ms % 100, hz / 100, hz % 100);
 			d->te_ret = 1;
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 			TOUCH_I("[%d] %s\n", i + 1, d->te_test_log);
+#endif
 			break;
 		}
 		touch_msleep(15);
 	}
 	mutex_unlock(&ts->lock);
 
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 	TOUCH_I("DDIC Test END : [%s] %d.%02d hz\n", d->te_ret ? "Fail" : "Pass",
 		hz_min / 100, hz_min % 100);
+#endif
 }
 static int sw49408_notify(struct device *dev, ulong event, void *data)
 {
@@ -1642,11 +1753,15 @@ static int sw49408_notify(struct device *dev, ulong event, void *data)
 
 	switch (event) {
 	case NOTIFY_TOUCH_RESET:
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 		TOUCH_I("NOTIFY_TOUCH_RESET! return = %d\n", ret);
+#endif
 		atomic_set(&d->init, IC_INIT_NEED);
 		break;
 	case LCD_EVENT_LCD_MODE:
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 		TOUCH_I("LCD_EVENT_LCD_MODE!\n");
+#endif
 		sw49408_lcd_mode(dev, *(u32 *)data);
 		ret = sw49408_check_mode(dev);
 		if (ret == 0)
@@ -1655,41 +1770,59 @@ static int sw49408_notify(struct device *dev, ulong event, void *data)
 			ret = 0;
 		break;
 	case LCD_EVENT_READ_REG:
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 		TOUCH_I("LCD_EVENT_READ_REG\n");
+#endif
 		sw49408_lcd_event_read_reg(dev);
 		break;
 	case NOTIFY_CONNECTION:
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 		TOUCH_I("NOTIFY_CONNECTION!\n");
+#endif
 		ret = sw49408_usb_status(dev, *(u32 *)data);
 		break;
 	case NOTIFY_WIRELEES:
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 		TOUCH_I("NOTIFY_WIRELEES!\n");
+#endif
 		ret = sw49408_wireless_status(dev, *(u32 *)data);
 		break;
 	case NOTIFY_EARJACK:
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 		TOUCH_I("NOTIFY_EARJACK!\n");
+#endif
 		ret = sw49408_earjack_status(dev, *(u32 *)data);
 		break;
 	case NOTIFY_IME_STATE:
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 		TOUCH_I("NOTIFY_IME_STATE!\n");
+#endif
 		ret = sw49408_reg_write(dev, d->reg_info.r_abt_cmd_spi_addr +
 			REG_IME_STATE, (u32*)data, sizeof(u32));
 		break;
 	case NOTIFY_DEBUG_TOOL:
 		ret = sw49408_debug_tool(dev, *(u32 *)data);
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 		TOUCH_I("NOTIFY_DEBUG_TOOL!\n");
+#endif
 		break;
 	case NOTIFY_CALL_STATE:
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 		TOUCH_I("NOTIFY_CALL_STATE!\n");
+#endif
 		ret = sw49408_reg_write(dev, d->reg_info.r_abt_cmd_spi_addr +
 			REG_CALL_STATE, (u32 *)data, sizeof(u32));
 		break;
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 	case NOTIFY_DEBUG_OPTION:
 		TOUCH_I("NOTIFY_DEBUG_OPTION!\n");
 		ret = sw49408_debug_option(dev, (u32 *)data);
 		break;
+#endif
 	case NOTIFY_ONHAND_STATE:
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 		TOUCH_I("NOTIFY_ONHAND_STATE!\n");
+#endif
 		break;
 	default:
 		TOUCH_E("%lu is not supported\n", event);
@@ -1794,7 +1927,9 @@ static int sw49408_fw_compare(struct device *dev, const struct firmware *fw)
 
 	if ((bin_ver_offset > FLASH_FW_SIZE) ||
 			(bin_pid_offset > FLASH_FW_SIZE)) {
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 		TOUCH_I("%s : invalid offset\n", __func__);
+#endif
 		return -1;
 	}
 
@@ -1815,12 +1950,13 @@ static int sw49408_fw_compare(struct device *dev, const struct firmware *fw)
 			update = 1;
 	}
 
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 	TOUCH_I("%s : binary[%d.%02d.%d] device[%d.%02d.%d]" \
 		" -> update: %d, force: %d\n", __func__,
 		binary->major, binary->minor, binary->build,
 		device->major, device->minor, device->build,
 		update, ts->force_fwup);
-
+#endif
 	return update;
 }
 
@@ -1837,9 +1973,11 @@ static int sw49408_condition_wait(struct device *dev,
 		if ((data & mask) == expect) {
 			if (value)
 				*value = data;
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 			TOUCH_I(
 				"%d, addr[%04x] data[%08x], mask[%08x], expect[%08x]\n",
 				retry, addr, data, mask, expect);
+#endif
 			return 0;
 		}
 	} while (--retry);
@@ -1847,8 +1985,10 @@ static int sw49408_condition_wait(struct device *dev,
 	if (value)
 		*value = data;
 
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 	TOUCH_I("%s addr[%04x], expect[%x], mask[%x], data[%x]\n",
 		__func__, addr, expect, mask, data);
+#endif
 
 	return -EPERM;
 }
@@ -1856,45 +1996,61 @@ static int sw49408_condition_wait(struct device *dev,
 int common_header_verify(t_cfg_info_def *header)
 {
 	t_cfg_info_def *head = (t_cfg_info_def *)header;
+
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 	t_cfg_c_header_def *common_head =
 		(t_cfg_c_header_def *)(header + sizeof(t_cfg_info_def));
+#endif
 
 	if (head->cfg_magic_code != CFG_MAGIC_CODE) {
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 		TOUCH_I("Invalid CFG_MAGIC_CODE. %8.8X\n",
 			head->cfg_magic_code);
+#endif
 		return -1;
 	}
 
 	if (head->cfg_chip_id != CFG_CHIP_ID) {
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 		TOUCH_I("Invalid Chip ID. (49408 != %d)\n",
 			head->cfg_chip_id);
+#endif
 		return -2;
 	}
 
 	if (head->cfg_struct_version <= 0) {
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 		TOUCH_I("Invalid cfg_struct_version. %8.8X\n",
 			head->cfg_struct_version);
+#endif
 		return -3;
 	}
 
 	if (head->cfg_specific_cnt <= 0) {
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 		TOUCH_I("No Specific Data. %8.8X\n",
 			head->cfg_specific_cnt);
+#endif
 		return -4;
 	}
 
 	if (head->cfg_size.b.common_cfg_size > CFG_C_MAX_SIZE) {
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 		TOUCH_I("Over CFG COMMON MAX Size (%d). %8.8X\n",
 			CFG_C_MAX_SIZE, head->cfg_size.b.common_cfg_size);
+#endif
 		return -5;
 	}
 
 	if (head->cfg_size.b.specific_cfg_size > CFG_S_MAX_SIZE) {
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 		TOUCH_I("Over CFG SPECIFIC MAX Size (%d). %8.8X\n",
 			CFG_S_MAX_SIZE, head->cfg_size.b.specific_cfg_size);
+#endif
 		return -6;
 	}
 
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 	TOUCH_I("==================== COMMON ====================\n");
 	TOUCH_I("magic code         : 0x%8.8X\n", head->cfg_magic_code);
 	TOUCH_I("chip id            : %d\n", head->cfg_chip_id);
@@ -1906,7 +2062,7 @@ int common_header_verify(t_cfg_info_def *header)
 	TOUCH_I("date               : 0x%8.8X\n", head->cfg_global_date);
 	TOUCH_I("time               : 0x%8.8X\n", head->cfg_global_time);
 	TOUCH_I("common_ver         : %d\n", common_head->cfg_common_ver);
-
+#endif
 	return 1;
 }
 
@@ -1917,14 +2073,17 @@ int specific_header_verify(unsigned char *header, int i)
 
 	if (head->cfg_specific_info1.b.chip_rev <= 0
 		&& head->cfg_specific_info1.b.chip_rev > 10) {
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 		TOUCH_I("Invalid Chip revision id %8.8X\n",
 			head->cfg_specific_info1.b.chip_rev);
+#endif
 		return -2;
 	}
 
 	memset(tmp, 0, 8);
 	memcpy((void*)tmp, (void *)&head->cfg_model_name, 4);
 
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 	TOUCH_I("==================== SPECIFIC #%d =====================\n",
 						i +1);
 	TOUCH_I("chip_rev           : %d\n",
@@ -1940,7 +2099,7 @@ int specific_header_verify(unsigned char *header, int i)
 					head->cfg_specific_info2.b.lot_id);
 	TOUCH_I("ver                : %d\n",
 					head->cfg_specific_version);
-
+#endif
 	return 1;
 }
 
@@ -1957,23 +2116,25 @@ static int sw49408_img_binary_verify(unsigned char *imgBuf)
 	if (*fw_crc == 0x0
 		|| *fw_crc == 0xFFFFFFFF
 		|| *fw_size > FLASH_FW_SIZE) {
-		TOUCH_I("Firmware Size Invalid READ : 0x%X\n", *fw_size);
-		TOUCH_I("Firmware CRC Invalid READ : 0x%X\n", *fw_crc);
+		TOUCH_E("Firmware Size Invalid READ : 0x%X\n", *fw_size);
+		TOUCH_E("Firmware CRC Invalid READ : 0x%X\n", *fw_crc);
 		return E_FW_CODE_SIZE_ERR;
 	} else {
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 		TOUCH_I("Firmware Size READ : 0x%X\n", *fw_size);
 		TOUCH_I("Firmware CRC READ : 0x%X\n", *fw_crc);
+#endif
 	}
 
 	if (common_header_verify(head) < 0) {
-		TOUCH_I("No Common CFG! Firmware Code Only\n");
+		TOUCH_E("No Common CFG! Firmware Code Only\n");
 		return E_FW_CODE_ONLY_VALID;
 	}
 
 	specific_ptr = cfg_buf_base + head->cfg_size.b.common_cfg_size;
 	for (i = 0; i < head->cfg_specific_cnt; i++) {
 		if (specific_header_verify(specific_ptr, i) < 0) {
-			TOUCH_I("specific CFG invalid!\n");
+			TOUCH_E("specific CFG invalid!\n");
 			return -2;
 		}
 		specific_ptr += head->cfg_size.b.specific_cfg_size;
@@ -2005,9 +2166,11 @@ void sw49408_default_reg_map(struct device* dev){
 	d->reg_info.r_abt_sts_spi_addr      = 0x2BF;
 	d->reg_info.r_tune_code_spi_addr    = 0x30F;
 	d->reg_info.r_aod_spi_addr          = 0x3E3;
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 	TOUCH_I("================================================\n");
 	TOUCH_I("sw49408 default register map loaded!!\n");
 	TOUCH_I("================================================\n");
+#endif
 }
 
 int sw49408_chip_info_load(struct device* dev)
@@ -2023,16 +2186,19 @@ int sw49408_chip_info_load(struct device* dev)
 		TOUCH_E("status addr read error\n");
 		goto error;
 	}
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 	TOUCH_I("ic status read : %8.8X, tc status read : %8.8X\n",
 						status_val[0], status_val[1]);
+#endif
 
 	if (sw49408_reg_read(dev, info_ptr_addr,
 			(u8 *)&info_ptr_val, sizeof(u32)) < 0) {
 		TOUCH_E("Info ptr addr read error\n");
 		goto error;
 	}
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 	TOUCH_I("info ptr addr read : %8.8X\n", info_ptr_val);
-
+#endif
 	if (info_ptr_val == 0 || ((info_ptr_val >> 24) != 0)) {
 
 		TOUCH_E("info_ptr_addr invalid!\n");
@@ -2042,21 +2208,25 @@ int sw49408_chip_info_load(struct device* dev)
 	chip_info_addr = (info_ptr_val & 0xFFF);
 	reg_info_addr  = ((info_ptr_val >> 12) & 0xFFF);
 
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 	TOUCH_I("========== Info ADDR ==========\n");
 	TOUCH_I("chip_info_addr        : %4.4X\n", chip_info_addr);
 	TOUCH_I("reg_info_addr         : %4.4X\n", reg_info_addr);
 	TOUCH_I("========== Info ADDR ==========\n");
-
+#endif
 	if (!((status_val[1] >> 27) & 0x1))
 		TOUCH_E("Model ID is not loaded : %x\n", status_val[1]);
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 	else
 		TOUCH_I("Model ID is loaded\n");
-
+#endif
 	if ((status_val[1] >> 28) & 0x1)
 		TOUCH_E("Production Test info checksum error : %x\n",
 								 status_val[1]);
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 	else
 		TOUCH_I("Production Test info checksum is ok\n");
+#endif
 
 	//chip info read
 	if (sw49408_reg_read(dev, chip_info_addr, (u8 *)&d->chip_info,
@@ -2098,15 +2268,19 @@ static int sw49408_fw_upgrade(struct device *dev,
 		touch_msleep(ts->caps.hw_reset_delay);
 	}
 
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 	TOUCH_I("%s - START\n", __func__);
+#endif
 
 	if (fw->size > FLASH_SIZE) {
-		TOUCH_I("Image Size invalid : %d. The Size must be less then 128KB. The Process of Firmware Download could not process!\n",
+		TOUCH_E("Image Size invalid : %d. The Size must be less then 128KB. The Process of Firmware Download could not process!\n",
 			(unsigned int)fw->size);
 		return -EPERM;
 	} else {
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 		TOUCH_I("Image Size : 0x%8.8X(%d)\n",
 			(unsigned int)fw->size, (unsigned int)fw->size);
+#endif
 	}
 
 	// Binary Check
@@ -2155,8 +2329,10 @@ static int sw49408_fw_upgrade(struct device *dev,
 	if (ret < 0) {
 		TOUCH_E("failed : \'boot check\'\n");
 		return -EPERM;
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 	} else {
 		TOUCH_I("success : boot check\n");
+#endif
 	}
 
 
@@ -2198,7 +2374,7 @@ static int sw49408_fw_upgrade(struct device *dev,
 		if (d->chip_info.r_conf_dn_index == 0 ||
 				((d->chip_info.r_conf_dn_index * cfg_s_size) >
 				 (fw->size - FLASH_FW_SIZE - cfg_c_size))) {
-			TOUCH_I("Invalid Specific CFG Index => 0x%8.8X\n",
+			TOUCH_E("Invalid Specific CFG Index => 0x%8.8X\n",
 				d->chip_info.r_conf_dn_index);
 			return -EPERM;
 		}
@@ -2233,11 +2409,15 @@ static int sw49408_fw_upgrade(struct device *dev,
 		if (ret < 0) {
 			TOUCH_E("failed : \'cfg check\'\n");
 			return -EPERM;
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 		} else {
 			TOUCH_I("success : cfg_check\n");
+#endif
 		}
 	}
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 	TOUCH_I("===== Firmware download Okay =====\n");
+#endif
 
 	return 0;
 }
@@ -2252,26 +2432,34 @@ static int sw49408_upgrade(struct device *dev)
 	int i = 0;
 
 	if (atomic_read(&ts->state.fb) >= FB_SUSPEND) {
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 		TOUCH_I("state.fb is not FB_RESUME\n");
+#endif
 		return -EPERM;
 	}
 
 	if (ts->test_fwpath[0]) {
 		memcpy(fwpath, &ts->test_fwpath[0], sizeof(fwpath));
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 		TOUCH_I("get fwpath from test_fwpath:%s\n",
 			&ts->test_fwpath[0]);
+#endif
 	} else if (ts->def_fwcnt) {
 		if (!strcmp(d->ic_info.product_id, "L1L57P2")) {
 			if (d->ic_info.chip_revision & 0x01)
 				memcpy(fwpath, ts->def_fwpath[0], sizeof(fwpath));
 			else
 				memcpy(fwpath, ts->def_fwpath[1], sizeof(fwpath));
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 			TOUCH_I("get fwpath from def_fwpath : rev:%x\n",
 			d->ic_info.chip_revision);
+#endif
 		} else {
 			memcpy(fwpath, ts->def_fwpath[0], sizeof(fwpath));
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 			TOUCH_I("wrong product id[%s] : fw_path set for default\n",
 							d->ic_info.product_id);
+#endif
 	        }
 	} else {
 		TOUCH_E("no firmware file\n");
@@ -2283,7 +2471,9 @@ static int sw49408_upgrade(struct device *dev)
 		return -EPERM;
 	}
 
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 	TOUCH_I("fwpath[%s]\n", fwpath);
+#endif
 
 	ret = request_firmware(&fw, fwpath, dev);
 
@@ -2294,7 +2484,9 @@ static int sw49408_upgrade(struct device *dev)
 		return ret;
 	}
 
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 	TOUCH_I("fw size:%zu, data: %p\n", fw->size, fw->data);
+#endif
 
 	if (sw49408_fw_compare(dev, fw)) {
 		ret = -EINVAL;
@@ -2324,12 +2516,16 @@ static int sw49408_suspend(struct device *dev)
 
 	mfts_mode = touch_boot_mode_check(dev);
 	if ((mfts_mode >= MINIOS_MFTS_FOLDER) && !ts->role.mfts_lpwg) {
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 		TOUCH_I("%s : touch_suspend - MFTS\n", __func__);
+#endif
 		touch_interrupt_control(dev, INTERRUPT_DISABLE);
 		sw49408_power(dev, POWER_OFF);
 		return -EPERM;
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 	} else {
 		TOUCH_I("%s : touch_suspend start\n", __func__);
+#endif
 	}
 
 	if (atomic_read(&d->init) == IC_INIT_DONE)
@@ -2376,16 +2572,20 @@ static int sw49408_init(struct device *dev)
 	TOUCH_TRACE();
 
 	if (atomic_read(&ts->state.core) == CORE_PROBE) {
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 		TOUCH_I("fb_notif change\n");
+#endif
 		fb_unregister_client(&ts->fb_notif);
 		ts->fb_notif.notifier_call = sw49408_fb_notifier_callback;
 		fb_register_client(&ts->fb_notif);
 	}
 
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 	TOUCH_I("%s: charger_state = 0x%02X\n", __func__, d->charger);
 	TOUCH_I("%s: runtime debug : %s\n", __func__,
 			atomic_read(&ts->state.debug_option_mask) &
 			DEBUG_OPTION_2 ? "Enable" : "Disable");
+#endif
 
 	if (atomic_read(&ts->state.debug_tool) == DEBUG_TOOL_ENABLE)
 		sw49408_sic_abt_init(dev);
@@ -2495,12 +2695,16 @@ int sw49408_check_status(struct device *dev)
 
 	status_mask = status ^ INT_NORMAL_MASK;
 	if (status_mask & INT_RESET_CLR_BIT) {
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 		TOUCH_I("%s : Need Reset, status = %x, ic_status = %x\n",
 			__func__, status, ic_status);
+#endif
 		ret = -ERESTART;
 	} else if (status_mask & INT_LOGGING_CLR_BIT) {
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 		TOUCH_I("%s : Need Logging, status = %x, ic_status = %x\n",
 			__func__, status, ic_status);
+#endif
 		ret = -ERANGE;
 	}
 
@@ -2618,8 +2822,10 @@ int sw49408_check_status(struct device *dev)
 		sw49408_reg_read(dev, SPI_ERROR_ST, (u8 *)&spi_err, sizeof(u32));
 		sw49408_reg_read(dev, SPI_FAULT_TYPE, (u8 *)&spi_fault, sizeof(u32));
 
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 		TOUCH_I("%s : Watchdog Exception - status : %x, ic_status : %x, spi_err : %x, spi_fault : %x\n",
 			__func__, status, ic_status, spi_err, spi_fault);
+#endif
 
 		sw49408_te_info(dev, NULL);
 
@@ -2629,7 +2835,9 @@ int sw49408_check_status(struct device *dev)
 	debugging_mask = ((status >> 16) & 0xF);
 	if (debugging_mask == 0x2) {
 		if ((ret != -ERESTART) && (ret != -EUPGRADE)) {
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 			TOUCH_I("TC_Driving OK\n");
+#endif
 			d->tc_status_rst_cnt = 0;
 			d->tc_status_fwup_cnt = 0;
 			ret = -ERANGE;
@@ -2658,7 +2866,9 @@ int sw49408_check_status(struct device *dev)
 		d->abnormal_recovery = 0;
 
 	if (d->abnormal_recovery > NEED_RESET && (ret != -EUPGRADE)) {
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 		TOUCH_I("%s : Reset! abnormal_recovery = %d\n", __func__, d->abnormal_recovery);
+#endif
 		ret = -ERESTART;
 	}
 
@@ -2672,7 +2882,9 @@ static ssize_t sw49408_get_rn_data(struct device *dev, int16_t *buf, int frame_s
 	struct sw49408_data *d = to_sw49408_data(dev);
 
 	data_offset = d->reg_info.r_dbg_buf_sram_oft + (DBG_BUF2_OFFSET/4);
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 	TOUCH_I("data_offset = %d \n", data_offset);
+#endif
 
 	sw49408_reg_write(dev, spr_data_offset, (u8 *)&data_offset, sizeof(u32));
 
@@ -2697,7 +2909,9 @@ int sw49408_irq_abs_data(struct device *dev)
 
 	/* check q cover status */
 	if (d->driving_mode == LCD_MODE_U3_QUICKCOVER && !d->q_sensitivity) {
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 		TOUCH_I("Interrupt in Qcover closed\n");
+#endif
 		ts->is_cancel = 1;
 		ts->tcount = 0;
 		ts->intr_status = TOUCH_IRQ_FINGER;
@@ -2708,12 +2922,16 @@ int sw49408_irq_abs_data(struct device *dev)
 	if (data[0].track_id == PALM_ID || data[0].track_id == WATER_ID) {
 		if (data[0].event == TOUCHSTS_DOWN) {
 			ts->is_cancel = 1;
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 			TOUCH_I("%s Detected\n", data[0].track_id == WATER_ID ?
 					"Water" : "Palm");
+#endif
 		} else if (data[0].event == TOUCHSTS_UP) {
 			ts->is_cancel = 0;
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 			TOUCH_I("%s Released\n", data[0].track_id == WATER_ID ?
 					"Water" : "Palm");
+#endif
 		}
 		ts->tcount = 0;
 		ts->intr_status = TOUCH_IRQ_FINGER;
@@ -2771,8 +2989,10 @@ int sw49408_irq_abs(struct device *dev)
 
 	/* check if touch cnt is valid */
 	if (d->info.touch_cnt == 0 || d->info.touch_cnt > ts->caps.max_id) {
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 		TOUCH_I("%s : touch cnt is invalid - %d, abnormal_recovery = %d\n",
 			__func__, d->info.touch_cnt, d->abnormal_recovery);
+#endif
 		return -ERANGE;
 	}
 
@@ -2798,33 +3018,45 @@ int sw49408_irq_lpwg(struct device *dev)
 			ts->intr_status = TOUCH_IRQ_PASSWD;
 		}
 	} else if (d->info.wakeup_type == SWIPE_LEFT) {
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 		TOUCH_I("SWIPE_LEFT\n");
+#endif
 		sw49408_get_swipe_data(dev);
 		ts->intr_status = TOUCH_IRQ_SWIPE_LEFT;
 	} else if (d->info.wakeup_type == SWIPE_RIGHT) {
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 		TOUCH_I("SWIPE_RIGHT\n");
+#endif
 		sw49408_get_swipe_data(dev);
 		ts->intr_status = TOUCH_IRQ_SWIPE_RIGHT;
 	} else if (d->info.wakeup_type == SWIPE_DOWN) {
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 		TOUCH_I("SWIPE_DOWN\n");
+#endif
 		sw49408_get_swipe_data(dev);
 		ts->intr_status = TOUCH_IRQ_SWIPE_DOWN;
 	} else if (d->info.wakeup_type == SWIPE_UP) {
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 		TOUCH_I("SWIPE_UP\n");
+#endif
 		sw49408_get_swipe_data(dev);
 		ts->intr_status = TOUCH_IRQ_SWIPE_UP;
 	} else if (d->info.wakeup_type == KNOCK_OVERTAP) {
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 		TOUCH_I("LPWG wakeup_type is Overtap\n");
+#endif
 		sw49408_get_tci_data(dev,
 				ts->tci.info[TCI_2].tap_count + 1);
 		ts->intr_status = TOUCH_IRQ_PASSWD;
 	} else if (d->info.wakeup_type == CUSTOM_DEBUG) {
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 		TOUCH_I("LPWG wakeup_type is CUSTOM_DEBUG\n");
 		sw49408_debug_tci(dev);
 		sw49408_debug_swipe(dev);
 	} else {
 		TOUCH_I("LPWG wakeup_type is not support type![%d]\n",
 			d->info.wakeup_type);
+#endif
 	}
 
 	return ret;
@@ -2852,8 +3084,10 @@ void sw49408_irq_runtime_engine_debug(struct device *dev)
 	   runtime_dbg_inttype = 3 : ocd & RN */
 	if((d->info.debug.runtime_dbg_inttype == 1) || (d->info.debug.runtime_dbg_inttype == 3))
 	{
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 		TOUCH_I("ABT Engine Debug : runtime_dbg_inttype = %d, runtime_dbg_case = %04X \n",
 				d->info.debug.runtime_dbg_inttype, d->info.debug.runtime_dbg_case);
+#endif
 		memcpy(&ocd_debug, &d->info.debug, sizeof(d->info.debug));
 
 		for (a = 0 ; a < 11; a++)
@@ -2870,7 +3104,9 @@ void sw49408_irq_runtime_engine_debug(struct device *dev)
 			{
 				debug_ret += snprintf(debug_buf + debug_ret, LOG_BUF_SIZE - debug_ret, "%5d ", ocd_debug[start_point + b]);
 			}
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 			TOUCH_I("%s \n", debug_buf);
+#endif
 		}
 	}
 
@@ -2878,8 +3114,10 @@ void sw49408_irq_runtime_engine_debug(struct device *dev)
 	{
 		int rnsize = sizeof(int16_t) * (ROW_SIZE * COL_SIZE);
 
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 		TOUCH_I("ABT Engine Debug : runtime_dbg_inttype = %d, runtime_dbg_case = %04X \n",
 				d->info.debug.runtime_dbg_inttype, d->info.debug.runtime_dbg_case);
+#endif
 
 		if (rnsize % 4)
 			rnsize = (((rnsize >> 2) + 1) << 2);
@@ -2909,7 +3147,9 @@ void sw49408_irq_runtime_engine_debug(struct device *dev)
 			{
 				debug_ret += snprintf(debug_buf + debug_ret, LOG_BUF_SIZE - debug_ret, "%5d ", rndata[x * COL_SIZE + y]);
 			}
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 			TOUCH_I("%s\n", debug_buf);
+#endif
 		}
 	}
 
@@ -2965,13 +3205,17 @@ static ssize_t store_reg_ctrl(struct device *dev,
 		data = value;
 		if (sw49408_reg_write(dev, reg_addr, &data, sizeof(u32)) < 0)
 			TOUCH_E("reg addr 0x%x write fail\n", reg_addr);
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 		else
 			TOUCH_I("reg[%x] = 0x%x\n", reg_addr, data);
+#endif
 	} else if (!strcmp(command, "read")) {
 		if (sw49408_reg_read(dev, reg_addr, &data, sizeof(u32)) < 0)
 			TOUCH_E("reg addr 0x%x read fail\n", reg_addr);
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 		else
 			TOUCH_I("reg[%x] = 0x%x\n", reg_addr, data);
+#endif
 	} else {
 		TOUCH_D(BASE_INFO, "Usage\n");
 		TOUCH_D(BASE_INFO, "Write reg value\n");
@@ -2992,7 +3236,9 @@ static ssize_t show_tci_debug(struct device *dev, char *buf)
 	if (sw49408_reg_read(dev, d->reg_info.r_abt_sts_spi_addr +
 				TCI_FAIL_DEBUG_R,
 				(u8 *)&rdata, sizeof(rdata)) < 0) {
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 		TOUCH_I("Fail to Read TCI Debug Reason type\n");
+#endif
 		mutex_unlock(&ts->lock);
 		return ret;
 	}
@@ -3005,8 +3251,10 @@ static ssize_t show_tci_debug(struct device *dev, char *buf)
 	ret += snprintf(buf + ret, PAGE_SIZE - ret,
 			"Read TCI Debug Reason type[Driver] = %s\n",
 			debug_type[d->tci_debug_type]);
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 	TOUCH_I("Read TCI Debug Reason type = %s\n",
 			debug_type[d->tci_debug_type]);
+#endif
 
 	return ret;
 }
@@ -3021,12 +3269,16 @@ static ssize_t store_tci_debug(struct device *dev,
 		return count;
 
 	if (value > 2 || value < 0) {
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 		TOUCH_I("SET TCI debug reason wrong, 0, 1, 2 only\n");
+#endif
 		return count;
 	}
 
 	d->tci_debug_type = (u8)value;
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 	TOUCH_I("SET TCI Debug reason type = %s\n", debug_type[value]);
+#endif
 
 	return count;
 }
@@ -3042,7 +3294,9 @@ static ssize_t show_swipe_debug(struct device *dev, char *buf)
 	if (sw49408_reg_read(dev, d->reg_info.r_abt_sts_spi_addr +
 				SWIPE_FAIL_DEBUG_R,
 				(u8 *)&rdata, sizeof(rdata)) < 0) {
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 		TOUCH_I("Fail to Read SWIPE Debug reason type\n");
+#endif
 		mutex_unlock(&ts->lock);
 		return ret;
 	}
@@ -3055,8 +3309,10 @@ static ssize_t show_swipe_debug(struct device *dev, char *buf)
 	ret += snprintf(buf + ret, PAGE_SIZE - ret,
 			"Read SWIPE Debug reason type[Driver] = %s\n",
 			debug_type[d->swipe_debug_type]);
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 	TOUCH_I("Read SWIPE Debug reason type = %s\n",
 			debug_type[d->swipe_debug_type]);
+#endif
 
 	return ret;
 }
@@ -3071,12 +3327,16 @@ static ssize_t store_swipe_debug(struct device *dev,
 		return count;
 
 	if (value > 2 || value < 0) {
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 		TOUCH_I("SET SWIPE debug reason wrong, 0, 1, 2 only\n");
+#endif
 		return count;
 	}
 
 	d->swipe_debug_type = (u32)value;
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 	TOUCH_I("Write SWIPE Debug reason type = %s\n", debug_type[value]);
+#endif
 
 	return count;
 }
@@ -3118,8 +3378,10 @@ static ssize_t store_q_sensitivity(struct device *dev, const char *buf,
 				&d->q_sensitivity, sizeof(u32));
 	mutex_unlock(&ts->lock);
 
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 	TOUCH_I("%s : %s(%d)\n", __func__,
 			value ? "SENSITIVE" : "NORMAL", value);
+#endif
 
 	return count;
 }
@@ -3151,7 +3413,9 @@ static ssize_t show_te_result(struct device *dev, char *buf)
 	struct sw49408_data *d = to_sw49408_data(dev);
 	int ret = 0;
 
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 	TOUCH_I("DDIC Test result : %s\n", d->te_ret ? "Fail" : "Pass");
+#endif
 	ret = snprintf(buf + ret, PAGE_SIZE, "DDIC Test result : %s\n",
 			d->te_ret ? "Fail" : "Pass");
 
@@ -3180,7 +3444,9 @@ static ssize_t show_lcd_block_result(struct device *dev, char *buf)
 		return ret;
 	}
 
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 	TOUCH_I("lcd block check Start\n");
+#endif
 
 	mutex_lock(&ts->lock);
 	if (sw49408_reg_read(dev, tc_status,
@@ -3196,9 +3462,11 @@ static ssize_t show_lcd_block_result(struct device *dev, char *buf)
 		lcd_block = 1;
 
 	ret = snprintf(buf + ret, PAGE_SIZE, "%x\n", lcd_block);
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 	TOUCH_I("tc status : %x, lcd block status : %x\n",
 			status, lcd_block);
 	TOUCH_I("lcd block check End\n");
+#endif
 
 	return ret;
 }
@@ -3211,8 +3479,10 @@ static ssize_t show_swipe_enable(struct device *dev, char *buf)
 	ret = snprintf(buf + ret, PAGE_SIZE, "SWIPE mode = 0x%X\n",
 			d->swipe.mode);
 
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 	TOUCH_I("Swipe mode = %s\n",
 			d->swipe.mode & SWIPE_UP_BIT ? "SWIPE_UP" : "Disable");
+#endif
 
 	return ret;
 }
@@ -3227,13 +3497,17 @@ static ssize_t store_swipe_enable(struct device *dev,
 		return count;
 
 	if (value > 1 || value < 0) {
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 		TOUCH_I("Set Swipe mode wrong, 0, 1 only\n");
+#endif
 		return count;
 	}
 
 	d->swipe.mode = value ? SWIPE_UP_BIT | SWIPE_UP_RELEASE_ENABLE : 0;
 
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 	TOUCH_I("%s : %s\n", __func__, value ? "SWIPE_UP" : "Disable");
+#endif
 
 	return count;
 }
@@ -3421,11 +3695,15 @@ static int __init touch_device_init(void)
 	TOUCH_TRACE();
 
 	if (touch_get_device_type() != TYPE_SW49408) {
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 		TOUCH_I("%s, sw49408 returned\n", __func__);
+#endif
 		return 0;
 	}
 
+#ifndef CONFIG_MELINA_QUIET_TOUCH
 	TOUCH_I("%s, sw49408 start\n", __func__);
+#endif
 
 	return touch_bus_device_init(&hwif, &touch_driver);
 }
