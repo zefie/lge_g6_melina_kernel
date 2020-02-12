@@ -1,8 +1,10 @@
 #!/bin/bash
 # shellcheck disable=SC1090
 
-SCRIPTDIR=$(realpath "$(dirname "${0}")")
-source "${SCRIPTDIR}/buildenv.sh"
+if [ -z "${SCRIPTDIR}" ]; then
+	SCRIPTDIR=$(realpath "$(dirname "${0}")")
+	source "${SCRIPTDIR}/buildenv.sh"
+fi
 
 for m in "${SUPPORTED_MODELS[@]}"; do
 	# Pproduction Kernel

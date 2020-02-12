@@ -1,7 +1,10 @@
 #!/bin/bash
 # shellcheck disable=SC1090
-SCRIPTDIR=$(realpath "$(dirname "${0}")")
-source "${SCRIPTDIR}/buildenv.sh"
+
+if [ -z "${SCRIPTDIR}" ]; then
+	SCRIPTDIR=$(realpath "$(dirname "${0}")")
+	source "${SCRIPTDIR}/buildenv.sh"
+fi
 
 function lerrchk() {
 	local res="${1}"
@@ -52,14 +55,12 @@ if [ ! -z "${1}" ]; then
 		echo "* gcc build"
 	else
 		echo "* clang build"
-		Z_BUILD_ARG+=(clang)
 	fi
 
 	if [ -z "${USE_DEBUG}" ]; then
 		echo "* Production (non-debug) kernel"
 	else
 		echo "* DEBUG kernel"
-		Z_BUILD_ARG+=(debug)
 	fi
 
 	if [ -z "${WORKSPACE}" ]; then
@@ -74,7 +75,7 @@ if [ ! -z "${1}" ]; then
 	lerrchk $? "${KERNLOG}"
 
 	echo "* Building ${KERNEL_DEVMODEL} zip (log in ${ZIPLOG})"
-	"${SCRIPTDIR}/buildzip.sh" > "${ZIPLOG}" 2>&1
+	"${SCRIPTDIR}/build.sh" zip > "${ZIPLOG}" 2>&1
 	lerrchk $? "${ZIPLOG}"
 
 	ZIPNAME=$(find build/out/ -name "boot_*.zip" | rev | cut -d'/' -f1 | rev)

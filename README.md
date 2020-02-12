@@ -39,7 +39,10 @@ only compile them and let you try them. Keep that in mind.
  * [Prepare your toolchain](ubertc-guide.md)
  * Clone this git repository and enter the directory
  * Edit `.zefie/scripts/buildenv.sh`, and set `TOOLCHAIN`, `KERNEL_DEV` and `KERNEL_NAME` path for your local setup
- * Run `.zefie/scripts/build.sh clean build zip`
+ * To build, run (for example `h870`) `.zefie/scripts/build.sh setdevice h870 clean build`
+ * To build all 6 kernels (3 devices, debug and non-debug), run `./zefie/scripts/build.sh release-build`
+ * To build all 6 kernels with clang, run `./zefie/scripts/build.sh clang release-build`
+ * To build all **12** kernels with (clang/nonclang debug/nondebug), run `./zefie/scripts/build.sh release-build clang release-build`
 
 If all goes well, output will be in `build/out/`,
 and you can also use `.zefie/scripts/sideload.sh` to automatically sideload the most recent zip to TWRP.
