@@ -7,9 +7,17 @@ export TOOLCHAIN32="${CROSS_COMPILE_ARM32:-/home/zefie/ubertc/out/arm-linux-andr
 
 SCRIPTDIR=$(realpath "$(dirname "${0}")")
 KERNEL_SOURCE_DIR=$(realpath "${SCRIPTDIR}/../..")
-LG_OUT_DIRECTORY=$(realpath "${KERNEL_SOURCE_DIR}/../lg_out")
+
+if [ -z "${WORKSPACE}" ]; then
+	# default to ../lg_out
+	LG_OUT_DIRECTORY=$(realpath "${KERNEL_SOURCE_DIR}/../lg_out")
+else
+	# For Jenkins, default to ${WORKSPACE}/lg_out
+	LG_OUT_DIRECTORY=$(realpath "${WORKSPACE:?}/lg_out")
+fi
+
 CPUS=$(nproc)
-export KERNEL_SOURCE_DIR SCRIPTDIR CPUS
+export KERNEL_SOURCE_DIR SCRIPTDIR CPUS LG_OUT_DIRECTORY
 
 Z_ANDROID="${Z_ANDROID:-/home/zefie/android}"
 Z_ANDROID_CLANG="${Z_ANDROID}/prebuilts/clang/host/linux-x86/clang-r349610"
