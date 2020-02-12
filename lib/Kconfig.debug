@@ -128,7 +128,7 @@ menu "Compile-time checks and compiler options"
 
 config DEBUG_INFO
 	bool "Compile the kernel with debug info"
-	depends on DEBUG_KERNEL && !COMPILE_TEST && !MELINA_ENHANCED_NDBG
+	depends on DEBUG_KERNEL && !COMPILE_TEST && !MELINA_DEBUG_DISABLE
 	help
           If you say Y here the resulting kernel image will include
 	  debugging info resulting in a larger kernel image.
@@ -369,7 +369,7 @@ config MAGIC_SYSRQ_DEFAULT_ENABLE
 
 config DEBUG_KERNEL
 	bool "Kernel debugging"
-	depends on !MELINA_ENHANCED_NDBG
+	depends on !MELINA_DEBUG_DISABLE
 	help
 	  Say Y here if you are developing drivers or trying to debug and
 	  identify kernel problems.
