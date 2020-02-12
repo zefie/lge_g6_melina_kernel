@@ -164,6 +164,7 @@ int trace_seq_vprintf(struct trace_seq *s, const char *fmt, va_list args)
 }
 EXPORT_SYMBOL_GPL(trace_seq_vprintf);
 
+#ifdef CONFIG_BINARY_PRINTF
 /**
  * trace_seq_bprintf - Write the printf string from binary arguments
  * @s: trace sequence descriptor
@@ -202,6 +203,7 @@ int trace_seq_bprintf(struct trace_seq *s, const char *fmt, const u32 *binary)
 	return len;
 }
 EXPORT_SYMBOL_GPL(trace_seq_bprintf);
+#endif
 
 /**
  * trace_seq_puts - trace sequence printing of simple string

@@ -2129,6 +2129,7 @@ static void trace_printk_start_stop_comm(int enabled)
 		tracing_stop_cmdline_record();
 }
 
+#ifdef CONFIG_BINARY_PRINTF
 /**
  * trace_vbprintk - write binary msg to tracing buffer
  *
@@ -2188,6 +2189,7 @@ out:
 	return len;
 }
 EXPORT_SYMBOL_GPL(trace_vbprintk);
+#endif
 
 __printf(3, 0)
 static int

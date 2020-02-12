@@ -137,6 +137,7 @@ config TRACING
 
 config GENERIC_TRACER
 	bool
+	depends on !MELINA_ENHANCED_NDBG
 	select TRACING
 
 #
