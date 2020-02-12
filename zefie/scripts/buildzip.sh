@@ -16,10 +16,8 @@ KERNEL_IMAGE="build/arch/${ARCH}/boot/Image.gz-dtb"
 if [ ! -f "${KERNEL_IMAGE}" ]; then
 	echo "Could not find binary kernel. Did you build it?";
         echo ""
-        echo "Try all of the following:"
-        echo "zefie/scripts/resetgit.sh"
-        echo "zefie/scripts/cleanbuild.sh"
-        echo "zefie/scripts/buildzip.sh"
+        echo "Try the following:"
+        echo "zefie/scripts/build.sh clean build zip"
 	exit 1;
 fi
 
@@ -92,18 +90,34 @@ errchk sed -i -e 's/\%MANU\%/'"${KERNEL_MANU}"'/' "${TMPDIR}/anykernel.sh"
 errchk sed -i -e 's/\%MODEL\%/'"${KERNEL_MODEL}"'/' "${TMPDIR}/anykernel.sh"
 errchk sed -i -e 's/\%DEVMODEL\%/'"${KERNEL_DEVMODEL}"'/' "${TMPDIR}/anykernel.sh"
 errchk sed -i -e 's/\%VERSION\%/'"${KVER}"'/' "${TMPDIR}/anykernel.sh"
+EXTRA_CMDS=();
 if [ -z "${USE_CLANG}" ]; then
 	errchk sed -i -e 's/\%TOOLCHAIN_VERSION\%/'"${TC_VER}"'/' "${TMPDIR}/anykernel.sh"
-	errchk sed -i -e 's/\%EXTRA_INFO\%//' "${TMPDIR}/anykernel.sh"
+	errchk sed -i -e 's/\%EXTRA_CMDS\%//' "${TMPDIR}/anykernel.sh"
 else
-	EXTRA_CMDS=("ui_print \"clang: ${TC_VER}\"")
-	EXTRA_CMDS_STR=""
-	for c in "${EXTRA_CMDS[@]}"; do
-		EXTRA_CMDS_STR+="${c}\n"
-	done
 	errchk sed -i -e 's/\%TOOLCHAIN_VERSION\%/'"${GCC_VER}"'/' "${TMPDIR}/anykernel.sh"
-	errchk sed -i -e 's/\%EXTRA_CMDS\%/'"${EXTRA_CMDS_STR}"'/' "${TMPDIR}/anykernel.sh"
+	EXTRA_CMDS+=("ui_print \"clang: ${TC_VER}\"")
 fi
+
+if [ -z "${USE_DEBUG}" ]; then
+	EXTRA_CMDS+=("ui_print \"This is a release (non-debug) kernel.\"")
+
+else
+	EXTRA_CMDS+=("ui_print \"***************************\"")
+	EXTRA_CMDS+=("ui_print \"NOTICE NOTICE NOTICE NOTICE\"")
+	EXTRA_CMDS+=("ui_print \"***************************\"")
+	EXTRA_CMDS+=("ui_print \"\"")
+	EXTRA_CMDS+=("ui_print \"This is a DEBUG kernel.\"")
+	EXTRA_CMDS+=("ui_print \"If you are not a developer or trying to\"")
+	EXTRA_CMDS+=("ui_print \"debug issues, you should use the \"")
+	EXTRA_CMDS+=("ui_print \"non-debug version of this kernel.\"")
+fi
+
+EXTRA_CMDS_STR=""
+for c in "${EXTRA_CMDS[@]}"; do
+	EXTRA_CMDS_STR+="${c}\n"
+done
+errchk sed -i -e 's/\%EXTRA_CMDS\%/'"${EXTRA_CMDS_STR}"'/' "${TMPDIR}/anykernel.sh"
 
 if [ ${MODULES} -eq 1 ]; then
 	errchk rm -rf "${TMPDIR}/_modtmp"
@@ -139,6 +153,11 @@ if [ ${MODULES} -eq 1 ]; then
 fi
 
 errchk cp "${KERNEL_IMAGE}" "${TMPDIR}/zImage"
+
+# Debug Naming
+if [ ! -z "${USE_DEBUG}" ]; then
+	ANDROID_TARGET="debug-${ANDROID_TARGET}"
+fi
 
 # Standard naming
 if [ -z "${USE_CLANG}" ]; then

@@ -11,7 +11,7 @@ else
 	echo "Could not find a zip? Did you build the kernel and zip file?";
 	echo ""
 	echo "Try the following:"
-	echo "zefie/scripts/fullbuild.sh"
+	echo "zefie/scripts/build.sh clean build zip"
 	echo "zefie/scripts/sideload.sh"
 	exit 1;
 fi

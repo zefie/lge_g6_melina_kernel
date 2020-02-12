@@ -17,7 +17,11 @@ function lerrchk() {
 
 if [ ! -z "${1}" ]; then
 	KERNEL_DEVMODEL="$(echo "${1}" | tr '[:lower:]' '[:upper:]')"
-	KERNEL_DEVMODEL_LOWER="$(echo "${KERNEL_DEVMODEL}" | tr '[:upper:]' '[:lower:]')"
+	if [ -z "${USE_DEBUG}" ]; then
+		KERNEL_DEVMODEL_LOWER="$(echo "${KERNEL_DEVMODEL}" | tr '[:upper:]' '[:lower:]')"
+	else
+		KERNEL_DEVMODEL_LOWER="debug-$(echo "${KERNEL_DEVMODEL}" | tr '[:upper:]' '[:lower:]')"
+	fi
 	shift
 	export KERNEL_DEVMODEL KERNEL_DEVMODEL_LOWER
 
@@ -42,10 +46,20 @@ if [ ! -z "${1}" ]; then
 	ZIPLOG="${LG_OUT_DIRECTORY}/${KERNEL_NAME_LOWER}-buildzip-${KERNEL_DEVMODEL_LOWER}.log"
 	ZIPLOGD="${LG_OUT_DIRECTORY}/${KERNEL_NAME_LOWER}-buildzip_details-${KERNEL_DEVMODEL_LOWER}.log"
 
+	Z_BUILD_ARG=(clean)
+
 	if [ -z "${USE_CLANG}" ]; then
 		echo "* gcc build"
 	else
 		echo "* clang build"
+		Z_BUILD_ARG+=(clang)
+	fi
+
+	if [ -z "${USE_DEBUG}" ]; then
+		echo "* Production (non-debug) kernel"
+	else
+		echo "* DEBUG kernel"
+		Z_BUILD_ARG+=(debug)
 	fi
 
 	if [ -z "${WORKSPACE}" ]; then
@@ -53,8 +67,10 @@ if [ ! -z "${1}" ]; then
 		errchk rm -f "${LG_OUT_DIRECTORY}/"*"-${KERNEL_DEVMODEL_LOWER}.log"
 	fi
 
+	Z_BUILD_ARG+=(build)
+
 	echo "* Building ${KERNEL_DEVMODEL} kernel (log in ${KERNLOG})"
-	"${SCRIPTDIR}/cleanbuild.sh" "${@}" > "${KERNLOG}" 2>&1
+	"${SCRIPTDIR}/build.sh" "${Z_BUILD_ARG[@]}" > "${KERNLOG}" 2>&1
 	lerrchk $? "${KERNLOG}"
 
 	echo "* Building ${KERNEL_DEVMODEL} zip (log in ${ZIPLOG})"
