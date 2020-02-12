@@ -402,15 +402,17 @@ function buildzip() {
 
 	# Debug Naming
 	if [ ! -z "${USE_DEBUG}" ]; then
-		ANDROID_TARGET="debug-${ANDROID_TARGET}"
+		ANDROID_TARGET="debug";
+	else
+		ANDROID_TARGET="nondebug";
+	fi
+
+	if [ ! -z "${USE_CLANG}" ]; then
+		ANDROID_TARGET="clang_${ANDROID_TARGET}"
 	fi
 
 	# Standard naming
-	if [ -z "${USE_CLANG}" ]; then
-		OUTFILE="boot_${KERNEL_MANU}-${KERNEL_DEVMODEL}_${KVER}_$(date --utc +%Y.%m.%d)_${ANDROID_TARGET}_${KERNEL_DEVNAME}.zip"
-	else
-		OUTFILE="boot_${KERNEL_MANU}-${KERNEL_DEVMODEL}_${KVER}_$(date --utc +%Y.%m.%d)_clang_${ANDROID_TARGET}_${KERNEL_DEVNAME}.zip"
-	fi
+	OUTFILE="boot_${KERNEL_MANU}-${KERNEL_DEVMODEL}_${KVER}_$(date --utc +%Y.%m.%d)_${ANDROID_TARGET}_${KERNEL_DEVNAME}.zip"
 
 	if [ -f "${OUTDIR}/${OUTFILE}" ]; then
 		rm -f "${OUTDIR}/${OUTFILE}"
