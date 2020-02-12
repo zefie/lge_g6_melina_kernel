@@ -102,6 +102,7 @@ typedef struct respData {
 
 respData_t *gStRecvData = NULL;
 unsigned char *gSendframe = NULL;
+int gSendframeSize = 300;
 unsigned char *gDataPackage = NULL;
 unsigned char *data1 = NULL;
 
@@ -201,7 +202,7 @@ static int p61_dev_open(struct inode *inode, struct file *filp)
 	gRecvBuff = (unsigned char *)kmalloc(300, GFP_KERNEL);
 	gStRecvData = (respData_t *)kmalloc(sizeof(respData_t), GFP_KERNEL);
 	checksum = (unsigned char *)kmalloc(csSize, GFP_KERNEL);
-	gSendframe = (unsigned char *)kmalloc(300, GFP_KERNEL);
+	gSendframe = (unsigned char *)kmalloc(gSendframeSize, GFP_KERNEL);
 	gDataPackage = (unsigned char *)kmalloc(300, GFP_KERNEL);
 	apduBuffer = (unsigned char *)kmalloc(apduBufferlen, GFP_KERNEL);
 	data1 = (unsigned char *)kmalloc(1, GFP_KERNEL);
@@ -475,9 +476,9 @@ void sendAcknowledge(struct file *filp)
 	ack[0] = 0x00;
 	ack[1] = (unsigned char)(PH_SCAL_T1_R_BLOCK | (unsigned char)(seqCounterCard << 4));
 	ack[2] = 0x00;
-	ack[3] = helperComputeLRC(ack, 0, (sizeof(ack) / sizeof(ack[0])) - 2);
+	ack[3] = helperComputeLRC(ack, 0, gSendframeSize - 2);
 
-	send(filp, &ack, C_TRANSMIT_NORMAL_SPI_OPERATION, sizeof(ack)/sizeof(ack[0]));
+	send(filp, &ack, C_TRANSMIT_NORMAL_SPI_OPERATION, gSendframeSize);
 
 	NFC_DBG_MSG(KERN_ALERT "sendAcknowledge - Exit\n");
 
@@ -668,7 +669,7 @@ again:
 		cleanup_timer();
 	}
 	if (timer_expired == 1) {
-		memset(gSendframe, 0, 300);
+		memset(gSendframe, 0, gSendframeSize);
 		r_frame = gSendframe;
 		r_frame[0] = 0x00;
 		r_frame[1] = 0x00;
