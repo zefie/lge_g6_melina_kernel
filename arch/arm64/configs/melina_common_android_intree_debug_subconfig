@@ -1,0 +1,6 @@
+include melina_common_android_intree_debug_subconfig
+
+# Kernel Debugging
+CONFIG_MELINA_DEBUG_ENABLE=n
+CONFIG_MELINA_ENHANCED_NDBG=y
+CONFIG_LOCALVERSION="-melinareborn-dbg"

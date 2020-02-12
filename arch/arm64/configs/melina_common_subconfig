@@ -57,3 +57,7 @@ CONFIG_USB_GSPCA=y
 CONFIG_LCD_CLASS_DEVICE=y
 CONFIG_CRYPTO_ANSI_CPRNG=y
 CONFIG_MODULES=n
+
+# Lineage extras
+include melina_common_lineageos_subconfig
+
