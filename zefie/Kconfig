@@ -4,6 +4,8 @@ menuconfig MELINA
 	bool "Melina Reborn Custom Options"
         depends on MACH_MSM8996_LUCYE
 	default y
+	help
+	  Offers enhancements specific to the Melina Reborn Kernel by zefie
 
 if MELINA
 
@@ -11,6 +13,12 @@ choice
         prompt "Compiler CPU Optimizations"
         default MELINA_OPTIMIZE_KYRO if 64BIT
         default MELINA_OPTIMIZE_CORTEX_A53 if !64BIT
+	help
+	  Select which CPU optimization flags, if any, you wish to compile
+	  the kernel with. Please note that some options are incompatible
+	  with the clang compiler.
+
+	  If unsure, use the selected default.
 
 config MELINA_OPTIMIZE_NONE
         bool "Do not optimize"
@@ -61,12 +69,12 @@ config MELINA_DEBUG_ENABLE
 	select INPUT_EVBUG
 	help
 	  Select this to have a fully verbose kernel, like LGE's stock.
-	  Selecting this turns on full kernel debug support, and will trigger a warning when booting Android.
+	  Selecting this turns on full kernel debug support, and may trigger a warning when booting Android.
 	  Select "Enhanced Debug Removal" to disable debug support, and remove the warning, but at the cost
 	  of making it more difficult to debug.
 
-	  This option will cause a warning from Android boot regarding a DEBUG kernel and "trace_printk".
-	  The warning is harmless, but this may slightly reduce performance.
+	  This option will cause a NOTICE in the kernel log from Android boot regarding a DEBUG kernel
+	  and "trace_printk". The warning is harmless, but this may slightly reduce performance.
 	  However, it will make it easier to diagnose any problems.
 
 	  If unsure, say Y here while developing, then say N here when making a public release.
