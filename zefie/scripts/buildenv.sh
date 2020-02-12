@@ -1,11 +1,13 @@
 #!/bin/bash
-# shellcheck disable=SC2034
+# shellcheck disable=SC2034,SC1090
 # git clone https://github.com/zefie/binary_toolchains -b uber-6.x-x86_64-aarch64
 export TOOLCHAIN="${CROSS_COMPILE:-/home/zefie/ubertc/out/aarch64-linux-android-6.x/bin/aarch64-linux-android-}"
 export TOOLCHAIN32="${CROSS_COMPILE_ARM32:-/home/zefie/ubertc/out/arm-linux-androideabi-6.x/bin/arm-linux-androideabi-}"
 
 
 SCRIPTDIR=$(realpath "$(dirname "${0}")")
+source "${SCRIPTDIR}/functions.sh"
+
 KERNEL_SOURCE_DIR=$(realpath "${SCRIPTDIR}/../..")
 
 if [ -z "${WORKSPACE}" ]; then
@@ -24,6 +26,7 @@ Z_ANDROID_CLANG="${Z_ANDROID}/prebuilts/clang/host/linux-x86/clang-r349610"
 Z_ANDROID_BINUTILS="${Z_ANDROID}/prebuilts/gcc/linux-x86/host/x86_64-linux-glibc2.17-4.8/x86_64-linux/bin"
 
 
+export KERNEL_MAKE_TARGETS=("dtbs" "Image.gz-dtb")
 # Jenkins
 if [ ! -z "${WORKSPACE}" ]; then
 	export TOOLCHAIN="${WORKSPACE}/ubertc/aarch64-linux-android-6.x/bin/aarch64-linux-android-"
@@ -59,9 +62,7 @@ if [ -z "${TC_TYPE}" ]; then export TC_TYPE="${ZEFIE_TC_TYPE}"; fi
 if [ -z "${TC_VER}" ]; then export TC_VER="${ZEFIE_TC_VER}"; fi
 if [ -z "${KERNEL_MANU}" ]; then export KERNEL_MANU="${DEFAULT_MANU}"; fi
 if [ -z "${KERNEL_MODEL}" ]; then export KERNEL_MODEL="${DEFAULT_MODEL}"; fi
-if [ -z "${KERNEL_DEVMODEL}" ]; then export KERNEL_DEVMODEL="${DEFAULT_DEVMODEL}"; fi
-KERNEL_DEVMODEL_LOWER="$(echo "${KERNEL_DEVMODEL}" | tr '[:upper:]' '[:lower:]')"
-export KERNEL_DEVMODEL_LOWER
+if [ -z "${KERNEL_DEVMODEL}" ]; then kernel_setdevice "${DEFAULT_DEVMODEL}"; fi
 
 if [ ! -z "${USE_CCACHE}" ]; then
 	TOOLCHAIN="ccache ${TOOLCHAIN}"
@@ -69,36 +70,14 @@ if [ ! -z "${USE_CCACHE}" ]; then
 	export TOOLCHAIN TOOLCHAIN32
 fi
 
-function errchk() {
-        case "${1}" in
-                "silent")
-                        local silent=1
-                        shift;
-                        ;;
-                "noout")
-                        local noout=1
-                        shift;
-                        ;;
-        esac
-        if [ -z "${noout}" ]; then
-                "${@}"
-        else
-                "${@}" 2>/dev/null >/dev/null
-        fi
-        local res=$?
-        if [ ${res} -ne 0 ]; then
-                if [ -z "${silent}" ]; then
-                        echo "Error ${res} executing ${*}";
-                fi
-                exit "${res}";
-        fi
-}
-
 errchk cd "${KERNEL_SOURCE_DIR}"
 
 if [ "$(basename "${0}")" == "buildenv.sh" ]; then
 	if [ ! -z "$1" ]; then
 		errchk "${@}"
+	else
+		export PS1="(melina-dev)${PS1}" Z_SHELL_ENV=1
+		bash
 	fi
 fi
 
