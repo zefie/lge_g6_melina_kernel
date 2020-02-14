@@ -25,6 +25,8 @@ while [ "${1}" != "" ]; do
 				shift
 				if [ -z "${1}" ]; then
 					echo "Usage: setdevice devicename"
+					echo "Supported Devices:"
+					echo "${SUPPORTED_MODELS[*]}"
 					exit 1;
 				else
 					kernel_setdevice "${1}"
@@ -34,8 +36,8 @@ while [ "${1}" != "" ]; do
 
 			"defconfig")
 				shift
-				errchk kernel_create_defconfigs "${Z_CONFIG_OVERRIDE[@]}"
-				errchk kernel_defconfig
+				errchk kernel_generate_defconfigs "${Z_CONFIG_OVERRIDE[@]}"
+				errchk kernel_make_defconfig
 				;;
 
 			"clean")
