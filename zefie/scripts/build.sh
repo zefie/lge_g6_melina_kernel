@@ -21,10 +21,10 @@ Z_INTERNAL_FUNCS=($(grep function "${SCRIPTDIR}/functions.sh" | cut -d'(' -f1 | 
 while [ "${1}" != "" ]; do
                 case "${1}" in
 
-			"setdevice")
+			"device")
 				shift
 				if [ -z "${1}" ]; then
-					echo "Usage: setdevice devicename"
+					echo "Usage: device devicename"
 					echo "Supported Devices:"
 					echo "${SUPPORTED_MODELS[*]}"
 					exit 1;
@@ -93,7 +93,7 @@ while [ "${1}" != "" ]; do
 
 			"make")
 				shift
-				make "${@}"
+				kernel_make "${@}"
 				exit $?
 				;;
 			"shell")
@@ -104,7 +104,12 @@ while [ "${1}" != "" ]; do
 
 			"zip")
 				shift
-				errchk "${SCRIPTDIR}/buildzip.sh"
+				buildzip
+				;;
+
+			"sideload")
+				shift
+				sideload
 				;;
 
 			"help")

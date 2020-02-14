@@ -10,20 +10,16 @@ function z_setlog() {
 	if [ -z "${1}" ]; then
 		unset Z_ERROR_LOG
 	else
-		local Z_ERROR_LOG="${1}"
+		Z_ERROR_LOG="${1}"
 		export Z_ERROR_LOG
 	fi
 }
 
-function kernel_read_errlog() {
-	local res="${1}"
-	local log="${2}"
-	if [ "${res}" -ne 0 ]; then
-		echo "*** BUILD ERROR *** "
-		echo "* Device: ${KERNEL_DEVMODEL}"
-		echo "Build Log:"
-		cat "${log}"
-		exit "${res}"
+function errout() {
+	if { 2>/dev/null true >&3; }; then
+		echo "$@" 1>&3;
+	else
+		echo "$@" 1>&2;
 	fi
 }
 
@@ -50,13 +46,16 @@ function errchk() {
         local res=$?
         if [ ${res} -ne 0 ]; then
                 if [ -z "${silent}" ]; then
-                        echo "Error ${res} executing ${*}";
-                fi
-		if [ -z "${stayalive}" ]; then
+                        errout "Error ${res} executing ${*}";
 			if [ ! -z "${Z_ERROR_LOG}" ]; then
-				kernel_read_errorlog "${res}" "${Z_ERROR_LOG}"
-			fi
-	                exit "${res}";
+				errout "*** BUILD ERROR *** "
+				errout "* Device: ${KERNEL_DEVMODEL}"
+				errout "Build Log:"
+				errout "$(cat "${Z_ERROR_LOG}")"
+	                fi
+		fi
+		if [ -z "${stayalive}" ]; then
+			exit "${res}"
 		else
 			return "${res}";
 		fi
@@ -70,12 +69,24 @@ function kernel_setdevice() {
 		if [ "${USER_DEV}" == "${m}" ]; then
 			KERNEL_DEVMODEL="${USER_DEV}";
 			KERNEL_DEVMODEL_LOWER="$(echo "${KERNEL_DEVMODEL}" | tr '[:upper:]' '[:lower:]')"
-			export KERNEL_DEVMODEL KERNEL_DEVMODEL_LOWER
+			KERNEL_DEVPETNAME="$(kernel_get_device_defconfig "${m}" | cut -d'_' -f1)"
+			case "${KERNEL_DEVPETNAME}" in
+				"lucye")
+					KERNEL_MODEL="G6"
+					;;
+				"elsa")
+					KERNEL_MODEL="G5"
+					;;
+				*)
+					KERNEL_MODEL="??"
+					;;
+			esac
+			export KERNEL_DEVMODEL KERNEL_DEVMODEL_LOWER KERNEL_MODEL KERNEL_DEVPETNAME
 			return 0;
 		fi
 	done
 
-	echo "Error: Unknown model (${KERNEL_DEVMODEL})";
+	echo "Error: Unknown model (${USER_DEV})";
 	echo "This script supports: ${SUPPORTED_MODELS[*]}";
 	exit 1
 }
@@ -181,7 +192,7 @@ function kernel_get_device_defconfig() {
 			"US996")
 				echo elsa_nao_us-perf_defconfig
 				;;
-			"US996Santa")
+			"US996SANTA")
 				echo elsa_nao_us_dirty-perf_defconfig
 				;;
 			"LS997")
@@ -292,34 +303,34 @@ function sideload() {
 	if [ -f "${LATEST}" ]; then
 		adb sideload "${LATEST}"
 	else
-		echo "Could not find a zip? Did you build the kernel and zip file?";
-		echo ""
-		echo "Try the following:"
-		echo "zefie/scripts/build.sh clean build zip"
-		echo "zefie/scripts/build.sh sideload"
+		errout "Could not find a zip? Did you build the kernel and zip file?";
+		errout ""
+		errout "Try the following:"
+		errout "zefie/scripts/build.sh build"
+		errour "zefie/scripts/build.sh sideload"
 		exit 1;
 	fi
 }
 
 function buildzip() {
 	local KERNDIR OUTDIR TMPDIR MODDIR LOGFILE MODULES KERNEL_IMAGE \
-	      KVER TC_VER GCC_VER INCLUDED_MODULES MODEL_WHITELIST \
+	      KVER TC_VER GCC_VER INCLUDED_MODULES MODEL_WHITELIST MODEL_WHITELIST2="" \
 	      EXTRA_CMDS EXTRA_CMDS_STR ANDROID_TARGET OUTFILE
 
 	KERNDIR="$(pwd)"
 	OUTDIR="${KERNDIR}/build/out"
-	TMPDIR="${OUTDIR}/build"
-	MODDIR="${TMPDIR}/modules"
+	TMPDIR="${OUTDIR}/buildzip"
 	LOGFILE="${OUTDIR}/buildzip.log"
+	MODDIR="${TMPDIR}/modules"
 	MODULES=0
 
 	KERNEL_IMAGE="build/arch/${ARCH}/boot/Image.gz-dtb"
 
 	if [ ! -f "${KERNEL_IMAGE}" ]; then
-		echo "Could not find binary kernel. Did you build it?";
-	        echo ""
-	        echo "Try the following:"
-	        echo "zefie/scripts/build.sh clean build zip"
+		errout "Could not find binary kernel. Did you build it?";
+	        errout ""
+	        errout "Try the following:"
+	        errout "zefie/scripts/build.sh build"
 		exit 1;
 	fi
 
@@ -330,6 +341,8 @@ function buildzip() {
 		TC_VER=$("${Z_ANDROID_CLANG}/bin/clang" --version | awk '/clang /{print $0;exit 0;}' | cut -d':' -f1 | rev | cut -d'(' -f2- | cut -d' ' -f2- | rev)
 		GCC_VER=$("${TOOLCHAIN}gcc" --version | awk '/gcc /{print $0;exit 0;}')
 	fi
+
+	# Modules section was originally designed for stock LGE roms
 	if [ ${MODULES} -eq 1 ]; then
 		## If you would like to add a custom module to your ROM
 		## add it's filename on its own line anywhere between the words INCLUDED.
@@ -384,8 +397,12 @@ function buildzip() {
 	errchk echo " * Patching template ..."
 
 	MODEL_WHITELIST="${KERNEL_DEVMODEL_LOWER}"
+	if [ "${KERNEL_DEVMODEL_UPPER}" == "US996SANTA" ]; then
+		MODEL_WHITELIST2="us996"
+	fi
 
 	errchk sed -i -e 's/\%MODEL_WHITELIST\%/'"${MODEL_WHITELIST}"'/' "${TMPDIR}/anykernel.sh"
+	errchk sed -i -e 's/\%MODEL_WHITELIST2\%/'"${MODEL_WHITELIST2}"'/' "${TMPDIR}/anykernel.sh"
 	errchk sed -i -e 's/\%KERNELDEV\%/'"${KERNEL_DEVNAME}"'/' "${TMPDIR}/anykernel.sh"
 	errchk sed -i -e 's/\%NAME\%/'"${KERNEL_NAME}"'/' "${TMPDIR}/anykernel.sh"
 	errchk sed -i -e 's/\%MANU\%/'"${KERNEL_MANU}"'/' "${TMPDIR}/anykernel.sh"
@@ -518,20 +535,20 @@ function kernel_release_build() {
 	fi
 
 	if [ -z "${WORKSPACE}" ]; then
-		echo "* Cleaning old ${KERNEL_DEVMODEL} log files..."
+		echo "* Cleaning old ${KERNEL_MANU} ${KERNEL_MODEL} ${KERNEL_DEVMODEL} log files..."
 		errchk rm -f "${LG_OUT_DIRECTORY}/"*"-${KERNEL_DEVMODEL_LOWER}.log"
 	fi
 
 	Z_BUILD_CMDS=(kernel_clean kernel_generate_defconfigs kernel_make_defconfig kernel_make)
 	z_setlog "${KERNLOG}"
-	echo "* Building clean ${KERNEL_DEVMODEL} kernel (log in ${KERNLOG})"
+	echo "* Building clean ${KERNEL_MANU} ${KERNEL_MODEL} ${KERNEL_DEVMODEL} kernel (log in ${KERNLOG})"
 	for c in "${Z_BUILD_CMDS[@]}"; do
-		"${c}" > "${KERNLOG}" 2>&1
+		3>&2 "${c}" > "${KERNLOG}" 2>&1
 	done
 
 	z_setlog "${ZIPLOG}"
-	echo "* Building ${KERNEL_DEVMODEL} zip (log in ${ZIPLOG})"
-	buildzip > "${ZIPLOG}" 2>&1
+	echo "* Building ${KERNEL_MANU} ${KERNEL_MODEL} ${KERNEL_DEVMODEL} zip (log in ${ZIPLOG})"
+	3>&1 buildzip > "${ZIPLOG}" 2>&1
 	z_setlog
 
 	ZIPNAME=$(find build/out/ -name "boot_*.zip" | rev | cut -d'/' -f1 | rev)
