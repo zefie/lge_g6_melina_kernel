@@ -10,20 +10,16 @@ function z_setlog() {
 	if [ -z "${1}" ]; then
 		unset Z_ERROR_LOG
 	else
-		local Z_ERROR_LOG="${1}"
+		Z_ERROR_LOG="${1}"
 		export Z_ERROR_LOG
 	fi
 }
 
-function kernel_read_errlog() {
-	local res="${1}"
-	local log="${2}"
-	if [ "${res}" -ne 0 ]; then
-		echo "*** BUILD ERROR *** "
-		echo "* Device: ${KERNEL_DEVMODEL}"
-		echo "Build Log:"
-		cat "${log}"
-		exit "${res}"
+function errout() {
+	if { true >&3; }; then
+		echo "$@" 1>&3;
+	else
+		echo "$@" 1>&2;
 	fi
 }
 
@@ -50,13 +46,16 @@ function errchk() {
         local res=$?
         if [ ${res} -ne 0 ]; then
                 if [ -z "${silent}" ]; then
-                        echo "Error ${res} executing ${*}";
-                fi
-		if [ -z "${stayalive}" ]; then
+                        errout "Error ${res} executing ${*}";
 			if [ ! -z "${Z_ERROR_LOG}" ]; then
-				kernel_read_errorlog "${res}" "${Z_ERROR_LOG}"
-			fi
-	                exit "${res}";
+				errout "*** BUILD ERROR *** "
+				errout "* Device: ${KERNEL_DEVMODEL}"
+				errout "Build Log:"
+				errout "$(cat "${Z_ERROR_LOG}")"
+	                fi
+		fi
+		if [ -z "${stayalive}" ]; then
+			exit "${res}"
 		else
 			return "${res}";
 		fi
@@ -292,11 +291,11 @@ function sideload() {
 	if [ -f "${LATEST}" ]; then
 		adb sideload "${LATEST}"
 	else
-		echo "Could not find a zip? Did you build the kernel and zip file?";
-		echo ""
-		echo "Try the following:"
-		echo "zefie/scripts/build.sh clean build zip"
-		echo "zefie/scripts/build.sh sideload"
+		errout "Could not find a zip? Did you build the kernel and zip file?";
+		errout ""
+		errout "Try the following:"
+		errout "zefie/scripts/build.sh build"
+		errour "zefie/scripts/build.sh sideload"
 		exit 1;
 	fi
 }
@@ -316,10 +315,10 @@ function buildzip() {
 	KERNEL_IMAGE="build/arch/${ARCH}/boot/Image.gz-dtb"
 
 	if [ ! -f "${KERNEL_IMAGE}" ]; then
-		echo "Could not find binary kernel. Did you build it?";
-	        echo ""
-	        echo "Try the following:"
-	        echo "zefie/scripts/build.sh clean build zip"
+		errout "Could not find binary kernel. Did you build it?";
+	        errout ""
+	        errout "Try the following:"
+	        errout "zefie/scripts/build.sh build"
 		exit 1;
 	fi
 
@@ -526,12 +525,12 @@ function kernel_release_build() {
 	z_setlog "${KERNLOG}"
 	echo "* Building clean ${KERNEL_DEVMODEL} kernel (log in ${KERNLOG})"
 	for c in "${Z_BUILD_CMDS[@]}"; do
-		"${c}" > "${KERNLOG}" 2>&1
+		3>&2 "${c}" > "${KERNLOG}" 2>&1
 	done
 
 	z_setlog "${ZIPLOG}"
 	echo "* Building ${KERNEL_DEVMODEL} zip (log in ${ZIPLOG})"
-	buildzip > "${ZIPLOG}" 2>&1
+	3>&1 buildzip > "${ZIPLOG}" 2>&1
 	z_setlog
 
 	ZIPNAME=$(find build/out/ -name "boot_*.zip" | rev | cut -d'/' -f1 | rev)
