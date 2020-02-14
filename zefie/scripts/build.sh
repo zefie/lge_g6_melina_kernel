@@ -93,7 +93,7 @@ while [ "${1}" != "" ]; do
 
 			"make")
 				shift
-				make "${@}"
+				kernel_make "${@}"
 				exit $?
 				;;
 			"shell")
@@ -104,7 +104,12 @@ while [ "${1}" != "" ]; do
 
 			"zip")
 				shift
-				errchk "${SCRIPTDIR}/buildzip.sh"
+				buildzip
+				;;
+
+			"sideload")
+				shift
+				sideload
 				;;
 
 			"help")
