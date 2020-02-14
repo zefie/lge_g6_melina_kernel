@@ -59,6 +59,10 @@ CONFIG_CRYPTO_ANSI_CPRNG=y
 CONFIG_MODULES_USE_ELF_RELA=n
 CONFIG_MODULES=n
 
+# FM Radio
+CONFIG_LGE_BLUETOOTH_PM=n
+CONFIG_BT_MSM_SLEEP=y
+CONFIG_FM_V4L2=y
+
 # Lineage extras
 include melina_common_lineageos_subconfig
-
