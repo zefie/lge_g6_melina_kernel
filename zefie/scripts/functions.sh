@@ -156,6 +156,65 @@ function kernel_clean() {
 	errchk kernel_mrproper
 }
 
+
+function kernel_get_device_defconfig() {
+	local MODEL
+	MODEL=$(echo "${1}" | tr '[:lower:]' '[:upper:]')
+
+	# start model list
+	case "${MODEL}" in
+			"US997")
+				echo lucye_nao_us-perf_defconfig
+				;;
+			"H870")
+				echo lucye_global_com-perf_defconfig
+				;;
+			"H872")
+				echo lucye_tmo_us-perf_defconfig
+				;;
+			"H990DS")
+				echo elsa_global_com-perf_defconfig
+				;;
+			"H990TR")
+				echo elsa_cno_cn-perf_defconfig
+				;;
+			"US996")
+				echo elsa_nao_us-perf_defconfig
+				;;
+			"US996Santa")
+				echo elsa_nao_us_dirty-perf_defconfig
+				;;
+			"LS997")
+				echo elsa_spr_us-perf_defconfig
+				;;
+			"VS995")
+				echo elsa_vzw-perf_defconfig
+				;;
+			"H918")
+				echo elsa_tmo_us-perf_defconfig
+				;;
+			"H910")
+				echo elsa_att_us-perf_defconfig
+				;;
+			"H915")
+				echo elsa_global_ca-perf_defconfig
+				;;
+			"F800K")
+				echo elsa_kt_kr-perf_defconfig
+				;;
+			"F800L")
+				echo elsa_lgu_kr-perf_defconfig
+				;;
+			"F800S")
+				echo elsa_skt_kr-perf_defconfig
+				;;
+			*)
+				return 1;
+				;;
+	esac
+	# end model list
+}
+
 function kernel_generate_defconfigs() {
 	local DEFCONFIG_DIR DEFCONFIG_OUTDIR ORIG_DEFCONFIG_US997 ORIG_DEFCONFIG_H870 \
 	      ORIG_DEFCONFIG_H872 CUSTOM_CONFIG Z_DEVMODEL_LOWER Z_DEVMODEL_UPPER \
@@ -163,10 +222,6 @@ function kernel_generate_defconfigs() {
 
 	DEFCONFIG_DIR="${KERNEL_SOURCE_DIR}/arch/${ARCH}/configs"
 	DEFCONFIG_OUTDIR="${DEFCONFIG_DIR}"
-
-	ORIG_DEFCONFIG_US997="lucye_nao_us-perf_defconfig"
-	ORIG_DEFCONFIG_H870="lucye_global_com-perf_defconfig"
-	ORIG_DEFCONFIG_H872="lucye_tmo_us-perf_defconfig"
 
 	CUSTOM_CONFIG=("${@}")
 
@@ -182,13 +237,14 @@ function kernel_generate_defconfigs() {
 	fi
 
 	for m in "${SUPPORTED_MODELS[@]}"; do
+		if [ -z "${m}" ]; then continue; fi
 		Z_DEVMODEL_LOWER="$(echo "$m" | tr '[:upper:]' '[:lower:]')"
 		Z_DEVMODEL_UPPER="$(echo "$m" | tr '[:lower:]' '[:upper:]')"
-		ORIG_DEFCONFIG=$(echo -n "ORIG_DEFCONFIG_${Z_DEVMODEL_UPPER}")
-		ORIG_DEFCONFIG="${!ORIG_DEFCONFIG}"
+		ORIG_DEFCONFIG="$(kernel_get_device_defconfig "${Z_DEVMODEL_UPPER}")"
+		if [ -z "${ORIG_DEFCONFIG}" ]; then continue; fi
 
 		TARGET_FILE="${DEFCONFIG_OUTDIR}/${KERNEL_NAME_LOWER}_${Z_DEVMODEL_LOWER}_defconfig"
-		echo "*** Generating ${KERNEL_NAME}_${Z_DEVMODEL_LOWER} kernel defconfigs..."
+		echo "*** Generating arch/${ARCH}/configs/${KERNEL_NAME_LOWER}_${Z_DEVMODEL_LOWER}_defconfig"
 		rm -f "${TARGET_FILE}"
 		cp -f "${DEFCONFIG_DIR}/${ORIG_DEFCONFIG}" "${TARGET_FILE}"
 		if [ -z "${KERNEL_RECOVERY}" ]; then
@@ -223,7 +279,7 @@ function kernel_generate_defconfigs() {
 
 function kernel_make_defconfig() {
 	if [ ! -f "${DEFCONFIG_DIR}/${KERNEL_NAME_LOWER}_${KERNEL_DEVMODEL_LOWER}_defconfig" ]; then
-		errchk "${SCRIPTDIR}/create_defconfigs.sh" "${Z_CONFIG_OVERRIDE[@]}"
+		kernel_generate_defconfigs "${Z_CONFIG_OVERRIDE[@]}"
 	fi
 	local DEFCONFIG="${KERNEL_NAME_LOWER}_${KERNEL_DEVMODEL_LOWER}_defconfig"
 	echo "Using ${DEFCONFIG}..."
