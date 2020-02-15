@@ -267,7 +267,7 @@ config BT_WILINK
 
 config MSM_BT_POWER
 	tristate "MSM Bluetooth Power Control"
-	depends on ARCH_MSM && RFKILL
+	depends on ARCH_MSM && RFKILL && !LGE_BLUETOOTH_PM
 	default m
 	help
 	  Provides a parameter to switch on/off power from PMIC
@@ -303,14 +303,11 @@ config BTFM_SLIM_WCN3990
 	  It is designed to adapt any future BT/FM device to implement a specific
 	  chip initialization process and control.
 
-#[H1_BT_BRINGUP_S]
 config LGE_BLUETOOTH_PM
 	tristate "LGE Bluetooth Power & Sleep driver"
-	depends on RFKILL
+	depends on RFKILL && !MSM_BT_POWER
 	default n
 	help
 		LGE Bluetooth Power & Sleep
 		This driver provides support for LGE BT Power & Sleep.
-#[H1_BT_BRINGUP_E]
-
 endmenu
