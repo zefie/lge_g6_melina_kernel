@@ -74,7 +74,7 @@ function kernel_setdevice() {
 		fi
 	done
 
-	echo "Error: Unknown model (${KERNEL_DEVMODEL})";
+	echo "Error: Unknown model (${USER_DEV})";
 	echo "This script supports: ${SUPPORTED_MODELS[*]}";
 	exit 1
 }
@@ -180,7 +180,7 @@ function kernel_get_device_defconfig() {
 			"US996")
 				echo elsa_nao_us-perf_defconfig
 				;;
-			"US996Santa")
+			"US996SANTA")
 				echo elsa_nao_us_dirty-perf_defconfig
 				;;
 			"LS997")
