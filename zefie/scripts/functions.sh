@@ -69,7 +69,15 @@ function kernel_setdevice() {
 		if [ "${USER_DEV}" == "${m}" ]; then
 			KERNEL_DEVMODEL="${USER_DEV}";
 			KERNEL_DEVMODEL_LOWER="$(echo "${KERNEL_DEVMODEL}" | tr '[:upper:]' '[:lower:]')"
-			export KERNEL_DEVMODEL KERNEL_DEVMODEL_LOWER
+			case "${USER_DEV}" in
+				US997|H87[02])
+					KERNEL_MODEL="G6"
+					;;
+				*)
+					KERNEL_MODEL="G5"
+					;;
+			esac
+			export KERNEL_DEVMODEL KERNEL_DEVMODEL_LOWER KERNEL_MODEL
 			return 0;
 		fi
 	done
@@ -307,9 +315,9 @@ function buildzip() {
 
 	KERNDIR="$(pwd)"
 	OUTDIR="${KERNDIR}/build/out"
-	TMPDIR="${OUTDIR}/build"
-	MODDIR="${TMPDIR}/modules"
+	TMPDIR="${OUTDIR}/buildzip"
 	LOGFILE="${OUTDIR}/buildzip.log"
+	MODDIR="${TMPDIR}/modules"
 	MODULES=0
 
 	KERNEL_IMAGE="build/arch/${ARCH}/boot/Image.gz-dtb"
@@ -329,6 +337,8 @@ function buildzip() {
 		TC_VER=$("${Z_ANDROID_CLANG}/bin/clang" --version | awk '/clang /{print $0;exit 0;}' | cut -d':' -f1 | rev | cut -d'(' -f2- | cut -d' ' -f2- | rev)
 		GCC_VER=$("${TOOLCHAIN}gcc" --version | awk '/gcc /{print $0;exit 0;}')
 	fi
+
+	# Modules section was originally designed for stock LGE roms
 	if [ ${MODULES} -eq 1 ]; then
 		## If you would like to add a custom module to your ROM
 		## add it's filename on its own line anywhere between the words INCLUDED.
@@ -517,19 +527,19 @@ function kernel_release_build() {
 	fi
 
 	if [ -z "${WORKSPACE}" ]; then
-		echo "* Cleaning old ${KERNEL_DEVMODEL} log files..."
+		echo "* Cleaning old ${KERNEL_MANU} ${KERNEL_MODEL} ${KERNEL_DEVMODEL} log files..."
 		errchk rm -f "${LG_OUT_DIRECTORY}/"*"-${KERNEL_DEVMODEL_LOWER}.log"
 	fi
 
 	Z_BUILD_CMDS=(kernel_clean kernel_generate_defconfigs kernel_make_defconfig kernel_make)
 	z_setlog "${KERNLOG}"
-	echo "* Building clean ${KERNEL_DEVMODEL} kernel (log in ${KERNLOG})"
+	echo "* Building clean ${KERNEL_MANU} ${KERNEL_MODEL} ${KERNEL_DEVMODEL} kernel (log in ${KERNLOG})"
 	for c in "${Z_BUILD_CMDS[@]}"; do
 		3>&2 "${c}" > "${KERNLOG}" 2>&1
 	done
 
 	z_setlog "${ZIPLOG}"
-	echo "* Building ${KERNEL_DEVMODEL} zip (log in ${ZIPLOG})"
+	echo "* Building ${KERNEL_MANU} ${KERNEL_MODEL} ${KERNEL_DEVMODEL} zip (log in ${ZIPLOG})"
 	3>&1 buildzip > "${ZIPLOG}" 2>&1
 	z_setlog
 
