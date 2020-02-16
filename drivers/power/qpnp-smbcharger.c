@@ -798,7 +798,6 @@ static unsigned int factory_mode;
 #endif
 
 #ifdef CONFIG_LGE_PM_LGE_POWER_CLASS_CHARGING_CONTROLLER
-#ifdef CONFIG_LGE_PM_DEBUG
 static bool is_usb_present(struct smbchg_chip *chip);
 
 static int get_usb_adc(struct smbchg_chip *chip)
@@ -832,7 +831,6 @@ static int get_usb_adc(struct smbchg_chip *chip)
 
 	return usbin_vol;
 }
-#endif
 
 static int get_prop_batt_health(struct smbchg_chip *chip);
 #ifdef CONFIG_LGE_PM_LGE_POWER_CLASS_SUPPORT_CCD
