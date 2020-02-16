@@ -1,0 +1,4 @@
+include melina_common_subconfig
+
+# Kernel name
+CONFIG_LOCALVERSION="-melinareborn"
