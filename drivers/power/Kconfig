@@ -10,6 +10,7 @@ if POWER_SUPPLY
 
 config POWER_SUPPLY_DEBUG
 	bool "Power supply debug"
+        depends on !MELINA_DEBUG_DISABLE
 	help
 	  Say Y here to enable debugging messages for power supply class
 	  and drivers.
@@ -519,6 +520,39 @@ config AXP20X_POWER
 	help
 	  This driver provides support for the power supply features of
 	  AXP20x PMIC.
+
+config LGE_PM
+        tristate "MSM8996 LGE POWER Feature"
+        depends on SPMI || MSM_SPMI
+        help
+          Say Y here to enable support for pm8994/pmi8994 chip lge feature.
+          Power Management, Battery charging, Battery Monitoring System
+          with battery FET and fuel gauge.
+
+config LGE_PM_FACTORY_CABLE
+        tristate "support FACTORY CABLE Feature"
+        default n
+        depends on MACH_LGE
+        help
+          cable detection for factory mode, etc
+
+config LGE_PM_PARALLEL_CHARGING
+        tristate "LGE parallel charging feature"
+        default n
+        depends on MACH_LGE
+        help
+          lge parallel charging feature
+
+config LGE_PM_BATTERY_ID_CHECKER
+        tristate "Virtual Device for LGE Battery ID Checker"
+        depends on LGE_PM
+        default n
+        help
+          Say Y to enable LGE Battery ID Checker. Manufacturer have their own
+          systematic identification of cell types, and protect the system from
+          problems as using non-standard or unexpected types. so cross-
+          reference battery identification are useful to identify.
+
 
 source "drivers/power/reset/Kconfig"
 source "drivers/power/supply/Kconfig"

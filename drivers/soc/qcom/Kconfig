@@ -770,6 +770,8 @@ config TRACER_PKT
 	  processor communication protocols. The profiling information
 	  can be logged into the tracer packet itself.
 
+source "drivers/soc/qcom/lge/Kconfig"
+
 config QCOM_FORCE_WDOG_BITE_ON_PANIC
 	bool "QCOM force watchdog bite"
 	depends on QCOM_WATCHDOG_V2
