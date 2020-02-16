@@ -11,7 +11,9 @@
  */
 
 #ifdef CONFIG_LGE_PM
+#ifndef DEBUG
 #define DEBUG
+#endif
 #endif
 #include <linux/debugfs.h>
 #include <linux/spinlock.h>
