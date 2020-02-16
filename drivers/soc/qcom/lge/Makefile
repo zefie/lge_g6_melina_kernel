@@ -4,6 +4,7 @@ obj-$(CONFIG_LGE_BOOTLOADER_LOG) += lge_bootloader_log.o
 obj-$(CONFIG_LGE_EARJACK_DEBUGGER) += lge_earjack_debugger.o
 obj-$(CONFIG_LGE_BOOTLOADER_TIME_CHECKER) += lge_bootloader_time_checker.o
 obj-$(CONFIG_LGE_PM) += lge_monitor_thermal.o
+CFLAGS_lge_monitor_thermal.o := -Wno-incompatible-pointer-types
 obj-$(CONFIG_LGE_PM_CABLE_DETECTION) += lge_cable_detection.o
 obj-$(CONFIG_LGE_PM_SMPL_COUNTER) += lge_smpl_count.o
 obj-$(CONFIG_LGE_PM_CHARGING_CONTROLLER) += lge_charging_controller.o

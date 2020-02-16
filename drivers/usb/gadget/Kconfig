@@ -579,7 +579,7 @@ endchoice
 
 config LGE_USB_G_ANDROID
 	boolean "LGE Android Gadget for LG PC host Driver"
-	depends on USB_G_ANDROID
+	depends on USB_GADGET
 	help
 	  Customized Android Gadget USB framework for
 	  LGE United PC host USB driver.

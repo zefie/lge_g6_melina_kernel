@@ -20,7 +20,7 @@
 #include <linux/of_fdt.h>
 #include <linux/module.h>
 #include <linux/moduleparam.h>
-#include <linux/qpnp/power-on.h>
+#include <linux/input/qpnp-power-on.h>
 #include <soc/qcom/smem.h>
 
 #define MODULE_NAME "lge_smpl_count"
