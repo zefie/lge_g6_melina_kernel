@@ -161,7 +161,7 @@ config INPUT_PMIC8XXX_PWRKEY
 	  To compile this driver as a module, choose M here: the
 	  module will be called pmic8xxx-pwrkey.
 
-config INPUT_INPUT_QPNP_POWER_ON
+config INPUT_QPNP_POWER_ON
 	tristate "QPNP PMIC Power-on support"
 	depends on SPMI
 	help
