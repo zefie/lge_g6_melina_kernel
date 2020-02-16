@@ -104,7 +104,7 @@ static long audio_ioctl_shared(struct file *file, unsigned int cmd,
 		pr_debug("%s:AUDIO_START sessionid[%d]enable[%d]\n", __func__,
 			audio->ac->session,
 			audio->enabled);
-		if (audio->stopped == 1)
+		if (audio->stopped == 1) {
 			audio->stopped = 0;
 			break;
 		}
