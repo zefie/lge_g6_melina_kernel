@@ -140,6 +140,7 @@ struct afe_ctl {
 
 static atomic_t afe_ports_mad_type[MAD_SLIMBUS_PORT_COUNT +
 				MAD_MI2S_PORT_COUNT];
+extern int msm_pcm_routing_is_flick_port(int port_id);
 static unsigned long afe_configured_cmd;
 
 static struct afe_ctl this_afe;
@@ -1576,7 +1577,10 @@ done:
 
 void afe_send_cal(u16 port_id)
 {
-	pr_debug("%s: port_id=0x%x\n", __func__, port_id);
+        pr_debug("%s: port_id=0x%x\n", __func__, port_id);
+
+        if (msm_pcm_routing_is_flick_port(port_id))
+                return;
 
 	if (afe_get_port_type(port_id) == MSM_AFE_PORT_TYPE_TX) {
 		afe_send_cal_spkr_prot_tx(port_id);
@@ -2763,7 +2767,7 @@ static int afe_send_cmd_port_start(u16 port_id)
 
 	pr_debug("%s: enter\n", __func__);
 	index = q6audio_get_port_index(port_id);
-	if (index < 0 || index > AFE_MAX_PORTS) {
+	if (index < 0 || index >= AFE_MAX_PORTS) {
 		pr_err("%s: AFE port index[%d] invalid!\n",
 				__func__, index);
 		return -EINVAL;
