@@ -129,6 +129,18 @@ static struct msm_pcm_route_bdai_pp_params
 	{HDMI_RX, 0, 0, 0}
 };
 
+/*
+ * The be_dai_name_table is passed to HAL so that it can specify the
+ * BE ID for the BE it wants to enable based on the name. Thus there
+ * is a matching table and structure in HAL that need to be updated
+ * if any changes to these are made.
+ */
+struct msm_pcm_route_bdai_name {
+        unsigned int be_id;
+        char be_name[LPASS_BE_NAME_MAX_LENGTH];
+};
+static struct msm_pcm_route_bdai_name be_dai_name_table[MSM_BACKEND_DAI_MAX];
+
 static int msm_routing_send_device_pp_params(int port_id,  int copp_idx,
 					     int fe_id);
 
@@ -610,6 +622,7 @@ static struct msm_pcm_routing_app_type_data lsm_app_type_cfg[MAX_APP_TYPES];
 static struct msm_pcm_stream_app_type_cfg
 			 fe_dai_app_type_cfg[MSM_FRONTEND_DAI_MAX][2];
 
+
 /* The caller of this should aqcuire routing lock */
 void msm_pcm_routing_get_bedai_info(int be_idx,
 				    struct msm_pcm_routing_bdai_data *be_dai)
@@ -774,6 +787,7 @@ void msm_pcm_routing_reg_stream_app_type_cfg(int fedai_id, int app_type,
 	fe_dai_app_type_cfg[fedai_id][session_type].app_type = app_type;
 	fe_dai_app_type_cfg[fedai_id][session_type].acdb_dev_id = acdb_dev_id;
 	fe_dai_app_type_cfg[fedai_id][session_type].sample_rate = sample_rate;
+
 }
 
 /**
@@ -819,6 +833,7 @@ int msm_pcm_routing_get_stream_app_type_cfg(int fedai_id, int session_type,
 		ret = -EINVAL;
 		goto done;
 	}
+
 	*app_type = fe_dai_app_type_cfg[fedai_id][session_type].app_type;
 	*acdb_dev_id = fe_dai_app_type_cfg[fedai_id][session_type].acdb_dev_id;
 	*sample_rate = fe_dai_app_type_cfg[fedai_id][session_type].sample_rate;
@@ -14180,6 +14195,64 @@ static const struct snd_kcontrol_new aptx_dec_license_controls[] = {
 	msm_aptx_dec_license_control_put),
 };
 
+static int msm_routing_be_dai_name_table_info(struct snd_kcontrol *kcontrol,
+                                              struct snd_ctl_elem_info *uinfo)
+{
+        uinfo->type = SNDRV_CTL_ELEM_TYPE_BYTES;
+        uinfo->count = sizeof(be_dai_name_table);
+        return 0;
+}
+
+static int msm_routing_be_dai_name_table_tlv_get(unsigned int __user *bytes,
+                                                 unsigned int size)
+{
+        int i;
+        int ret;
+
+        if (size < sizeof(be_dai_name_table)) {
+                pr_err("%s: invalid size %d requested, returning\n",
+                        __func__, size);
+                ret = -EINVAL;
+                goto done;
+        }
+
+        /*
+         * Fill be_dai_name_table from msm_bedais table to reduce code changes
+         * needed when adding new backends
+         */
+        for (i = 0; i < MSM_BACKEND_DAI_MAX; i++) {
+                be_dai_name_table[i].be_id = i;
+                strlcpy(be_dai_name_table[i].be_name,
+                        msm_bedais[i].name,
+                        LPASS_BE_NAME_MAX_LENGTH);
+        }
+
+        ret = copy_to_user(bytes, &be_dai_name_table,
+                           sizeof(be_dai_name_table));
+        if (ret) {
+                pr_err("%s: failed to copy be_dai_name_table\n", __func__);
+                ret = -EFAULT;
+        }
+
+done:
+        return ret;
+}
+
+static const struct snd_kcontrol_new
+        msm_routing_be_dai_name_table_mixer_controls[] = {
+        {
+                .access = SNDRV_CTL_ELEM_ACCESS_TLV_READ |
+                          SNDRV_CTL_ELEM_ACCESS_TLV_CALLBACK,
+                .info = msm_routing_be_dai_name_table_info,
+                .name = "Backend DAI Name Table",
+                .tlv.c = snd_soc_bytes_tlv_callback,
+                .private_value = (unsigned long) &(struct soc_bytes_ext) {
+                        .max = sizeof(be_dai_name_table),
+                        .get = msm_routing_be_dai_name_table_tlv_get,
+                }
+        },
+};
+
 static struct snd_pcm_ops msm_routing_pcm_ops = {
 	.hw_params	= msm_pcm_routing_hw_params,
 	.close          = msm_pcm_routing_close,
@@ -14243,6 +14316,10 @@ static int msm_routing_probe(struct snd_soc_platform *platform)
 	snd_soc_add_platform_controls(platform,
 				device_pp_params_mixer_controls,
 				ARRAY_SIZE(device_pp_params_mixer_controls));
+
+	snd_soc_add_platform_controls(platform,
+				msm_routing_be_dai_name_table_mixer_controls,
+				ARRAY_SIZE(msm_routing_be_dai_name_table_mixer_controls));
 
 	for (i = 0; i < ARRAY_SIZE(msm_snd_controls); i++) {
 		kctl = snd_ctl_new1(&msm_snd_controls[i], &channel_mux);
@@ -14389,6 +14466,8 @@ static int __init msm_soc_routing_platform_init(void)
 	if (msm_routing_init_cal_data())
 		pr_err("%s: could not init cal data!\n", __func__);
 
+        memset(&be_dai_name_table, 0, sizeof(be_dai_name_table));
+
 	return platform_driver_register(&msm_routing_pcm_driver);
 }
 module_init(msm_soc_routing_platform_init);
@@ -14396,6 +14475,7 @@ module_init(msm_soc_routing_platform_init);
 static void __exit msm_soc_routing_platform_exit(void)
 {
 	msm_routing_delete_cal_data();
+	memset(&be_dai_name_table, 0, sizeof(be_dai_name_table));
 	platform_driver_unregister(&msm_routing_pcm_driver);
 }
 module_exit(msm_soc_routing_platform_exit);
