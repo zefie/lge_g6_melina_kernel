@@ -1420,10 +1420,10 @@ config SERIAL_PCH_UART_CONSOLE
 	  (the system  console is the device which receives all kernel messages and
 	  warnings and which allows logins in single user mode).
 
-config SERIAL_MSM_SMD
+config SERIAL_QCOM_SMD
 	bool "Enable tty device interface for some SMD ports"
 	default n
-	depends on MSM_SMD
+	depends on QCOM_SMD
 	help
 	  Enables userspace clients to read and write to some streaming SMD
 	  ports via tty device interface for MSM chipset.

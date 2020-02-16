@@ -29,7 +29,7 @@ config QCOM_COMMON_LOG
 	  table can be used by post analysis tools to extract information
 	  from memory when device crashes.
 
-config MSM_SMEM
+config QCOM_SMEM
 	depends on ARCH_QCOM
 	depends on REMOTE_SPINLOCK_MSM
 	bool "MSM Shared Memory (SMEM)"
@@ -57,8 +57,8 @@ config QPNP_PBS
 	  the APIs to the client drivers that wants to send the PBS trigger
 	  event to the PBS RAM.
 
-config MSM_SMD
-	depends on MSM_SMEM
+config QCOM_SMD
+	depends on QCOM_SMEM
 	bool "MSM Shared Memory Driver (SMD)"
 	help
 	  Support for the shared memory interprocessor communication protocol
@@ -68,8 +68,8 @@ config MSM_SMD
 	  protocol which provides a mechanism to publish single bit state
 	  information to one or more processors in the SoC.
 
-config MSM_SMD_DEBUG
-	depends on MSM_SMD
+config QCOM_SMD_DEBUG
+	depends on QCOM_SMD
 	bool "MSM SMD debug support"
 	help
 	  Support for debugging SMD and SMSM communication between apps and
@@ -96,7 +96,7 @@ config MSM_GLINK_LOOPBACK_SERVER
 	  data received from the clients.
 
 config MSM_GLINK_SMD_XPRT
-	depends on MSM_SMD
+	depends on QCOM_SMD
 	depends on MSM_GLINK
 	bool "Generic Link (G-Link) SMD Transport"
 	help
@@ -107,7 +107,7 @@ config MSM_GLINK_SMD_XPRT
 	  internal to the System-on-Chip.
 
 config MSM_GLINK_SMEM_NATIVE_XPRT
-	depends on MSM_SMEM
+	depends on QCOM_SMEM
 	depends on MSM_GLINK
 	bool "Generic Link (G-Link) SMEM Native Transport"
 	help
@@ -151,8 +151,8 @@ config MSM_SPSS_UTILS
 	  because the SPSS firmware size is too small to support multiple
 	  HW versions.
 
-config MSM_SMEM_LOGGING
-	depends on MSM_SMEM
+config QCOM_SMEM_LOGGING
+	depends on QCOM_SMEM
 	bool "MSM Shared Memory Logger"
 	help
 	  Enable the shared memory logging to log the events between
@@ -162,7 +162,7 @@ config MSM_SMEM_LOGGING
 
 config MSM_SMP2P
 	bool "SMSM Point-to-Point (SMP2P)"
-	depends on MSM_SMEM
+	depends on QCOM_SMEM
 	help
 	  Provide point-to-point remote signaling support.
 	  SMP2P enables transferring 32-bit values between
@@ -271,7 +271,7 @@ config QCOM_DCC
 	  captured data from DCC's internal SRAM.
 
 config MSM_IPC_ROUTER_SMD_XPRT
-	depends on MSM_SMD
+	depends on QCOM_SMD
 	depends on IPC_ROUTER
 	bool "MSM SMD XPRT Layer"
 	help
@@ -457,7 +457,7 @@ config QCOM_MEMORY_DUMP_V2
 
 config QCOM_MINIDUMP
 	bool "QCOM Minidump Support"
-	depends on MSM_SMEM && QCOM_DLOAD_MODE
+	depends on QCOM_SMEM && QCOM_DLOAD_MODE
 	help
 	  This enables minidump feature. It allows various clients to
 	  register to dump their state at system bad state (panic/WDT,etc.,).
@@ -609,7 +609,7 @@ config QCOM_CPUSS_DUMP
 
 config MSM_QDSP6_APRV2
         bool "Audio QDSP6 APRv2 support"
-        depends on MSM_SMD
+        depends on QCOM_SMD
         help
           Enable APRv2 IPC protocol support between
           application processor and QDSP6. APR is
@@ -618,7 +618,7 @@ config MSM_QDSP6_APRV2
 
 config MSM_QDSP6_APRV3
 	bool "Audio QDSP6 APRv3 support"
-	depends on MSM_SMD
+	depends on QCOM_SMD
 	help
 	  Enable APRv3 IPC protocol support between
 	  application processor and QDSP6. APR is
@@ -727,7 +727,7 @@ config MSM_SUBSYSTEM_RESTART
 
 config MSM_SYSMON_COMM
 	bool "MSM System Monitor communication support"
-	depends on MSM_SMD && MSM_SUBSYSTEM_RESTART
+	depends on QCOM_SMD && MSM_SUBSYSTEM_RESTART
 	help
 	  This option adds support for MSM System Monitor library, which
 	  provides an API that may be used for notifying subsystems within
