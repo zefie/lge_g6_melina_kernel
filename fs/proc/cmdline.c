@@ -2,7 +2,9 @@
 #include <linux/init.h>
 #include <linux/proc_fs.h>
 #include <linux/seq_file.h>
+#ifdef CONFIG_MACH_LGE
 #include <soc/qcom/lge/board_lge.h>
+#endif
 #include <asm/setup.h>
 #include <linux/slab.h>
 
