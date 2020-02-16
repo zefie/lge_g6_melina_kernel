@@ -13,6 +13,12 @@
 #define _MSM_PCM_ROUTING_H
 #include <sound/apr_audio-v2.h>
 
+/*
+ * These names are used by HAL to specify the BE. If any changes are
+ * made to the string names or the max name length corresponding
+ * changes need to be made in the HAL to ensure they still match.
+ */
+#define LPASS_BE_NAME_MAX_LENGTH 24
 #define LPASS_BE_PRI_I2S_RX "PRIMARY_I2S_RX"
 #define LPASS_BE_PRI_I2S_TX "PRIMARY_I2S_TX"
 #define LPASS_BE_SLIMBUS_0_RX "SLIMBUS_0_RX"
@@ -331,6 +337,7 @@ enum {
 #define INVALID_SESSION -1
 #define SESSION_TYPE_RX 0
 #define SESSION_TYPE_TX 1
+#define MAX_SESSION_TYPES 2
 #define INT_RX_VOL_MAX_STEPS 0x2000
 #define INT_RX_VOL_GAIN 0x2000
 
