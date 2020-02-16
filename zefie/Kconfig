@@ -83,6 +83,9 @@ config MELINA_DEBUG_ENABLE
 	select DEBUG_KERNEL
 	select MSM_RTB
 	select INPUT_EVBUG
+	select POWER_SUPPLY_DEBUG
+	select LGE_PM_DEBUG
+	select FB_MSM_MDSS_XLOG_DEBUG
 	help
 	  Select this to have a fully verbose kernel, like LGE's stock.
 	  Selecting this turns on full kernel debug support, and may trigger a NOTICE when booting Android.

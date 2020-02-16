@@ -323,7 +323,7 @@ config MACH_MSM8996_ELSA_KDDI_JP
 	select MACH_LGE
 	help
 	  Support for the Qualcomm MSM8996 ELSA_KDDI_JP device.
-	  	  
+		  
 config MACH_MSM8996_ELSA_DCM_JP
 	bool "MSM8996 ELSA_DCM_JP"
 	depends on ARCH_MSM8996
@@ -450,11 +450,11 @@ config MACH_MSM8996_LUCYE_ACG_US
           Support for the Qualcomm MSM8996 LUCYE_ACG_US device.
 
 config MACH_MSM8996_LUCYE_TRF_US_VZW
-		bool "MSM8996 LUCYE_TRF_US_VZW"
-		depends on ARCH_MSM8996
-		select MACH_LGE
-		help
-	  	  Support for the Qualcomm MSM8996 LUCYE_TRF_US_VZW device.
+	bool "MSM8996 LUCYE_TRF_US_VZW"
+	depends on ARCH_MSM8996
+	select MACH_LGE
+	help
+	  Support for the Qualcomm MSM8996 LUCYE_TRF_US_VZW device.
 endmenu
 
 menu "LGE Specific Patches"
@@ -516,7 +516,6 @@ config LGE_POWER_ONOFF_LOCKUP_DEBUG
 	  detector which raise crash when expired some period after
 	  reboot like system call.
 
-
 config LGE_BOOTLOADER_LOG
 	tristate "Support LGE bootloader log"
 	default n
@@ -539,18 +538,19 @@ config LGE_USB_DEBUGGER
 	  Support USB type UART debugger cable
 
 config LGE_BOOTLOADER_TIME_CHECKER
-    tristate "Supprt bootloader(LK, SBL) time"
-    default n
-    depends on MACH_LGE
-    help
-      Check LK, SBL booting time at
-      sys/module/lge_bootloader_time_checker/parameters/lk_time
-      sys/module/lge_bootloader_time_checker/parameters/sbl_time
+	tristate "Supprt bootloader(LK, SBL) time"
+	default n
+	depends on MACH_LGE
+	help
+	  Check LK, SBL booting time at
+	  sys/module/lge_bootloader_time_checker/parameters/lk_time
+	  sys/module/lge_bootloader_time_checker/parameters/sbl_time
 
 config LGE_PM_DEBUG
         tristate "Support LGE PM Debug Feature"
         default n
         depends on MACH_LGE
+	depends on !MELINA_DEBUG_DISABLE
         help
 	  LGE PM Debug Feature
 

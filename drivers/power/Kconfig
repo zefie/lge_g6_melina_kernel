@@ -10,6 +10,7 @@ if POWER_SUPPLY
 
 config POWER_SUPPLY_DEBUG
 	bool "Power supply debug"
+	depends on !MELINA_DEBUG_DISABLE
 	help
 	  Say Y here to enable debugging messages for power supply class
 	  and drivers.
