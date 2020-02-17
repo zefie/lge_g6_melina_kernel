@@ -670,26 +670,9 @@ ifdef CONFIG_MELINA_WARN_AS_ERR
 KBUILD_CFLAGS 	+= -Werror
 endif
 
-ifdef CONFIG_MELINA_OPTIMIZE_CORTEX_A53
-KBUILD_CFLAGS 	+= -mcpu=cortex-a53 -mtune=cortex-a53
+ifdef CONFIG_MELINA_CPU_OPTIMIZE
+KBUILD_CFLAGS 	+= $(call cc-option,-mcpu=kyro,-mcpu=cortex-a72.cortex-a53)
 endif
-
-ifdef CONFIG_MELINA_OPTIMIZE_CORTEX_A57
-KBUILD_CFLAGS 	+= -mcpu=cortex-a57 -mtune=cortex-a57
-endif
-
-ifdef CONFIG_MELINA_OPTIMIZE_CORTEX_A72
-KBUILD_CFLAGS 	+= -mcpu=cortex-a72 -mtune=cortex-a72
-endif
-
-ifdef CONFIG_MELINA_OPTIMIZE_CORTEX_A72_A53
-KBUILD_CFLAGS 	+= -mcpu=cortex-a72.cortex-a53 -mtune=cortex-a72.cortex-a53
-endif
-
-ifdef CONFIG_MELINA_OPTIMIZE_CORTEX_A72_A53
-KBUILD_CFLAGS 	+= -mcpu=kyro -mtune=kyro
-endif
-
 
 ifdef CONFIG_READABLE_ASM
 # Disable optimizations that make assembler listings hard to read.
