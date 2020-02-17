@@ -155,6 +155,18 @@ int spmi_register_read(struct spmi_device *sdev, u8 addr, u8 *buf)
 }
 EXPORT_SYMBOL_GPL(spmi_register_read);
 
+int spmi_ext_register_read_ctrl(struct spmi_controller *sctrl, u8 addr, u8 *buf,
+			   size_t len)
+{
+	/* 8-bit register address, up to 16 bytes */
+	if (len == 0 || len > 16)
+		return -EINVAL;
+
+	return spmi_read_cmd(sctrl, SPMI_CMD_EXT_READ, sdev->usid, addr,
+			     buf, 1);
+}
+EXPORT_SYMBOL_GPL(spmi_ext_register_read_ctrl);
+
 /**
  * spmi_ext_register_read() - extended register read
  * @sdev:	SPMI device.
@@ -506,6 +518,24 @@ static void of_spmi_register_devices(struct spmi_controller *ctrl)
 		}
 	}
 }
+
+
+/**
+ * spmi_busnum_to_ctrl: Map bus number to controller
+ * @busnum: bus number
+ * Returns controller representing this bus number
+ */
+struct spmi_controller *spmi_busnum_to_ctrl(u32 bus_num)
+{
+        struct spmi_controller *ctrl;
+
+        mutex_lock(&board_lock);
+        ctrl = idr_find(&ctrl_idr, bus_num);
+        mutex_unlock(&board_lock);
+
+        return ctrl;
+}
+EXPORT_SYMBOL_GPL(spmi_busnum_to_ctrl);
 
 /**
  * spmi_controller_add() - Add an SPMI controller

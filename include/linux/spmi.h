@@ -125,6 +125,14 @@ static inline void spmi_controller_put(struct spmi_controller *ctrl)
 		put_device(&ctrl->dev);
 }
 
+/**
+ * spmi_busnum_to_ctrl: Map bus number to controller
+ * @busnum: bus number
+ *
+ * Returns controller device representing this bus number
+ */
+extern struct spmi_controller *spmi_busnum_to_ctrl(u32 bus_num);
+
 int spmi_controller_add(struct spmi_controller *ctrl);
 void spmi_controller_remove(struct spmi_controller *ctrl);
 
@@ -185,6 +193,8 @@ static inline bool spmi_show_resume_irq(void)
 #endif
 
 int spmi_register_read(struct spmi_device *sdev, u8 addr, u8 *buf);
+int spmi_ext_register_read_ctrl(struct spmi_controller *sctrl, u8 addr, u8 *buf,
+                           size_t len);
 int spmi_ext_register_read(struct spmi_device *sdev, u8 addr, u8 *buf,
 			   size_t len);
 int spmi_ext_register_readl(struct spmi_device *sdev, u16 addr, u8 *buf,

@@ -131,7 +131,7 @@ void gpio_debug_print(void)
 
 	pr_cont("\nPMIC GPIOs:\n");
 	for (i = 1; i < dbgdata->n_pm_gpio+1; i++) {
-		spmi_ext_register_readl(ctrl, 0, PMIC_GPIO_MODE(i), d, 6);
+		spmi_ext_register_read_ctrl(ctrl, PMIC_GPIO_MODE(i), d, 6);
 
 		pr_cont("GPIO[%-3d]: [DIR] %-5s  [PULL] %-20s  "
 				"[OUT] %-8s  [DRV] %-8s",
@@ -140,7 +140,7 @@ void gpio_debug_print(void)
 				gpio_out[d[5]&0x30>>4],
 				gpio_drv[d[5]&0x3]);
 
-		spmi_ext_register_readl(ctrl, 0, PMIC_GPIO_INT(i), d, 1);
+		spmi_ext_register_read_ctrl(ctrl, PMIC_GPIO_INT(i), d, 1);
 
 		if (d[0])
 			pr_cont("  [INT] Enable");
@@ -149,13 +149,13 @@ void gpio_debug_print(void)
 
 	pr_cont("\nPMIC MPPs:\n");
 	for (i = 1; i < dbgdata->n_pm_mpp+1; i++) {
-		spmi_ext_register_readl(ctrl, 0, PMIC_MPP_MODE(i), d, 3);
+		spmi_ext_register_read_ctrl(ctrl, PMIC_MPP_MODE(i), d, 3);
 
 		pr_cont("MPP [%-3d]: [DIR] %-15s  [PULL] %-10s",
 					i, mpp_mode[(d[0]&0x70)>>4],
 					mpp_pull[d[2]&0x7]);
 
-		spmi_ext_register_readl(ctrl, 0, PMIC_MPP_INT(i), d, 1);
+		spmi_ext_register_read_ctrl(ctrl, PMIC_MPP_INT(i), d, 1);
 
 		if (d[0])
 			pr_cont("  [INT] Enable");
