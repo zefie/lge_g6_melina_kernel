@@ -1,49 +1,14 @@
 menu "Melina-specific Configuration"
 
-choice
-        prompt "Compiler CPU Optimizations"
-        default MELINA_OPTIMIZE_KYRO if 64BIT
-        default MELINA_OPTIMIZE_CORTEX_A53 if !64BIT
+config MELINA_CPU_OPTIMIZE
+        bool "Compiler CPU Optimizations"
+	default y
 	help
-	  Select which CPU optimization flags, if any, you wish to compile
+	  Enables CPU optimizations flags, depending on your compiler, if any, you wish to compile
 	  the kernel with. Please note that some options are incompatible
 	  with the clang compiler.
 
-	  If unsure, use the selected default.
-
-config MELINA_OPTIMIZE_NONE
-        bool "Do not optimize"
-        help
-          Compiles the kernel without any additional -mcpu optimizations.
-
-config MELINA_OPTIMIZE_CORTEX_A53
-        bool "Optimize for cortex-a53"
-        help
-          Compiles the kernel with -mcpu=cortex-a53
-
-config MELINA_OPTIMIZE_CORTEX_A57
-        bool "Optimize for cortex-a57"
-        help
-          Compiles the kernel with -mcpu=cortex-a57
-
-config MELINA_OPTIMIZE_CORTEX_A72
-        bool "Optimize for cortex-a72"
-        help
-          Compiles the kernel with -mcpu=cortex-a72
-
-config MELINA_OPTIMIZE_CORTEX_A72_A53
-        bool "Optimize for big.LITTLE cortex-a72.cortex-a53"
-        depends on 64BIT
-        help
-	  Compiles the kernel with -mcpu=cortex-a72.cortex-a53
-
-config MELINA_OPTIMIZE_KYRO
-        bool "Optimize for Kyro with -mcpu=kyro"
-        depends on 64BIT
-        help
-	  Compiles the kernel with -mcpu=kyro
-
-endchoice
+	  If unsure, select Y.
 
 config MELINA_DRIVEDROID_CDROM
         boolean "DriveDroid CD-ROM Mass Storage Emulation"
