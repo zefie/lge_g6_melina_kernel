@@ -14,34 +14,34 @@ choice
 config MELINA_OPTIMIZE_NONE
         bool "Do not optimize"
         help
-          Compiles the kernel without any additional -mtune optimizations.
+          Compiles the kernel without any additional -mcpu optimizations.
 
 config MELINA_OPTIMIZE_CORTEX_A53
         bool "Optimize for cortex-a53"
         help
-          Compiles the kernel with -mcpu=cortex-a53 -mtune=cortex-a53
+          Compiles the kernel with -mcpu=cortex-a53
 
 config MELINA_OPTIMIZE_CORTEX_A57
         bool "Optimize for cortex-a57"
         help
-          Compiles the kernel with -mcpu=cortex-a57 -mtune=cortex-a57
+          Compiles the kernel with -mcpu=cortex-a57
 
 config MELINA_OPTIMIZE_CORTEX_A72
         bool "Optimize for cortex-a72"
         help
-          Compiles the kernel with -mcpu=cortex-a72 -mtune=cortex-a72
+          Compiles the kernel with -mcpu=cortex-a72
 
 config MELINA_OPTIMIZE_CORTEX_A72_A53
         bool "Optimize for big.LITTLE cortex-a72.cortex-a53"
         depends on 64BIT
         help
-	  Compiles the kernel with -mcpu=cortex-a72.cortex-a53 -mtune=cortex-a72.cortex-a53
+	  Compiles the kernel with -mcpu=cortex-a72.cortex-a53
 
 config MELINA_OPTIMIZE_KYRO
-        bool "Optimize for Kyro with -mcpu=kyro -mtune=kyro"
+        bool "Optimize for Kyro with -mcpu=kyro"
         depends on 64BIT
         help
-	  Compiles the kernel with -mcpu=kyro -mtune=kyro
+	  Compiles the kernel with -mcpu=kyro
 
 endchoice
 
