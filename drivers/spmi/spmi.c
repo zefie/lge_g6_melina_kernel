@@ -25,6 +25,9 @@
 #define CREATE_TRACE_POINTS
 #include <trace/events/spmi.h>
 
+static DEFINE_MUTEX(board_lock);
+static LIST_HEAD(board_list);
+static DEFINE_IDR(ctrl_idr);
 static DEFINE_IDA(ctrl_ida);
 
 static void spmi_dev_release(struct device *dev)
@@ -162,7 +165,7 @@ int spmi_ext_register_read_ctrl(struct spmi_controller *sctrl, u8 addr, u8 *buf,
 	if (len == 0 || len > 16)
 		return -EINVAL;
 
-	return spmi_read_cmd(sctrl, SPMI_CMD_EXT_READ, sdev->usid, addr,
+	return spmi_read_cmd(sctrl, SPMI_CMD_EXT_READ, 0, addr,
 			     buf, 1);
 }
 EXPORT_SYMBOL_GPL(spmi_ext_register_read_ctrl);

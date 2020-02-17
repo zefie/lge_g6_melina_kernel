@@ -100,10 +100,10 @@ __power_supply_is_supplied_by_for_lge_power(struct lge_power *supplier,
 	}
 
 	if (supplier->supplied_to) {
-		if (!supply->name)
+		if (!supply->desc->name)
 			return false;
 		for (i = 0; i < supplier->num_supplicants; i++)
-			if (!strcmp(supplier->supplied_to[i], supply->name))
+			if (!strcmp(supplier->supplied_to[i], supply->desc->name))
 				return true;
 	}
 
@@ -132,10 +132,10 @@ __power_supply_is_supplied_by_for_lge_power_psy(struct lge_power *supplier,
 	}
 
 	if (supplier->lge_psy_supplied_to) {
-		if (!supply->name)
+		if (!supply->desc->name)
 			return false;
 		for (i = 0; i < supplier->num_lge_psy_supplicants; i++)
-			if (!strcmp(supplier->lge_psy_supplied_to[i], supply->name))
+			if (!strcmp(supplier->lge_psy_supplied_to[i], supply->desc->name))
 				return true;
 	}
 
@@ -154,8 +154,8 @@ __lge_power_changed_for_power_supply_work(struct device *dev, void *data)
 	}
 
 	if (__power_supply_is_supplied_by_for_lge_power_psy(psy, pst)) {
-		if (pst->external_power_changed)
-			pst->external_power_changed(pst);
+		if (pst->desc->external_power_changed)
+			pst->desc->external_power_changed(pst);
 	}
 
 	return 0;

@@ -152,7 +152,7 @@ static int lge_power_adc_get_property(struct lge_power *lpc,
 
 	case LGE_POWER_PROP_BATT_THERM_PHY:
 #ifdef CONFIG_ARCH_MSM8996
-	rc = lge_adc_chip->bms_psy->get_property(lge_adc_chip->bms_psy,
+	rc = lge_adc_chip->bms_psy->desc->get_property(lge_adc_chip->bms_psy,
 			POWER_SUPPLY_PROP_TEMP, &prop);
 	val->int64val = prop.intval;
 #else
@@ -191,7 +191,7 @@ static int lge_power_adc_get_property(struct lge_power *lpc,
 
 	case LGE_POWER_PROP_BATT_THERM_RAW:
 #ifdef CONFIG_ARCH_MSM8996
-	rc = lge_adc_chip->bms_psy->get_property(lge_adc_chip->bms_psy,
+	rc = lge_adc_chip->bms_psy->desc->get_property(lge_adc_chip->bms_psy,
 			POWER_SUPPLY_PROP_TEMP, &prop);
 	val->intval = prop.intval;
 #else
@@ -238,16 +238,16 @@ static int lge_power_adc_get_property(struct lge_power *lpc,
 				mutex_lock(&lge_adc_chip->lock_for_usb_id);
 
 				usb_pd_psy = power_supply_get_by_name("usb_pd");
-				if(usb_pd_psy && usb_pd_psy->get_property) {
-					usb_pd_psy->get_property(usb_pd_psy, POWER_SUPPLY_PROP_TYPEC_MODE, &prop);
+				if(usb_pd_psy && usb_pd_psy->desc->get_property) {
+					usb_pd_psy->desc->get_property(usb_pd_psy, POWER_SUPPLY_PROP_TYPEC_MODE, &prop);
 					typec_accessory = prop.intval;
 					pr_info("usb_pd : %d\n", typec_accessory);
 				}else{
 					pr_info("usb_pd is not ready\n");
 				}
 
-				if(usb_pd_psy && usb_pd_psy->get_property) {
-					usb_pd_psy->get_property(usb_pd_psy, POWER_SUPPLY_PROP_INPUT_SUSPEND, &prop);
+				if(usb_pd_psy && usb_pd_psy->desc->get_property) {
+					usb_pd_psy->desc->get_property(usb_pd_psy, POWER_SUPPLY_PROP_INPUT_SUSPEND, &prop);
 					waterproof = prop.intval;
 					pr_info("waterproof : %d\n", waterproof);
 				}else{
@@ -621,7 +621,7 @@ static int lge_adc_qct_probe(struct platform_device *pdev)
 				&lge_adc_chip->bd2_therm_channel);
 
 #ifdef CONFIG_ARCH_MSM8996
-	ret = lge_adc_chip->bms_psy->get_property(lge_adc_chip->bms_psy,
+	ret = lge_adc_chip->bms_psy->desc->get_property(lge_adc_chip->bms_psy,
 			POWER_SUPPLY_PROP_TEMP, &prop);
 	lge_adc_chip->batt_therm_channel = prop.intval;
 #else

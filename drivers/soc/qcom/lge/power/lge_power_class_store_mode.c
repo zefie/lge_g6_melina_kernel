@@ -108,7 +108,7 @@ static void lge_sm_external_power_changed(struct lge_power *lpc)
 			chip->store_demo_enabled = chip->default_set;
 #endif
 		if (chip->store_demo_enabled == 1) {
-			rc = chip->batt_psy->get_property(chip->batt_psy,
+			rc = chip->batt_psy->desc->get_property(chip->batt_psy,
 					POWER_SUPPLY_PROP_CAPACITY, &ret);
 			if (rc) {
 				pr_err ("cannot get capacity!\n");

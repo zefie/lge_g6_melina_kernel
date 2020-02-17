@@ -391,7 +391,7 @@ static int lgcc_set_iusb_control(const char *val,
 	pr_info("set lgcc_iusb_control to %d\n", lgcc_iusb_control);
 
 	pval.intval = lgcc_iusb_control;
-	the_cc->batt_psy->set_property(the_cc->batt_psy,
+	the_cc->batt_psy->desc->set_property(the_cc->batt_psy,
 			POWER_SUPPLY_PROP_CHARGING_ENABLED, &pval);
 
 	return 0;
@@ -613,7 +613,7 @@ static void lge_batt_cap_fcc_work(struct work_struct *work) {
 		goto reschedule;
 	}
 
-	cc->bms_psy->get_property(cc->bms_psy,
+	cc->bms_psy->desc->get_property(cc->bms_psy,
 			POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN, &ret);
 
 	new_fcc = ret.intval/1000;
@@ -684,7 +684,7 @@ static void lge_monitor_batt_temp_work(struct work_struct *work){
 		return;
 	}
 #endif
-	cc->batt_psy->get_property(cc->batt_psy,
+	cc->batt_psy->desc->get_property(cc->batt_psy,
 			POWER_SUPPLY_PROP_TEMP, &ret);
 	if (cc->test_chg_scenario == 1)
 		req.batt_temp = cc->test_batt_therm_value;
@@ -692,15 +692,15 @@ static void lge_monitor_batt_temp_work(struct work_struct *work){
 		req.batt_temp = ret.intval;
 	cc->batt_temp = req.batt_temp;
 
-	cc->batt_psy->get_property(cc->batt_psy,
+	cc->batt_psy->desc->get_property(cc->batt_psy,
 			POWER_SUPPLY_PROP_VOLTAGE_NOW, &ret);
 	req.batt_volt = ret.intval;
 
-	cc->batt_psy->get_property(cc->batt_psy,
+	cc->batt_psy->desc->get_property(cc->batt_psy,
 			POWER_SUPPLY_PROP_VOLTAGE_MAX, &ret);
 	req.max_chg_volt = ret.intval;
 
-	cc->batt_psy->get_property(cc->batt_psy,
+	cc->batt_psy->desc->get_property(cc->batt_psy,
 			POWER_SUPPLY_PROP_CURRENT_NOW, &ret);
 	req.current_now = ret.intval / 1000;
 #ifdef CONFIG_LGE_PM_LGE_POWER_CLASS_CABLE_DETECT
@@ -711,7 +711,7 @@ static void lge_monitor_batt_temp_work(struct work_struct *work){
 	cc->chg_current_max = cc->ibat_current / 1000;
 #endif
 #else
-	cc->usb_psy->get_property(
+	cc->usb_psy->desc->get_property(
 			cc->usb_psy, POWER_SUPPLY_PROP_CURRENT_MAX, &ret);
 	cc->chg_current_max = ret.intval / 1000;
 #endif
@@ -723,15 +723,15 @@ static void lge_monitor_batt_temp_work(struct work_struct *work){
 		req.chg_current_te = cc->chg_current_max;
 
 	pr_debug("chg_curren_te = %d\n", cc->chg_current_te);
-	cc->usb_psy->get_property(cc->usb_psy,
+	cc->usb_psy->desc->get_property(cc->usb_psy,
 			POWER_SUPPLY_PROP_PRESENT, &ret);
 	req.is_charger = ret.intval;
 
 #ifdef CONFIG_IDTP9223_CHARGER
 {	/* Update the presence of wireless charging */
 	struct power_supply* dc_wireless = power_supply_get_by_name("dc-wireless");
-	if (dc_wireless && dc_wireless->get_property &&
-		!dc_wireless->get_property(dc_wireless, POWER_SUPPLY_PROP_ONLINE, &ret)) {
+	if (dc_wireless && dc_wireless->desc->get_property &&
+		!dc_wireless->desc->get_property(dc_wireless, POWER_SUPPLY_PROP_ONLINE, &ret)) {
 		req.is_charger = (!!req.is_charger) || (!!ret.intval);
 	}
 }
@@ -739,7 +739,7 @@ static void lge_monitor_batt_temp_work(struct work_struct *work){
 	lge_monitor_batt_temp(req, &res);
 
 #ifdef CONFIG_LGE_PM_LGE_POWER_CLASS_CHARGER_SLEEP
-	cc->batt_psy->get_property(cc->batt_psy,
+	cc->batt_psy->desc->get_property(cc->batt_psy,
 			POWER_SUPPLY_PROP_CAPACITY, &ret);
 	if (ret.intval == 100)
 		cc->charger_eoc = 1;
@@ -764,7 +764,7 @@ static void lge_monitor_batt_temp_work(struct work_struct *work){
 			pr_info("DECCUR state, 0.3C Chg Current, 4.0V Float Voltage\n");
 			//Float Voltage Change.
 			ret.intval = res.float_voltage;
-			cc->batt_psy->set_property(cc->batt_psy,
+			cc->batt_psy->desc->set_property(cc->batt_psy,
 				POWER_SUPPLY_PROP_VOLTAGE_MAX, &ret);
 			//Charge Current Change
 			cc->otp_ibat_current = res.chg_current;
@@ -803,12 +803,12 @@ static void lge_monitor_batt_temp_work(struct work_struct *work){
 			pr_info("NORMAL state, Restore to all.\n");
 			//Float Voltage Restore.
 			ret.intval = res.float_voltage;
-			if (!cc->batt_psy->set_property(cc->batt_psy,
+			if (!cc->batt_psy->desc->set_property(cc->batt_psy,
 				POWER_SUPPLY_PROP_VOLTAGE_MAX, &ret)) {
 
 				ret.intval = 0;
-				if (cc->bms_psy && cc->bms_psy->set_property &&
-					!cc->bms_psy->set_property(cc->bms_psy,
+				if (cc->bms_psy && cc->bms_psy->desc->set_property &&
+					!cc->bms_psy->desc->set_property(cc->bms_psy,
 						POWER_SUPPLY_PROP_CHARGE_DONE, &ret)) {
 						pr_info("vfloat is restored to %d\n", res.float_voltage);
 				}
@@ -887,7 +887,7 @@ static void lge_monitor_batt_temp_work(struct work_struct *work){
 	}
 #endif
 
-	cc->batt_psy->get_property(cc->batt_psy,
+	cc->batt_psy->desc->get_property(cc->batt_psy,
 			POWER_SUPPLY_PROP_CAPACITY, &ret);
 #ifndef CONFIG_LGE_PM_LGE_POWER_CLASS_CHARGER_SLEEP
 	pr_debug("cap : %d, hvdcp : %d, usb : %d\n",
@@ -1180,7 +1180,7 @@ static void lge_check_typec_work(struct work_struct *work) {
 		if (!cc->ctype_psy)
 			goto skip_ctype;
 	} else {
-		rc = cc->ctype_psy->get_property(cc->ctype_psy,
+		rc = cc->ctype_psy->desc->get_property(cc->ctype_psy,
 				POWER_SUPPLY_PROP_TYPE, &pval);
 		if (rc == 0)
 			cc->ctype_type = pval.intval;
@@ -1216,7 +1216,7 @@ skip_ctype:
 			pr_err("Not type-C\n");
 		}
 	} else {
-		rc = cc->ctype_psy->get_property(cc->ctype_psy,
+		rc = cc->ctype_psy->desc->get_property(cc->ctype_psy,
 				POWER_SUPPLY_PROP_CURRENT_MAX, &pval);
 		if (rc == 0)
 			ibat_temp = pval.intval / 1000;
@@ -1287,7 +1287,7 @@ static void lge_hvdcp_set_ibat_work(struct work_struct *work){
 	if (!cc->batt_psy)
 		cc->batt_psy = power_supply_get_by_name("battery");
 	if (cc->batt_psy) {
-		rc = cc->batt_psy->get_property(cc->batt_psy,
+		rc = cc->batt_psy->desc->get_property(cc->batt_psy,
 				POWER_SUPPLY_PROP_CHARGE_TYPE, &pval);
 		if (pval.intval == POWER_SUPPLY_CHARGE_TYPE_TAPER)
 			taper_charging = true;

@@ -418,7 +418,7 @@ lge_power_lge_cable_detect_set_property(struct lge_power *lpc,
 					== POWER_SUPPLY_TYPE_USB_HVDCP) {
 				cd->modified_usb_ma = cd->ta_current*1000;
 			} else {
-				cd->usb_psy->get_property(
+				cd->usb_psy->desc->get_property(
 					cd->usb_psy,
 					POWER_SUPPLY_PROP_CURRENT_MAX, &ret);
 				cd->modified_usb_ma = ret.intval;
@@ -636,13 +636,13 @@ static void lge_cable_detect_external_power_changed(struct lge_power *lpc)
 	cd->usb_pd_psy = power_supply_get_by_name("usb_pd");
 	cd->usb_ctype = POWER_SUPPLY_TYPE_UNKNOWN;
 	if (cd->usb_pd_psy){
-		rc = cd->usb_pd_psy->get_property(cd->usb_pd_psy,
+		rc = cd->usb_pd_psy->desc->get_property(cd->usb_pd_psy,
 				POWER_SUPPLY_PROP_TYPE, &ret);
 		if (rc ==0){
 			cd->usb_ctype = ret.intval;
 			pr_info("usb_ctype : %d\n", cd->usb_ctype);
 		}
-		rc = cd->usb_pd_psy->get_property(cd->usb_pd_psy,
+		rc = cd->usb_pd_psy->desc->get_property(cd->usb_pd_psy,
 				POWER_SUPPLY_PROP_DP_ALT_MODE, &ret);
 		if (rc == 0){
 			cd->dp_alt_mode = ret.intval;
@@ -654,7 +654,7 @@ static void lge_cable_detect_external_power_changed(struct lge_power *lpc)
 	if(!cd->usb_psy){
 		pr_err("[LGE-CD] usb power_supply is not probed yet!!!\n");
 	} else {
-		rc = cd->usb_psy->get_property(
+		rc = cd->usb_psy->desc->get_property(
 				cd->usb_psy, POWER_SUPPLY_PROP_REAL_TYPE, &ret);
 		cd->chg_type = ret.intval;
 #ifdef CONFIG_LGE_PM_LGE_POWER_CLASS_SIMPLE
@@ -673,7 +673,7 @@ static void lge_cable_detect_external_power_changed(struct lge_power *lpc)
 #endif
 		} else if (cd->chg_type == POWER_SUPPLY_TYPE_USB) {
 #ifdef CONFIG_LGE_PM_LGE_POWER_CLASS_SIMPLE
-			cd->usb_psy->get_property(
+			cd->usb_psy->desc->get_property(
 				cd->usb_psy, POWER_SUPPLY_PROP_CURRENT_MAX,
 				&ret);
 			cd->modified_usb_ma = ret.intval;
@@ -769,7 +769,7 @@ static void lge_cable_detect_external_power_changed(struct lge_power *lpc)
 #endif
 #endif
 		} else {
-			cd->usb_psy->get_property(
+			cd->usb_psy->desc->get_property(
 				cd->usb_psy, POWER_SUPPLY_PROP_CURRENT_MAX,
 				&ret);
 			cd->modified_usb_ma = ret.intval;
@@ -783,7 +783,7 @@ static void lge_cable_detect_external_power_changed(struct lge_power *lpc)
 			cd->ctype_present = 0;
 #endif
 		}
-		rc = cd->usb_psy->get_property(
+		rc = cd->usb_psy->desc->get_property(
 				cd->usb_psy, POWER_SUPPLY_PROP_PRESENT, &ret);
 		cd->chg_present = ret.intval;
 		if (cd->chg_present != prev_chg_present) {
@@ -807,7 +807,7 @@ static void lge_cable_detect_external_power_changed(struct lge_power *lpc)
 				cd->chg_enable = 1;
 		}
 #endif
-		rc = cd->usb_psy->get_property(cd->usb_psy,
+		rc = cd->usb_psy->desc->get_property(cd->usb_psy,
 				POWER_SUPPLY_PROP_CHARGING_ENABLED, &ret);
 		if (rc < 0) {
 			cd->chg_usb_enable = -1;
@@ -861,11 +861,11 @@ lge_cable_detect_external_lge_power_changed(struct lge_power *lpc)
 	if (!chip->lge_pb_lpc) {
 		pr_err("pseudo_battery driver is not proved!!!\n");
 	} else {
-		rc = chip->lge_pb_lpc->get_property(chip->lge_pb_lpc,
+		rc = chip->lge_pb_lpc->desc->get_property(chip->lge_pb_lpc,
 				LGE_POWER_PROP_PSEUDO_BATT, &lge_val);
 		chip->pseudo_batt_mode = lge_val.intval;
 		if (chip->pseudo_batt_mode) {
-			rc = chip->lge_pb_lpc->get_property(chip->lge_pb_lpc,
+			rc = chip->lge_pb_lpc->desc->get_property(chip->lge_pb_lpc,
 					LGE_POWER_PROPS_PSEUDO_BATT_CHARGING, &lge_val);
 			if (chip->chg_present)
 				chip->chg_enable = lge_val.intval;

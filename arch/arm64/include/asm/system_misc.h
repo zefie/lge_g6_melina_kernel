@@ -63,6 +63,8 @@ extern char* (*arch_read_hardware_id)(void);
 #define UDBG_SEGV	(1 << 3)
 #define UDBG_BUS	(1 << 4)
 
+extern unsigned int system_rev;
+
 #endif	/* __ASSEMBLY__ */
 
 #endif	/* __ASM_SYSTEM_MISC_H */

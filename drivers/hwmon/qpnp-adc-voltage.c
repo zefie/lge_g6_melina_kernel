@@ -268,6 +268,24 @@ static int qpnp_vadc_is_valid(struct qpnp_vadc_chip *vadc)
 	return -EINVAL;
 }
 
+#if defined (CONFIG_MACH_MSM8996_LUCYE) || defined (CONFIG_MACH_MSM8996_FALCON)
+int32_t set_pm_gpio_value (struct qpnp_vadc_chip *vadc, int16_t reg,
+                        u8 *buf, int len)
+{
+        struct platform_device *spmi = vadc->adc->pdev;
+        int rc;
+
+        rc = spmi_ext_register_writel(spmi, reg, buf, len);
+        if (rc < 0) {
+                pr_err("qpnp adc write reg %d failed with %d\n", reg, rc);
+                return rc;
+        }
+
+        return 0;
+}
+#endif
+
+
 static int32_t qpnp_vadc_warm_rst_configure(struct qpnp_vadc_chip *vadc)
 {
 	int rc = 0;

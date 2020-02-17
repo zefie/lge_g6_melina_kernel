@@ -69,9 +69,9 @@ static int update_power_supply_property(struct power_supply *psy)
 
 	if (psy->property_data == NULL)
 		return 1;
-	for (i = 0; i < psy->num_properties; i++) {
-		check_psp = power_supply_is_check_uevent(psy->properties[i]);
-		if (psy->get_property(psy, psy->properties[i], &val))
+	for (i = 0; i < psy->desc->num_properties; i++) {
+		check_psp = power_supply_is_check_uevent(psy->desc->properties[i]);
+		if (psy->desc->get_property(psy, psy->desc->properties[i], &val))
 				return 0;
 		diff = psy->property_data[i] - val.intval;
 		diff = abs(diff);
