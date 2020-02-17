@@ -397,7 +397,7 @@ function buildzip() {
 	errchk echo " * Patching template ..."
 
 	MODEL_WHITELIST="${KERNEL_DEVMODEL_LOWER}"
-	if [ "${KERNEL_DEVMODEL_UPPER}" == "US996SANTA" ]; then
+	if [ "${KERNEL_DEVMODEL_LOWER}" == "us996santa" ]; then
 		MODEL_WHITELIST2="us996"
 	fi
 
