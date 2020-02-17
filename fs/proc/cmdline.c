@@ -44,11 +44,7 @@ static int cmdline_proc_show(struct seq_file *m, void *v)
 
 static int cmdline_proc_open(struct inode *inode, struct file *file)
 {
-	int rc = single_open(file, cmdline_proc_show, NULL);
-	if (rc == 0)
-		strcpy(updated_command_line, saved_command_line);
-
-	return rc;
+	return single_open(file, cmdline_proc_show, NULL);
 }
 
 static const struct file_operations cmdline_proc_fops = {
@@ -60,6 +56,9 @@ static const struct file_operations cmdline_proc_fops = {
 
 static int __init proc_cmdline_init(void)
 {
+	// copy it only once
+	strcpy(updated_command_line, saved_command_line);
+
 	proc_create("cmdline", 0, NULL, &cmdline_proc_fops);
 	return 0;
 }
