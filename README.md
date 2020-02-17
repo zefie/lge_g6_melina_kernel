@@ -5,18 +5,19 @@ Based on LGE OpenSource H870 v30a Kernel ([commit cff8191](https://github.com/ze
 **Note**: I own the US997, therefore I cannot test any other releases made available,
 only compile them and let you try them. Keep that in mind.
 
-**Always retain a backup of your current kernel and system (we update kernel modules in /system/lib/modules)**.
+**Always retain a backup of your current kernel and system image**.
 
 ## Information
 
- * For use on modern AOSP ROMs (Pie/10) 
+ * For use on modern AOSP ROMs (10, Pie may be unstable) 
  * Developer tested on HavocOS-v3.2 (Android 10)
- * Uses [osm0sis's AnyKernel2](https://forum.xda-developers.com/showthread.php?t=2670512) system
+ * Uses [osm0sis's AnyKernel3](https://forum.xda-developers.com/showthread.php?t=2670512) system
 
 ## Features:
- * No (or less, still testing) random reboots compared other V30A based kernels
  * Release builds have significantly reduced debugging messages/routines for slight performance & battery enhancements
- * Optimize compiler flags with Kyro optimizations
+ * No (or less, still testing) random reboots compared other V30A based kernels
+ * Moduleless Kernel
+ * Optimize compiler flags with better CPU optimizations
  * Updated AnyKernel to v3, now retains Magisk [zefie/recovery_zip_template](zefie/recovery_zip_template)
  * Previous security updates from past Melina Kernels and new security updates
  * Optimize for performance rather than size
@@ -28,9 +29,9 @@ only compile them and let you try them. Keep that in mind.
 
 ## Features for Developers:
  * [zefie/scripts](zefie/scripts) build helper scripts
+ * BE DAI Name Table (sound soc HAL) backported from msm 4.x
  * Moduleless Kernel, don't need to work about modules and paths
  * Most Melina Reborn tweaks are enabled via a custom Kconfig menu, so you can choose which features are enabled
- * Can select a different CPU optimization target via kernel config (for experimentation or exotic use cases)
  * Re-enable debug via 2 kernel config options (`CONFIG_MELINA_DEBUG_DISABLE=n` `CONFIG_MELINA_DEBUG_ENABLE=y`)
  * Kernel is ready to compile in-tree or out of tree with clang or gcc (the clang build currently has an issue that breaks Bluetooth)
 
@@ -49,8 +50,16 @@ and you can also use `.zefie/scripts/sideload.sh` to automatically sideload the 
 
 ## Credits
 
- Commits have been cherry-picked from the following sources:
+ This is an incomplete list of sources used for cherry-picking some commits:
 
+ * [mk2000 Kernel](https://github.com/LG-G6-DEV/android_kernel_lge_msm8996)
+ * [nathanchance/android-kernel-clang](https://github.com/nathanchance/android-kernel-clang.git)
+ * [nathanchance/marlin](https://github.com/nathanchance/marlin.git)
+ * [SaberMod/android-kernel-lge-hammerhead](https://gitlab.com/SaberMod/android-kernel-lge-hammerhead)
+ * [N00bKernel/stanlee](https://github.com/N00bKernel/stanlee.git)
+ * [LineageOS/android_kernel_lge_msm8996](https://github.com/LineageOS/android_kernel_lge_msm8996)
+ * [sonyexperiadev/caf-kernel](https://git.choose-a.name/sonyxperiadev/caf-kernel.git)
+ * [LG-G6-DEV/android_kernel_lge_msm8996](https://github.com/LG-G6-DEV/android_kernel_lge_msm8996)
  * [android-7.0 branch of Melina Kernel](https://github.com/zefie/lge_g6_melina_kernel/tree/android-7.0)
  * [CrazyAquaKernel for LineageOS by CrazyGamerGR](https://github.com/CrazyGamerGR/CrazyAquaKernel-g5-g6-los-nougat)
  * [DX-Mi5 by pappschlumpf](https://github.com/pappschlumpf/DX-Mi5)
