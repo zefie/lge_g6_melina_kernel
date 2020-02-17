@@ -116,6 +116,13 @@ config MELINA_QUIET_TOUCH
         help
           Silences information from the touchscreen driver, which is only useful for debugging.
 
+config MELINA_QUIET_FM
+        bool "Silence FM Radio (si470x) RDS and Tuning Debug Info"
+        default y
+        depends on RADIO_SI470X
+        help
+          Silences information from the touchscreen driver, which is only useful for debugging.
+
 
 endif # MELINA_DEBUG_DISABLE
 
