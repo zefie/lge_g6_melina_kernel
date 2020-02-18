@@ -69,7 +69,7 @@ function kernel_setdevice() {
 		if [ "${USER_DEV}" == "${m}" ]; then
 			KERNEL_DEVMODEL="${USER_DEV}";
 			KERNEL_DEVMODEL_LOWER="$(echo "${KERNEL_DEVMODEL}" | tr '[:upper:]' '[:lower:]')"
-			KERNEL_DEVPETNAME="$(kernel_get_device_defconfig "${m}" | cut -d'_' -f1)"
+			KERNEL_DEVPETNAME="$(kernel_get_device_defconfig "${m}" nolineage | cut -d'_' -f1)"
 			case "${KERNEL_DEVPETNAME}" in
 				"lucye")
 					KERNEL_MODEL="G6"
@@ -173,9 +173,11 @@ function kernel_get_device_defconfig() {
 	MODEL=$(echo "${1}" | tr '[:lower:]' '[:upper:]')
 	MODEL_L=$(echo "${1}" | tr '[:upper:]' '[:lower:]')
 
-	if [ -f "${DEFCONFIG_DIR}/lineageos_${MODEL_L}_defconfig" ]; then
-			echo "lineageos_${MODEL_L}_defconfig"
-			return;
+	if [ "${2}" != "nolineage" ]; then
+		if [ -f "${DEFCONFIG_DIR}/lineageos_${MODEL_L}_defconfig" ]; then
+				echo "lineageos_${MODEL_L}_defconfig"
+				return;
+		fi
 	fi
 
 	# start model list
