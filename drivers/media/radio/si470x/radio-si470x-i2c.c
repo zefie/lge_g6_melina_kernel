@@ -182,7 +182,9 @@ int cancel_seek(struct si470x_device *radio)
 {
 	int retval = 0;
 
+#ifndef CONFIG_MELINA_QUIET_FM
 	pr_info("%s enter\n",__func__);
+#endif
 	mutex_lock(&radio->lock);
 
 	/* stop seeking */
@@ -205,7 +207,9 @@ void si470x_search(struct si470x_device *radio, bool on)
 	current_freq_khz = radio->tuned_freq_khz;
 
 	if (on) {
+#ifndef CONFIG_MELINA_QUIET_FM
 		pr_info("%s: Queuing the work onto scan work q\n", __func__);
+#endif
 		queue_delayed_work(radio->wqueue_scan, &radio->work_scan,
 					msecs_to_jiffies(10));
 	} else {
@@ -220,7 +224,9 @@ void si470x_search(struct si470x_device *radio, bool on)
 int si470x_vidioc_querycap(struct file *file, void *priv,
 		struct v4l2_capability *capability)
 {
+#ifndef CONFIG_MELINA_QUIET_FM
 	pr_info("%s enter\n" , __func__);
+#endif
 	strlcpy(capability->driver, DRIVER_NAME, sizeof(capability->driver));
 	strlcpy(capability->card, DRIVER_CARD, sizeof(capability->card));
 	capability->device_caps = V4L2_CAP_HW_FREQ_SEEK | V4L2_CAP_READWRITE |
@@ -239,7 +245,9 @@ static void si470x_i2c_interrupt_handler(struct si470x_device *radio)
 	int retval = 0;
 	//struct kfifo *data_b;
 
+#ifndef CONFIG_MELINA_QUIET_FM
 	pr_info("%s enter\n",__func__);
+#endif
 	/* check Seek/Tune Complete */
 	retval = si470x_get_register(radio, STATUSRSSI);
 	if (retval < 0)
@@ -264,11 +272,15 @@ static void si470x_i2c_interrupt_handler(struct si470x_device *radio)
 		pr_err("%s No RDS group ready\n",__func__);
 		goto end;
 	} else {
+#ifndef CONFIG_MELINA_QUIET_FM
 		pr_info("%s start rds handler\n",__func__);
+#endif
 		schedule_work(&radio->rds_worker);
 	}
 end:
+#ifndef CONFIG_MELINA_QUIET_FM
 	pr_info("%s exit :%d\n",__func__, retval);
+#endif
 	return;
 }
 
@@ -327,7 +339,9 @@ static int si470x_reg_cfg(struct si470x_device *radio, bool on)
 
 	vreg = radio->dreg;
 
+#ifndef CONFIG_MELINA_QUIET_FM
 	pr_info("%s enter : %d \n",__func__, on);
+#endif
 
 	if (!vreg) {
 		pr_err("In %s, dreg is NULL\n", __func__);
@@ -335,7 +349,9 @@ static int si470x_reg_cfg(struct si470x_device *radio, bool on)
 	}
 
 	if (on) {
+#ifndef CONFIG_MELINA_QUIET_FM
 		pr_info("%s vreg is : %s\n",__func__, vreg->name);
+#endif
 		if (vreg->set_voltage_sup) {
 			rc = regulator_set_voltage(vreg->reg,
 						vreg->low_vol_level,
@@ -358,7 +374,9 @@ static int si470x_reg_cfg(struct si470x_device *radio, bool on)
 		}
 			vreg->is_enabled = true;
 	} else {
+#ifndef CONFIG_MELINA_QUIET_FM
 		pr_info("%s vreg is off: %s\n",__func__, vreg->name);
+#endif
 		rc = regulator_disable(vreg->reg);
 		if (rc < 0) {
 			pr_err("reg disable(%s) fail. rc=%d\n", vreg->name, rc);
@@ -394,8 +412,10 @@ static int si470x_configure_gpios(struct si470x_device *radio, bool on)
 				rc = regulator_enable(radio->vdd_reg);
 				if (rc < 0)
 					pr_err("vdd_reg enable failed.rc=%d\n", rc);
+#ifndef CONFIG_MELINA_QUIET_FM
 				else
 					pr_info("vdd_reg enable success.rc=%d\n", rc);
+#endif
 
 				msleep(100);
 			}
@@ -406,7 +426,9 @@ static int si470x_configure_gpios(struct si470x_device *radio, bool on)
 				return rc;
 			}
 			msleep(100);
+#ifndef CONFIG_MELINA_QUIET_FM
 			pr_info("%s fm_sw_gpio gpio_get_value : %d\n", __func__, gpio_get_value(radio->fm_sw_gpio));
+#endif
 		}
 		/*
 		 * GPO/Interrupt gpio configuration.
@@ -472,7 +494,9 @@ static int si470x_configure_gpios(struct si470x_device *radio, bool on)
 				__func__, radio->fm_sw_gpio, rc);
 				return rc;
 			}
+#ifndef CONFIG_MELINA_QUIET_FM
 			pr_info("%s fm_sw_gpio gpio_get_value : %d\n", __func__, gpio_get_value(radio->fm_sw_gpio));
+#endif
 		}
 
 		/* Wait for some time for the value to take effect. */
@@ -486,7 +510,9 @@ static int si470x_power_cfg(struct si470x_device *radio, bool on)
 {
 	int rc = 0;
 
+#ifndef CONFIG_MELINA_QUIET_FM
 	pr_info("%s enter : %d\n",__func__, on);
+#endif
 
 	if (on) {
 		/* Turn ON sequence */
@@ -596,7 +622,9 @@ static int silabs_parse_dt(struct device *dev,
 	}
 	else {
 		radio->vdd_reg = regulator_get(dev, "vdd_fm_sw");
+#ifndef CONFIG_MELINA_QUIET_FM
 		pr_info("%s regulator_get for ant switch\n", __func__);
+#endif
 		if (IS_ERR(radio->vdd_reg)) {
 			pr_err("In %s, vdd supply is not provided\n", __func__);
 		}
@@ -693,7 +721,9 @@ static int si470x_enable_irq(struct si470x_device *radio)
 		goto open_err_req_irq;
 	}
 
+#ifndef CONFIG_MELINA_QUIET_FM
 	pr_info("%s irq number is = %d\n", __func__,radio->irq);
+#endif
 
 	retval = request_any_context_irq(radio->irq, si470x_isr,
 			IRQF_TRIGGER_FALLING, DRIVER_NAME, radio);
@@ -701,8 +731,10 @@ static int si470x_enable_irq(struct si470x_device *radio)
 	if (retval < 0) {
 		pr_err("%s Couldn't acquire FM gpio %d, retval:%d\n", __func__,radio->irq,retval);
 		return retval;
+#ifndef CONFIG_MELINA_QUIET_FM
 	} else {
 		pr_info("%s FM GPIO %d registered\n", __func__, radio->irq);
+#endif
 	}
 	retval = enable_irq_wake(irq);
 	if (retval < 0) {
@@ -726,9 +758,11 @@ int si470x_fops_open(struct file *file)
 	struct si470x_device *radio = video_drvdata(file);
 	int retval = v4l2_fh_open(file);
 	int version_warning = 0;
+#ifndef CONFIG_MELINA_QUIET_FM
 	int i = 0;
 
 	pr_info("%s enter\n",__func__);
+#endif
 	if (retval){
 		pr_err("%s fail to open v4l2\n", __func__);
 		return retval;
@@ -762,8 +796,10 @@ int si470x_fops_open(struct file *file)
 		goto done;
 	}
 
+#ifndef CONFIG_MELINA_QUIET_FM
 	pr_info("%s DeviceID=0x%4.4hx ChipID=0x%4.4hx\n",__func__,
 			radio->registers[DEVICEID], radio->registers[CHIPID]);
+#endif
 	if ((radio->registers[CHIPID] & CHIPID_FIRMWARE) < RADIO_FW_VERSION) {
 		pr_err("%s This driver is known to work with "
 				"firmware version %d\n", __func__,RADIO_FW_VERSION);
@@ -781,8 +817,10 @@ int si470x_fops_open(struct file *file)
 	retval = si470x_set_chan(radio,
 		radio->registers[CHANNEL] & CHANNEL_CHAN);
 
+#ifndef CONFIG_MELINA_QUIET_FM
 	for(i = 0; i < 16; i++ )
 		pr_info("%s radio->registers[%d] : %x\n",__func__,i,radio->registers[i]);
+#endif
 
 done:
 	if (retval)
@@ -797,7 +835,9 @@ int si470x_fops_release(struct file *file)
 {
 	struct si470x_device *radio = video_drvdata(file);
 
+#ifndef CONFIG_MELINA_QUIET_FM
 	pr_info("%s enter \n",__func__);
+#endif
 
 	if (v4l2_fh_is_singular_file(file))
 		/* stop radio */
@@ -821,7 +861,9 @@ static int si470x_i2c_probe(struct i2c_client *client,
 	int i = 0;
 	int kfifo_alloc_rc = 0;
 
+#ifndef CONFIG_MELINA_QUIET_FM
 	pr_info("%s enter",__func__);
+#endif
 	vreg = regulator_get(&client->dev, "va");
 
 	if (IS_ERR(vreg)) {
@@ -839,7 +881,9 @@ static int si470x_i2c_probe(struct i2c_client *client,
 	/* private data allocation and initialization */
 	radio = kzalloc(sizeof(struct si470x_device), GFP_KERNEL);
 	if (!radio) {
+#ifndef CONFIG_MELINA_QUIET_FM
 		pr_info("%s error radio allocation",__func__);
+#endif
 		retval = -ENOMEM;
 		goto err_initial;
 	}
@@ -882,7 +926,9 @@ static int si470x_i2c_probe(struct i2c_client *client,
 		}
 
 		vreg = regulator_get(&client->dev, "vdd");
+#ifndef CONFIG_MELINA_QUIET_FM
 		pr_info("%s regulator_get",__func__);
+#endif
 
 		if (IS_ERR(vreg)) {
 			pr_err("In %s, vdd supply is not provided\n", __func__);
@@ -925,8 +971,10 @@ static int si470x_i2c_probe(struct i2c_client *client,
 		/* if pinctrl is not supported, -EINVAL is returned*/
 		if (retval == -EINVAL)
 			retval = 0;
+#ifndef CONFIG_MELINA_QUIET_FM
 	} else {
 		pr_info("%s si470x_pinctrl_init success\n",__func__);
+#endif
 	}
 
 	radio->wqueue = NULL;
@@ -991,7 +1039,9 @@ static int si470x_i2c_probe(struct i2c_client *client,
 		retval = -ENOMEM;
 		goto err_wqueue;
 	}
+#ifndef CONFIG_MELINA_QUIET_FM
 	pr_info("%s: creating work q for scan\n", __func__);
+#endif
 	radio->wqueue_scan  = create_singlethread_workqueue("sifmradioscan");
 
 	if (!radio->wqueue_scan) {
