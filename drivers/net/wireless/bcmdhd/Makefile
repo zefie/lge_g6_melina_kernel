@@ -365,7 +365,9 @@ endif
 ifeq ($(DRIVER_TYPE),y)
   DHDCFLAGS += -DUSE_LATE_INITCALL_SYNC
 endif
+ifeq ($(CONFIG_MELINA_BCMDHD_MONITOR_MODE),)
   DHDCFLAGS += -DMFP
+endif
 endif
 ifeq ($(CONFIG_ARCH_MSM8996),y)
   # Runtime PM
