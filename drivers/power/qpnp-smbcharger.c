@@ -10396,6 +10396,7 @@ static irqreturn_t usbin_uv_handler(int irq, void *_chip)
 #else
 		pr_smb(PR_STATUS, "Very weak charger detected\n");
 #endif
+#endif
 #ifdef CONFIG_LGE_PM_INCOMPATIBLE_HVDCP_SUPPORT
 		if (chip->incompatible_hvdcp_det_ignore_uv){
 			pr_smb(PR_LGE, "incompatible_hvdcp_det_ignore_uv. skip.\n");
@@ -12007,6 +12008,7 @@ static int batt_life_cycle_dt_init (struct smbchg_chip* chip) {
             pr_err("Incorrect batt-life-cycle-fcc-ma\n");
             goto out;
         }
+#ifndef CONFIG_MELINA_QUIET_POWER
         pr_smb(PR_LGE, "batt_life_cycle_fcc_ma %d : %d\n",
             i, chip->batt_life_cycle_fcc_ma[i]);
 #endif
@@ -12037,6 +12039,7 @@ static int batt_life_cycle_dt_init (struct smbchg_chip* chip) {
             pr_err("Incorrect batt-life-cycle-vfloate\n");
             goto out;
         }
+#ifndef CONFIG_MELINA_QUIET_POWER
         pr_smb(PR_LGE, "batt_life_cycle_vfloat %d : %d\n",
             i, chip->batt_life_cycle_vfloat[i]);
 #endif

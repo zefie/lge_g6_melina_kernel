@@ -1285,6 +1285,7 @@ void mdss_dsi_phy_init(struct mdss_dsi_ctrl_pdata *ctrl)
 			mdss_dsi_phy_init_sub(sctrl);
 		else
 			pr_warn("%s: unable to get slave ctrl\n", __func__);
+	}
 }
 
 void mdss_dsi_core_clk_deinit(struct device *dev, struct dsi_shared_data *sdata)

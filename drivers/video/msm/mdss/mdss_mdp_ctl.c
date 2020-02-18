@@ -5351,7 +5351,7 @@ int mdss_mdp_display_wait4comp(struct mdss_mdp_ctl *ctl)
 		ret = ctl->ops.wait_fnc(ctl, NULL);
 #ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	ATRACE_END("wait_fnc");
-
+#endif
 	trace_mdp_commit(ctl);
 
 	mdss_mdp_ctl_perf_update(ctl, 0, false);

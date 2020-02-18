@@ -2801,7 +2801,9 @@ int mdss_mdp_cmd_wait4_vsync(struct mdss_mdp_ctl *ctl)
 	mdss_mdp_setup_vsync(ctx, true);
 
 	/* wait for read pointer */
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(atomic_read(&ctx->rdptr_cnt));
+#endif
 	pr_debug("%s: wait for vsync cnt:%d\n",
 		__func__, atomic_read(&ctx->rdptr_cnt));
 
@@ -2813,7 +2815,9 @@ int mdss_mdp_cmd_wait4_vsync(struct mdss_mdp_ctl *ctl)
 	/* disable rd_ptr interrupt */
 	mdss_mdp_setup_vsync(ctx, false);
 
+#ifndef CONFIG_MELINA_QUIET_MSMVIDEO
 	MDSS_XLOG(ctl->num);
+#endif
 	pr_debug("%s: out from wait for rd_ptr ctl:%d\n", __func__, ctl->num);
 
 	return rc;
