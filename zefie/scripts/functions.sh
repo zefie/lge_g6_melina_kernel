@@ -169,8 +169,14 @@ function kernel_clean() {
 
 
 function kernel_get_device_defconfig() {
-	local MODEL
+	local MODEL MODEL_L
 	MODEL=$(echo "${1}" | tr '[:lower:]' '[:upper:]')
+	MODEL_L=$(echo "${1}" | tr '[:upper:]' '[:lower:]')
+
+	if [ -f "${DEFCONFIG_DIR}/lineageos_${MODEL_L}_defconfig" ]; then
+			echo "lineageos_${MODEL_L}_defconfig"
+			return;
+	fi
 
 	# start model list
 	case "${MODEL}" in
