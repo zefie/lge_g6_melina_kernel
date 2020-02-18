@@ -19,6 +19,15 @@ config MELINA_DRIVEDROID_CDROM
           Allows you to mount CD-ROM ISO images with DriveDroid.
           Without this, the image will try to mount as a USB Disk (flash drive).
 
+config MELINA_BCMDHD_MONITOR_MODE
+        boolean "WiFi Monitor Mode Support"
+        depends on BCMDHD
+        default y
+        help
+          Enables monitor mode in the BCM WiFi Drivers
+
+	  If unsure, say Y.
+
 config MELINA_PERFORMANCE_TWEAKS
 	boolean "Enable Melina Kernel Performance Tweaks"
 	select CPU_INPUT_BOOST
@@ -110,7 +119,6 @@ config MELINA_QUIET_POWER
         depends on QPNP_SMBCHARGER
         help
           Silences information from the charging driver curcuit, which is only useful for debugging.
-
 
 config MELINA_QUIET_TOUCH
         bool "Silence Touchscreen (sw49048) Debug Info"

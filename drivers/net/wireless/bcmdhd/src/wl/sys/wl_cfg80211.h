@@ -252,7 +252,13 @@ enum wl_status {
 enum wl_mode {
 	WL_MODE_BSS,
 	WL_MODE_IBSS,
+#ifdef CONFIG_MELINA_BCMDHD_MONITOR_MODE
+	WL_MODE_AP,
+	WL_MODE_MONITOR
+#else
 	WL_MODE_AP
+#endif
+
 };
 
 /* driver profile list */
