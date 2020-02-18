@@ -16,7 +16,7 @@ function z_setlog() {
 }
 
 function errout() {
-	if { true >&3; }; then
+	if { 2>/dev/null true >&3; }; then
 		echo "$@" 1>&3;
 	else
 		echo "$@" 1>&2;
@@ -69,15 +69,19 @@ function kernel_setdevice() {
 		if [ "${USER_DEV}" == "${m}" ]; then
 			KERNEL_DEVMODEL="${USER_DEV}";
 			KERNEL_DEVMODEL_LOWER="$(echo "${KERNEL_DEVMODEL}" | tr '[:upper:]' '[:lower:]')"
-			case "${USER_DEV}" in
-				US997|H87[02])
+			KERNEL_DEVPETNAME="$(kernel_get_device_defconfig "${m}" | cut -d'_' -f1)"
+			case "${KERNEL_DEVPETNAME}" in
+				"lucye")
 					KERNEL_MODEL="G6"
 					;;
-				*)
+				"elsa")
 					KERNEL_MODEL="G5"
 					;;
+				*)
+					KERNEL_MODEL="??"
+					;;
 			esac
-			export KERNEL_DEVMODEL KERNEL_DEVMODEL_LOWER KERNEL_MODEL
+			export KERNEL_DEVMODEL KERNEL_DEVMODEL_LOWER KERNEL_MODEL KERNEL_DEVPETNAME
 			return 0;
 		fi
 	done
@@ -310,7 +314,7 @@ function sideload() {
 
 function buildzip() {
 	local KERNDIR OUTDIR TMPDIR MODDIR LOGFILE MODULES KERNEL_IMAGE \
-	      KVER TC_VER GCC_VER INCLUDED_MODULES MODEL_WHITELIST \
+	      KVER TC_VER GCC_VER INCLUDED_MODULES MODEL_WHITELIST MODEL_WHITELIST2="" \
 	      EXTRA_CMDS EXTRA_CMDS_STR ANDROID_TARGET OUTFILE
 
 	KERNDIR="$(pwd)"
@@ -393,8 +397,12 @@ function buildzip() {
 	errchk echo " * Patching template ..."
 
 	MODEL_WHITELIST="${KERNEL_DEVMODEL_LOWER}"
+	if [ "${KERNEL_DEVMODEL_LOWER}" == "us996santa" ]; then
+		MODEL_WHITELIST2="us996"
+	fi
 
 	errchk sed -i -e 's/\%MODEL_WHITELIST\%/'"${MODEL_WHITELIST}"'/' "${TMPDIR}/anykernel.sh"
+	errchk sed -i -e 's/\%MODEL_WHITELIST2\%/'"${MODEL_WHITELIST2}"'/' "${TMPDIR}/anykernel.sh"
 	errchk sed -i -e 's/\%KERNELDEV\%/'"${KERNEL_DEVNAME}"'/' "${TMPDIR}/anykernel.sh"
 	errchk sed -i -e 's/\%NAME\%/'"${KERNEL_NAME}"'/' "${TMPDIR}/anykernel.sh"
 	errchk sed -i -e 's/\%MANU\%/'"${KERNEL_MANU}"'/' "${TMPDIR}/anykernel.sh"
