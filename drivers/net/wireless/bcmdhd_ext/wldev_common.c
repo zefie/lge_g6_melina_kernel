@@ -375,7 +375,6 @@ int wldev_get_band(
 {
 	int error;
 
-	*pband = 0;
 	error = wldev_ioctl_get(dev, WLC_GET_BAND, pband, sizeof(uint));
 	return error;
 }
