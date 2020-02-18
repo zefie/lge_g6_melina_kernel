@@ -684,7 +684,8 @@ KBUILD_CFLAGS 	+= -Werror
 endif
 
 ifdef CONFIG_MELINA_CPU_OPTIMIZE
-KBUILD_CFLAGS 	+= $(call cc-option,-mcpu=kyro,-mcpu=cortex-a72.cortex-a53)
+#                                    v-- first try               v-- first fallback                                            v-- final fallback
+KBUILD_CFLAGS 	+= $(call cc-option,-mcpu=kyro,$(call cc-option,-mcpu=cortex-a72.cortex-a53 -march=armv8-a+fp+simd+crc+crypto,-march=armv8-a+fp+simd+crc+crypto))
 endif
 
 ifdef CONFIG_READABLE_ASM
