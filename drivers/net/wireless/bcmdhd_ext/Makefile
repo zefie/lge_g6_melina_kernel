@@ -422,8 +422,6 @@ DHDOFILES := dhd_pno.o dhd_common.o dhd_ip.o dhd_custom_gpio.o dhd_custom_lge.o	
 	wl_linux_mon.o wl_roam.o dhd_wlfc.o
 
 
-CFLAGS_wl_cfg80211.o := $(call cc-disable-warning, enum-conversion)
-
 ifeq ($(CONFIG_BCMDHD_PCIE),y)
 DHDOFILES += dhd_pcie.o dhd_pcie_linux.o dhd_flowring.o	dhd_msgbuf.o pcie_core.o
 endif
