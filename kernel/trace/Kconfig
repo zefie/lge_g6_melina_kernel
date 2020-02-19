@@ -511,6 +511,7 @@ config FUNCTION_PROFILER
 
 config CPU_FREQ_SWITCH_PROFILER
 	bool "CPU frequency switch time profiler"
+	depends on !MELINA_DEBUG_DISABLE
 	select GENERIC_TRACER
 	help
 	  This option enables the CPU frequency switch profiler. A file is
