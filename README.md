@@ -1,6 +1,6 @@
 # Melina Reborn Kernel for LG G6 modern AOSP ROMs
 
-Based on LGE OpenSource H870 v30a Kernel ([commit cff8191](https://github.com/zefie/lge_g6_melina_kernel/tree/cff81912fd72dc07746be77663b6cba73ebd5938))
+Based off of [LG-G6-DEV/android_kernel_lge_msm8996 commit 757e457](https://github.com/LG-G6-DEV/android_kernel_lge_msm8996/commit/757e45767a0725a93ae01f2cf93cdda9f598aea7))
 
 **Note**: I own the US997, therefore I cannot test any other releases made available,
 only compile them and let you try them. Keep that in mind.
@@ -15,8 +15,7 @@ only compile them and let you try them. Keep that in mind.
 
 ## Features:
  * Release builds have significantly reduced debugging messages/routines for slight performance & battery enhancements
- * No (or less, still testing) random reboots compared other V30A based kernels
- * Moduleless Kernel
+ * No random reboots compared to V30A kernels (including Melina Reborn rel_r4 and older)
  * Optimize compiler flags with better CPU optimizations
  * Updated AnyKernel to v3, now retains Magisk [zefie/recovery_zip_template](zefie/recovery_zip_template)
  * Previous security updates from past Melina Kernels and new security updates
@@ -33,7 +32,7 @@ only compile them and let you try them. Keep that in mind.
  * Moduleless Kernel, don't need to work about modules and paths
  * Most Melina Reborn tweaks are enabled via a custom Kconfig menu, so you can choose which features are enabled
  * Re-enable debug via 2 kernel config options (`CONFIG_MELINA_DEBUG_DISABLE=n` `CONFIG_MELINA_DEBUG_ENABLE=y`)
- * Kernel is ready to compile in-tree or out of tree with clang or gcc (the clang build currently has an issue that breaks Bluetooth)
+ * Kernel is ready to compile in-tree or out of tree with clang or gcc
 
 ## How to build:
 
