@@ -60,10 +60,10 @@ dump_boot;
 # end ramdisk changes
 
 ui_print " "
-ui_print "Kernel Device: %MANU% %MODEL% (%DEVMODEL%)"
+ui_print "Device: %MANU% %MODEL% (%DEVMODEL%)"
 ui_print "Kernel Name: %NAME%"
-ui_print "Kernel Maintainer: %KERNELDEV%"
-ui_print "Kernel Version: %VERSION%"
+ui_print "Build User: %KERNELDEV%"
+ui_print "KVer: %VERSION%"
 ui_print " "
 ui_print "Toolchain Info:"
 ui_print "gcc: %TOOLCHAIN_VERSION%"
