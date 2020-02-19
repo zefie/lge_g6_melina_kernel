@@ -421,7 +421,7 @@ int wl_cfg80211_set_btcoex_allow_bt_inquiry(struct net_device *dev, char *comman
 {
 	static uint32 saved_reg50, modified_reg50;
 	static bool saved_status = FALSE;
-	int ret;
+	int ret = 0;
 	uint32 regaddr = 50;
 
 	if (enabled) {
