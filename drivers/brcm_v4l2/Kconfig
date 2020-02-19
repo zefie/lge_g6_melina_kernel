@@ -33,7 +33,8 @@ config BT_V4L2
 
 config FM_V4L2
 	tristate "FM protocol driver"
-	depends on SH_V4L2 && BT_MSM_SLEEP
+	depends on SH_V4L2
+	depends on BT_MSM_SLEEP || LGE_BLUETOOTH_PM
 	help
 	  FM Radio protocol driver.
 	  This driver is required if you want to use FM via
