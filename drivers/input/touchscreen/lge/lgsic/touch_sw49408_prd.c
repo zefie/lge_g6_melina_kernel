@@ -257,6 +257,7 @@ error:
 	return 0;
 }
 
+#ifndef CONFIG_MELINA_REMOVE_LGE_TOUCH_TESTS
 static int prd_os_xline_result_read(struct device *dev,
 	u16 (*buf)[COL_SIZE], int type)
 {
@@ -306,7 +307,7 @@ static int prd_os_xline_result_read(struct device *dev,
 
 	return ret;
 }
-
+#endif
 /*
  * Frame1 : M1 Raw Data, M2 Raw Data, Open1 Data, Short Data
  * Frame2 : Open2, P2P-1 Noise, Delta Jitter Max
@@ -415,6 +416,7 @@ static int read_pt_frame(struct device *dev, struct sw49408_data *d, u32 type, u
 }
 
 
+#ifndef CONFIG_MELINA_REMOVE_LGE_TOUCH_TESTS
 static int prd_open_short_test(struct device *dev)
 {
 	struct sw49408_data *d = to_sw49408_data(dev);
@@ -496,6 +498,7 @@ static int prd_open_short_test(struct device *dev)
 
 	return openshort_all_result;
 }
+#endif
 
 static int prd_print_rawdata(struct device *dev, char *buf, u32 type,
 				int pt_num, int* ret)
@@ -1435,6 +1438,7 @@ static void firmware_version_log(struct device *dev)
 	write_file(dev, buffer, TIME_INFO_SKIP);
 }
 
+#ifndef CONFIG_MELINA_REMOVE_LGE_TOUCH_TESTS
 static int ic_exception_check(struct device *dev, char *buf)
 {
 #if 0
@@ -1487,7 +1491,7 @@ static int ic_exception_check(struct device *dev, char *buf)
 #endif
 	return 0;
 }
-
+#endif
 static int check_noise_test(struct device *dev, char* buf, u32 type,
 								int* ret_val)
 {
@@ -1547,6 +1551,7 @@ void sw49408_te_test_logging(struct device *dev, char *buf)
 	ic_run_info_print(dev);
 }
 
+#ifndef CONFIG_MELINA_REMOVE_LGE_TOUCH_TESTS
 static ssize_t show_sd(struct device *dev, char *buf)
 {
 
@@ -1679,6 +1684,7 @@ static ssize_t show_sd(struct device *dev, char *buf)
 	TOUCH_I("Show_sd Test End\n");
 	return ret;
 }
+#endif
 
 static ssize_t get_data(struct device *dev, int16_t *buf, u32 wdata)
 {
@@ -2230,7 +2236,9 @@ static ssize_t show_lpwg_sd(struct device *dev, char *buf)
 
 	return ret;
 }
+#ifndef CONFIG_MELINA_REMOVE_LGE_TOUCH_TESTS
 static TOUCH_ATTR(sd, show_sd, NULL);
+#endif
 static TOUCH_ATTR(delta, show_delta, NULL);
 static TOUCH_ATTR(fdata, show_fdata, NULL);
 static TOUCH_ATTR(rawdata, show_rawdata, NULL);
@@ -2240,7 +2248,9 @@ static TOUCH_ATTR(ocd, show_ocd, NULL);
 static TOUCH_ATTR(pt_data, show_pt_data, NULL);
 
 static struct attribute *prd_attribute_list[] = {
+#ifndef CONFIG_MELINA_REMOVE_LGE_TOUCH_TESTS
 	&touch_attr_sd.attr,
+#endif
 	&touch_attr_delta.attr,
 	&touch_attr_fdata.attr,
 	&touch_attr_rawdata.attr,
