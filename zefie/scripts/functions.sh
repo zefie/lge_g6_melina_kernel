@@ -289,10 +289,10 @@ function kernel_generate_defconfigs() {
 		done
 
 		# Force disable modules
-		if [ ! -z "${KERNEL_RECOVERY}" ]; then
-			sed -i -e '/CONFIG_MODULE/d' "${TARGET_FILE}"
-			sed -i -e 's/\=m/\=y/g' "${TARGET_FILE}"
-		fi
+#		if [ ! -z "${KERNEL_RECOVERY}" ]; then
+#			sed -i -e '/CONFIG_MODULE/d' "${TARGET_FILE}"
+#			sed -i -e 's/\=m/\=y/g' "${TARGET_FILE}"
+#		fi
 	done
 }
 

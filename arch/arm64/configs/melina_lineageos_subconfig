@@ -1,0 +1,3 @@
+include melina_common_subconfig
+
+CONFIG_LOCALVERSION="-melinareborn"

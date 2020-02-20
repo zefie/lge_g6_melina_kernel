@@ -1,4 +1,4 @@
-include melina_common_android_intree_debug_subconfig
+include melina_common_subconfig
 
 # Kernel Debugging
 CONFIG_MELINA_DEBUG_ENABLE=n
