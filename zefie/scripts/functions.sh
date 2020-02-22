@@ -322,7 +322,7 @@ function buildzip() {
 	TMPDIR="${OUTDIR}/buildzip"
 	LOGFILE="${OUTDIR}/buildzip.log"
 	MODDIR="${TMPDIR}/modules"
-	MODULES=0
+	MODULES=1
 
 	KERNEL_IMAGE="build/arch/${ARCH}/boot/Image.gz-dtb"
 
