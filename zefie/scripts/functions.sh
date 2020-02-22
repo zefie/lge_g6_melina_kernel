@@ -183,42 +183,6 @@ function kernel_get_device_defconfig() {
 			"H872")
 				echo lucye_tmo_us-perf_defconfig
 				;;
-			"H990DS")
-				echo elsa_global_com-perf_defconfig
-				;;
-			"H990TR")
-				echo elsa_cno_cn-perf_defconfig
-				;;
-			"US996")
-				echo elsa_nao_us-perf_defconfig
-				;;
-			"US996SANTA")
-				echo elsa_nao_us_dirty-perf_defconfig
-				;;
-			"LS997")
-				echo elsa_spr_us-perf_defconfig
-				;;
-			"VS995")
-				echo elsa_vzw-perf_defconfig
-				;;
-			"H918")
-				echo elsa_tmo_us-perf_defconfig
-				;;
-			"H910")
-				echo elsa_att_us-perf_defconfig
-				;;
-			"H915")
-				echo elsa_global_ca-perf_defconfig
-				;;
-			"F800K")
-				echo elsa_kt_kr-perf_defconfig
-				;;
-			"F800L")
-				echo elsa_lgu_kr-perf_defconfig
-				;;
-			"F800S")
-				echo elsa_skt_kr-perf_defconfig
-				;;
 			*)
 				return 1;
 				;;
