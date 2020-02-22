@@ -25,8 +25,11 @@ void lge_set_blank_called(void);
 #endif
 void lge_mdss_fb_init(struct msm_fb_data_type *mfd);
 void lge_set_backlight(int bl_level);
-void lge_backlight_register(struct msm_fb_data_type *mfd);
-void lge_backlight_unregister(void);
+#if defined(CONFIG_LGE_DISPLAY_AOD_SUPPORTED) || defined(CONFIG_LGE_DISPLAY_AMBIENT_SUPPORTED)
+void lge_ambient_brightness_register(struct msm_fb_data_type *mfd);
+void lge_ambient_brightness_unregister(void);
+#endif
+
 void lge_aod_bl_ctrl_blank_blank(struct msm_fb_data_type *mfd);
 
 #if defined(CONFIG_LGE_PP_AD_SUPPORTED)
@@ -49,8 +52,8 @@ void mdss_fb_set_backlight_ex(struct msm_fb_data_type *mfd, u32 bkl_lvl);
 void mdss_fb_update_backlight_ex(struct msm_fb_data_type *mfd);
 #endif
 #endif
-#if defined(CONFIG_LGE_PANEL_RECOVERY)
-bool lge_panel_recovery_mode(void);
+#if defined(CONFIG_LGE_DISPLAY_RECOVERY_ESD)
+bool lge_mdss_report_panel_dead(void);
 #endif
 #ifdef CONFIG_LGE_PM_SUPPORT_LG_POWER_CLASS
 int lge_charger_present(void);

@@ -166,6 +166,9 @@ enum supply_type_t
 	SUPPLY_TYPE_FIXED    = 0,
 	SUPPLY_TYPE_BATTERY  = 1,
 	SUPPLY_TYPE_VARIABLE = 2,
+#ifdef CONFIG_LGE_USB_TYPE_C
+	SUPPLY_TYPE_AUGMENTED = 3,
+#endif
 };
 
 enum peak_current_t
@@ -199,7 +202,11 @@ struct snk_pdo_t
 	uint16_t        OperationalPower;	 /*! Power           (battery)           */
 };
 
+#ifdef CONFIG_LGE_USB_TYPE_C
+#define PD_MAX_PDO_NUM   7
+#else
 #define PD_MAX_PDO_NUM   6
+#endif
 #define PDO_VOLT(mv)   ((uint16_t)((mv)/50))    // 50mV LSB
 #define PDO_CURR(ma)   ((uint16_t)((ma)/10))    // 10mA LSB
 #define PDO_PWR(mw)    ((uint16_t)((mw)/250))   // 250mW LSB

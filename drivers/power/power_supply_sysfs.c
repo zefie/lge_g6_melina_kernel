@@ -145,12 +145,8 @@ static ssize_t power_supply_show_property(struct device *dev,
 		return sprintf(buf, "%s\n", technology_text[value.intval]);
 	else if (off == POWER_SUPPLY_PROP_CAPACITY_LEVEL)
 		return sprintf(buf, "%s\n", capacity_level_text[value.intval]);
-#ifdef CONFIG_LGE_PM
-	else if (off == POWER_SUPPLY_PROP_TYPE
-			|| off == POWER_SUPPLY_PROP_REAL_TYPE)
-#else
-	else if (off == POWER_SUPPLY_PROP_TYPE)
-#endif
+	else if (off == POWER_SUPPLY_PROP_TYPE ||
+			off == POWER_SUPPLY_PROP_REAL_TYPE)
 		return sprintf(buf, "%s\n", type_text[value.intval]);
 	else if (off == POWER_SUPPLY_PROP_SCOPE)
 		return sprintf(buf, "%s\n", scope_text[value.intval]);
@@ -420,13 +416,15 @@ static struct device_attribute power_supply_attrs[] = {
 #endif
 #ifdef CONFIG_LGE_PM
 	POWER_SUPPLY_ATTR(fastchg),
+	POWER_SUPPLY_ATTR(fastchg_support),
+	POWER_SUPPLY_ATTR(fake_hvdcp_mode),
 #endif
 #if defined(CONFIG_BATTERY_MAX17050) || defined(CONFIG_LGE_PM_FG_AGE)
 	POWER_SUPPLY_ATTR(battery_condition),
 	POWER_SUPPLY_ATTR(battery_age),
 	POWER_SUPPLY_ATTR(battery_age_level),
 #endif
-#if defined(CONFIG_IDTP9223_CHARGER) || defined(CONFIG_MACH_MSM8996_LUCYE)
+#if defined(CONFIG_IDTP9223_CHARGER) || defined(CONFIG_MACH_MSM8996_LUCYE) || defined (CONFIG_MACH_MSM8996_FALCON)
 	POWER_SUPPLY_ATTR(connection_type),
 #endif
 	POWER_SUPPLY_ATTR(current_capability),
@@ -483,6 +481,7 @@ static struct device_attribute power_supply_attrs[] = {
 	POWER_SUPPLY_ATTR(die_health),
 	POWER_SUPPLY_ATTR(connector_health),
 	POWER_SUPPLY_ATTR(hw_current_max),
+	POWER_SUPPLY_ATTR(real_type),
 	/* Local extensions of type int64_t */
 	POWER_SUPPLY_ATTR(charge_counter_ext),
 	/* Properties of type `const char *' */

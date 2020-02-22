@@ -32,7 +32,7 @@
 /*
  *  Include to touch core Header File
  */
-#include <touch_core.h>
+#include <touch_core_nos.h>
 
 /*
  *  Include to Local Header File
@@ -244,7 +244,7 @@ static void abt_ksocket_start_for_pctool(struct device *dev)
 {
 	static int client_connected;
 	int size, err;
-	unsigned char *buf;
+	unsigned char *buf = NULL;
 	struct socket *sock;
 
 	/* kernel thread initialization */
@@ -391,11 +391,11 @@ out:
 static uint32_t abt_ksocket_send_exit(void)
 {
 	uint32_t ret = 0;
-	struct msghdr msg;
-	struct iovec iov;
+	struct msghdr msg = {0, };
+	struct iovec iov = {0, };
 	mm_segment_t oldfs;
 	struct socket *sock;
-	struct sockaddr_in addr;
+	struct sockaddr_in addr = {0, };
 	uint8_t buf = 1;
 
 	ret = sock_create(AF_INET, SOCK_DGRAM, IPPROTO_UDP, &sock);

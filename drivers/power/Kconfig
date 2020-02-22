@@ -853,6 +853,13 @@ config LGE_PM_WATERPROOF_PROTECTION
 	help
 	  Support charging suspending when water is detected
 
+config LGE_PM_INCOMPATIBLE_HVDCP_SUPPORT
+	bool "LGE_PM_INCOMPATIBLE_HVDCP_SUPPORT"
+	default n
+	depends on LGE_PM
+	help
+	  To make normal charging when the incompatible hvdcp connected
+
 config LGE_PM_MIRACAST_MITIGATION
 	bool "LGE_PM_MIRACAST_MITIGATION"
 	default n

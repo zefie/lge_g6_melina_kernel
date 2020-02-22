@@ -47,6 +47,11 @@
 
 #define SPI_MAX_BYTES_PER_WORD			(4)
 
+#if defined(CONFIG_LGE_TOUCH_SPI_MAX_SPEED_CHK)
+char* touch_spi_driver_name = NULL;
+static u32 last_rate = 0;
+#endif
+
 static int msm_spi_pm_resume_runtime(struct device *device);
 static int msm_spi_pm_suspend_runtime(struct device *device);
 static inline void msm_spi_dma_unmap_buffers(struct msm_spi *dd);
@@ -219,7 +224,6 @@ static inline void msm_spi_free_cs_gpio(struct msm_spi *dd)
 	}
 }
 
-
 /**
  * msm_spi_clk_max_rate: finds the nearest lower rate for a clk
  * @clk the clock for which to find nearest lower rate
@@ -294,6 +298,9 @@ static void msm_spi_clk_path_vote(struct msm_spi *dd, u32 rate)
 		u64 ib = rate * dd->pdata->bus_width;
 
 		msm_bus_scale_update_bw(dd->bus_cl_hdl, 0, ib);
+#if defined(CONFIG_LGE_TOUCH_SPI_MAX_SPEED_CHK)
+		last_rate = rate;
+#endif
 	}
 }
 
@@ -718,7 +725,6 @@ static int msm_spi_bam_pipe_connect(struct msm_spi *dd,
 	return 0;
 }
 
-
 static void msm_spi_bam_pipe_flush(struct msm_spi *dd,
 					enum msm_spi_pipe_direction pipe_dir)
 {
@@ -818,7 +824,6 @@ msm_spi_bam_process_tx(struct msm_spi *dd, u32 *bytes_to_send, u32 desc_cnt)
 	dd->bam.bam_tx_len -= data_xfr_size;
 	return data_xfr_size;
 }
-
 
 /**
  * msm_spi_bam_begin_transfer: transfer dd->tx_bytes_remaining bytes
@@ -1488,7 +1493,6 @@ transfer_end:
 	return status;
 }
 
-
 static inline void msm_spi_set_cs(struct spi_device *spi, bool set_flag)
 {
 	struct msm_spi *dd = spi_master_get_devdata(spi->master);
@@ -1508,7 +1512,16 @@ static inline void msm_spi_set_cs(struct spi_device *spi, bool set_flag)
 			return;
 	}
 
+#if defined(CONFIG_LGE_TOUCH_SPI_MAX_SPEED_CHK)
+	if (to_spi_driver(spi->dev.driver) != NULL && !strcmp(to_spi_driver(spi->dev.driver)->driver.name, touch_spi_driver_name)) {
+		if (last_rate != spi->max_speed_hz)
+			msm_spi_clk_path_vote(dd, spi->max_speed_hz);
+	} else {
+		msm_spi_clk_path_vote(dd, spi->max_speed_hz);
+	}
+#else
 	msm_spi_clk_path_vote(dd, spi->max_speed_hz);
+#endif
 
 	if (!(spi->mode & SPI_CS_HIGH))
 		set_flag = !set_flag;
@@ -1687,7 +1700,6 @@ static int msm_spi_transfer_one(struct spi_master *master,
 		status_error = 1;
 	}
 
-
 	if (!status_error)
 		status_error =
 			msm_spi_process_transfer(dd);
@@ -1843,7 +1855,6 @@ err_setup_exit:
 }
 
 #ifdef CONFIG_DEBUG_FS
-
 
 static int debugfs_iomem_x32_set(void *data, u64 val)
 {
@@ -2570,7 +2581,7 @@ skip_dma_resources:
 		goto err_probe_reqmem;
 	}
 
-	pm_runtime_set_autosuspend_delay(&pdev->dev, MSEC_PER_SEC);
+	pm_runtime_set_autosuspend_delay(&pdev->dev, 250L);
 	pm_runtime_use_autosuspend(&pdev->dev);
 	pm_runtime_enable(&pdev->dev);
 
@@ -2741,7 +2752,6 @@ static int msm_spi_resume(struct device *device)
 #define msm_spi_resume NULL
 #endif
 
-
 static int msm_spi_remove(struct platform_device *pdev)
 {
 	struct spi_master *master = platform_get_drvdata(pdev);
@@ -2770,7 +2780,6 @@ static struct of_device_id msm_spi_dt_match[] = {
 	},
 	{}
 };
-
 
 static const struct dev_pm_ops msm_spi_dev_pm_ops = {
 	SET_SYSTEM_SLEEP_PM_OPS(msm_spi_suspend, msm_spi_resume)

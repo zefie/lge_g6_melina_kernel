@@ -24,14 +24,14 @@
 /*
  *  Include to touch core Header File
  */
-#include <touch_hwif.h>
-#include <touch_core.h>
+#include <touch_hwif_nos.h>
+#include <touch_core_nos.h>
 
 /*
  *  Include to Local Header File
  */
-#include "touch_sw49407.h"
-#include "touch_sw49407_watch.h"
+#include "touch_sw49407_lucye.h"
+#include "touch_sw49407_watch_lucye.h"
 
 static int ext_watch_rtc_start(struct device *dev, u8 start)
 {

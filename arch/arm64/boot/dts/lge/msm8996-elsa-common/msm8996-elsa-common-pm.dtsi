@@ -10,6 +10,8 @@
  * GNU General Public License for more details.
  */
 
+#include "../msm8996-common-fstab_non_AB.dtsi"
+
 /{
 	mtp_batterydata: qcom,battery-data {
 		qcom,batt-id-range-pct = <15>;

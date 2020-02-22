@@ -24,8 +24,8 @@
 /*
  *  Include to touch core Header File
  */
-#include <touch_hwif.h>
-#include <touch_core.h>
+#include <touch_hwif_nos.h>
+#include <touch_core_nos.h>
 
 /*
  *  Include to Local Header File
@@ -58,8 +58,8 @@ static int ext_watch_get_mode(struct device *dev, char *buf, int *len)
 {
 	struct sw49407_data *d = to_sw49407_data(dev);
 	struct touch_core_data *ts = to_touch_core(d->dev);
-	struct ext_watch_ctrl_cfg mode_cfg;
-	struct ext_watch_lut_cfg lut_cfg;
+	struct ext_watch_ctrl_cfg mode_cfg = {0, };
+	struct ext_watch_lut_cfg lut_cfg = {0, };
 	struct ext_watch_lut_bits *lut = NULL;
 	u32 wdata;
 	u8 *ptr = NULL;
@@ -166,8 +166,8 @@ static int ext_watch_get_position(struct device *dev, char *buf, int *len)
 {
 	struct sw49407_data *d = to_sw49407_data(dev);
 	struct touch_core_data *ts = to_touch_core(d->dev);
-	struct ext_watch_position_cfg position = {0};
-	struct ext_watch_status_cfg status_cfg = {0};
+	struct ext_watch_position_cfg position = {0, };
+	struct ext_watch_status_cfg status_cfg = {0, };
 	int ret = 0;
 	char log[256] = {0};
 	int loglen = 0;
@@ -234,7 +234,7 @@ int ext_watch_get_current_time(struct device *dev, char *buf, int *len)
 {
 	struct sw49407_data *d = to_sw49407_data(dev);
 	struct touch_core_data *ts = to_touch_core(d->dev);
-	struct ext_watch_status_cfg status_cfg = {0};
+	struct ext_watch_status_cfg status_cfg = {0, };
 	int ret = 0;
 	char log[256] = {0};
 	int loglen = 0;

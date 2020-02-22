@@ -942,7 +942,11 @@ void rndis_deregister(int configNr)
 {
 	pr_debug("%s:\n", __func__);
 
+#ifdef CONFIG_LGE_USB_G_ANDROID
+	if (configNr >= RNDIS_MAX_CONFIGS || configNr < 0) return;
+#else
 	if (configNr >= RNDIS_MAX_CONFIGS) return;
+#endif
 	rndis_per_dev_params[configNr].used = 0;
 	rndis_per_dev_params[configNr].flow_ctrl_enable = NULL;
 }

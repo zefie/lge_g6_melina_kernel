@@ -179,6 +179,9 @@ enum zone_stat_item {
 #ifdef CONFIG_MIGRATE_HIGHORDER
 	NR_FREE_HIGHORDER_PAGES,
 #endif
+#ifdef CONFIG_NON_SWAP
+	NR_NON_SWAP,
+#endif
 	NR_VM_ZONE_STAT_ITEMS };
 
 /*

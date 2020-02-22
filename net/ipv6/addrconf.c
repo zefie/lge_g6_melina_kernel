@@ -91,6 +91,7 @@
 #include <linux/seq_file.h>
 #include <linux/export.h>
 
+#include <net/patchcodeid.h>
 /* Set to 3 to get tracing... */
 // LGE_CHANGE_S, [LGE_DATA][LGP_DATA_TCPIP_SLAAC_IPV6_ALLOCATION_BOOSTER], heeyeon.nah@lge.com, 2013-05-21
 //#define ACONF_DEBUG 2 // The original value.
@@ -915,7 +916,10 @@ ipv6_add_addr(struct inet6_dev *idev, const struct in6_addr *addr,
 	INIT_HLIST_NODE(&ifa->addr_lst);
 	ifa->scope = scope;
 	ifa->prefix_len = pfxlen;
-	ifa->flags = flags | IFA_F_TENTATIVE;
+	ifa->flags = flags;
+	/* No need to add the TENTATIVE flag for addresses with NODAD */
+	if (!(flags & IFA_F_NODAD))
+		ifa->flags |= IFA_F_TENTATIVE;
 	ifa->valid_lft = valid_lft;
 	ifa->prefered_lft = prefered_lft;
 	ifa->cstamp = ifa->tstamp = jiffies;
@@ -3384,22 +3388,23 @@ static void addrconf_dad_kick(struct inet6_ifaddr *ifp)
 	}
 	else {
 		rand_num = prandom_u32() % (idev->cnf.rtr_solicit_delay ? : 1);
-        printk("addrconf_dad_kick wait rand_num\n");
+		printk("addrconf_dad_kick wait rand_num\n");
 #ifdef CONFIG_IPV6_OPTIMISTIC_DAD
+/* 2017-11-24 samuel.seo@lge.com LGP_DATA_IMPROVE_QCT_EPDG_CONNECTION_TIME2 [START] */
 #ifdef CONFIG_LGP_DATA_IMPROVE_QCT_EPDG_CONNECTION_TIME
-        if(idev->dev != NULL && strlen(idev->dev->name)>5 && !strncmp(idev->dev->name,"rmnet",5)){
-            printk("addrconf_dad_kick it's rmnet!\n");
-            if(ifp && !dev_net(idev->dev)->ipv6.devconf_all->forwarding){
-                printk("addrconf_dad_kick forwarding disabled\n");
-                if(ipv6_addr_type(&(ifp->addr)) & IPV6_ADDR_LINKLOCAL){
-                    printk("addrconf_dad_kick rmnet linklocal case. set rand_num 0 !!\n");
-                    rand_num = 0;
-                }
-            }
-        }
+		patch_code_id("LPCP-2334@y@c@vmlinux@addrconf.c@1");
+		if (idev->dev != NULL && strlen(idev->dev->name)>5 && !strncmp(idev->dev->name,"rmnet",5)) {
+			printk("addrconf_dad_kick it's rmnet!\n");
+			if (ifp && !dev_net(idev->dev)->ipv6.devconf_all->forwarding){
+				printk("addrconf_dad_kick forwarding disabled\n");
+				printk("addrconf_dad_kick rmnet case. set rand_num 0 !!\n");
+				rand_num = 0;
+			}
+		}
 #endif
+/* 2017-11-24 samuel.seo@lge.com LGP_DATA_IMPROVE_QCT_EPDG_CONNECTION_TIME2 [END] */
 #endif
-    }
+	}
 	ifp->dad_probes = idev->cnf.dad_transmits;
 // LGE_CHANGE_S, [LGE_DATA][LGP_DATA_TCPIP_SLAAC_IPV6_ALLOCATION_BOOSTER], heeyeon.nah@lge.com, 2013-05-21
 #ifdef CONFIG_LGP_DATA_TCPIP_SLAAC_IPV6_ALLOCATION_BOOSTER

@@ -12,6 +12,7 @@ endif
 
 # Touch Core Driver Common Header Code..!!
 ccflags-y += -I$(srctree)/drivers/input/touchscreen/lge/
+ccflags-y += -Wno-missing-braces
 
 obj-$(CONFIG_LGE_TOUCH_CORE_BASE)	+= touch_core.o
 obj-$(CONFIG_LGE_TOUCH_CORE_BASE)	+= touch_core_sysfs.o
@@ -26,3 +27,16 @@ obj-$(CONFIG_LGE_TOUCH_CORE_MTK)	+= touch_hwif_mtk.o
 
 obj-$(CONFIG_LGE_TOUCH_CORE_BASE)	+= lgsic/
 obj-$(CONFIG_LGE_TOUCH_CORE_BASE)	+= synaptics/
+
+obj-$(CONFIG_LGE_TOUCH_CORE_BASE_NOS)   += touch_core_nos.o
+obj-$(CONFIG_LGE_TOUCH_CORE_BASE_NOS)   += touch_core_sysfs_nos.o
+obj-$(CONFIG_LGE_TOUCH_CORE_BASE_NOS)   += touch_common_nos.o
+obj-$(CONFIG_LGE_TOUCH_CORE_BASE_NOS)   += touch_i2c_nos.o
+obj-$(CONFIG_LGE_TOUCH_CORE_BASE_NOS)   += touch_spi_nos.o
+obj-$(CONFIG_LGE_TOUCH_CORE_BASE_NOS)   += touch_model_nos.o
+obj-$(CONFIG_LGE_TOUCH_CORE_BASE_NOS)   += touch_notify_nos.o
+
+obj-$(CONFIG_LGE_TOUCH_CORE_NOS)        += touch_hwif_nos.o
+obj-$(CONFIG_LGE_TOUCH_CORE_MTK_NOS)    += touch_hwif_mtk_nos.o
+
+obj-$(CONFIG_LGE_TOUCH_CORE_BASE_NOS)   += lgsic/

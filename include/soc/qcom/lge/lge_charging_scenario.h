@@ -24,14 +24,16 @@
 #define CONFIG_LGE_PSEUDO_CHG_UI
 
 #define DC_IUSB_VOLTUV   4000000
+#define DC_IBAT_VOLTUV_HIS  200000
 #define DC_IUSB_CURRENT  450
 #define DC_CURRENT_DEF   -1
+
 
 #define HIGH_VBAT_THREHSOLD	3980000 // 4000 mV - float voltage margin 20 mV
 
 #define DECCUR_FLOAT_VOLTAGE	4000 // Warm & Cool float voltage 4000 mV
 #define DECCUR_CHG_CURRENT_DIVIDER	3 // Warm & Cool chg current 0.3C
-
+#define DECCUR_SAFETY_CHG_CURRENT 500 // Cool & over 4.0V chg current 0.2C
 /* Battery temperature states */
 
 #ifdef CONFIG_LGE_PM_OTP_SCENARIO_FOR_SPRINT

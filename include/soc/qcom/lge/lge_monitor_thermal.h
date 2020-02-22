@@ -13,7 +13,7 @@
  * GNU General Public License for more details.
  */
 
-#ifdef CONFIG_MACH_MSM8996_LUCYE
+#if defined (CONFIG_MACH_MSM8996_LUCYE) || defined (CONFIG_MACH_MSM8996_FALCON)
 #define VTS_WEIGHT_XO_TEMP      (260)    /*  0.260     */
 #define VTS_WEIGHT_BD2_TEMP     (380)    /*  0.380     */
 #define VTS_CONST_1             (13940)  /* 13.940     */

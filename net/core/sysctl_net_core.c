@@ -331,14 +331,16 @@ static struct ctl_table net_core_table[] = {
 		.data		= &sysctl_net_busy_poll,
 		.maxlen		= sizeof(unsigned int),
 		.mode		= 0644,
-		.proc_handler	= proc_dointvec
+		.proc_handler	= proc_dointvec_minmax,
+		.extra1		= &zero,
 	},
 	{
 		.procname	= "busy_read",
 		.data		= &sysctl_net_busy_read,
 		.maxlen		= sizeof(unsigned int),
 		.mode		= 0644,
-		.proc_handler	= proc_dointvec
+		.proc_handler	= proc_dointvec_minmax,
+		.extra1		= &zero,
 	},
 #endif
 #ifdef CONFIG_NET_SCHED
@@ -374,20 +376,22 @@ static struct ctl_table net_core_table[] = {
 		.extra2		= &max_skb_frags,
 	},
     /* 2017-05-19 yunsik.lee@lge.com LGP_DATA_UDP_PREVENT_ICMPv6_WITH_CLAT_IID [START] */
+    /* 2018-01-09 yunsik.lee@lge.com LGP_DATA_KERNEL_DATA_HAL [START] */
     {
         .procname	= "clat_iid1",
         .data		= &sysctl_clat_iid1,
         .maxlen 	= sizeof(unsigned int),
-        .mode		= 0644,
+        .mode		= 0666,
         .proc_handler	= proc_dointvec,
     },
     {
         .procname	= "clat_iid2",
         .data		= &sysctl_clat_iid2,
         .maxlen 	= sizeof(unsigned int),
-        .mode		= 0644,
+        .mode		= 0666,
         .proc_handler	= proc_dointvec,
     },
+    /* 2018-01-09 yunsik.lee@lge.com LGP_DATA_KERNEL_DATA_HAL [END] */
     /* 2017-05-19 yunsik.lee@lge.com LGP_DATA_UDP_PREVENT_ICMPv6_WITH_CLAT_IID [END] */
 	{ }
 };
@@ -408,8 +412,6 @@ static struct ctl_table netns_core_table[] = {
 static __net_init int sysctl_core_net_init(struct net *net)
 {
 	struct ctl_table *tbl;
-
-	net->core.sysctl_somaxconn = SOMAXCONN;
 
 	tbl = netns_core_table;
 	if (!net_eq(net, &init_net)) {

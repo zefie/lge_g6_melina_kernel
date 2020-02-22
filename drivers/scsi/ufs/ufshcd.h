@@ -916,8 +916,10 @@ struct ufs_hba {
 	int scsi_block_reqs_cnt;
 
 	int			latency_hist_enabled;
-	struct io_latency_state io_lat_s;
 	bool do_full_init;
+
+	struct io_latency_state io_lat_read;
+	struct io_latency_state io_lat_write;
 
 #ifdef CONFIG_UFS_LGE_CARD_RESET
 	void*	card_reset_info;

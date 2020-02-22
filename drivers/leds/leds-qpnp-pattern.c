@@ -23,6 +23,11 @@
 #define TUNING_PCT_RED                  200
 #define TUNING_PCT_GREEN                100
 #define TUNING_PCT_BLUE                  32
+#elif defined(CONFIG_MACH_MSM8996_FALCON)
+#define TUNING_LUT_SCALE                 53
+#define TUNING_PCT_RED                  125
+#define TUNING_PCT_GREEN                100
+#define TUNING_PCT_BLUE                 100
 #else
 #define TUNING_LUT_SCALE                BRIGHTNESS_BASE_LUT
 #define TUNING_PCT_RED                  BRIGHTNESS_BASE_PCT

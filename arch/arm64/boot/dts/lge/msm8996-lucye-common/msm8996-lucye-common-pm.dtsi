@@ -10,6 +10,8 @@
  * GNU General Public License for more details.
  */
 
+#include "../msm8996-common-fstab_non_AB.dtsi"
+
 &soc {
 	tlmm: pinctrl@01010000 {
 
@@ -603,6 +605,7 @@
 			"charger", "incompatible", "/sys/class/power_supply/usb/incompatible_chg",
 			"charger", "ext_pwr", "/sys/class/power_supply/battery/ext_pwr",
 			"charger", "input_current_settled", "/sys/class/power_supply/battery/input_current_settled",
+			"charger", "fastchg_support", "/sys/class/power_supply/battery/fastchg_support",
 			"charger", "connection_type", "/sys/class/power_supply/battery-veneer/connection_type",
 			"charger", "wireless_charging_enabled", "/sys/class/power_supply/battery-veneer/charging_enabled",
 			"charger", "input_suspend", "/sys/class/power_supply/battery/input_suspend",
@@ -640,7 +643,7 @@
                         "testmode", "batt_id", "/sys/class/lge_power/lge_batt_id/valid_batt_id",
                         "testmode", "pa_therm0", "NULL",
                         "testmode", "pa_therm1", "/sys/class/hwmon/hwmon2/device/pa_therm1",
-                        "testmode", "usb_in", "/sys/class/hwmon/hwmon3/device/usbin",
+                        "testmode", "usbin", "/sys/class/hwmon/hwmon3/device/usbin",
                         "testmode", "vcoin", "/sys/class/hwmon/hwmon2/device/vcoin",
                         "testmode", "vph_pwr", "/sys/class/hwmon/hwmon2/device/vph_pwr",
                         "testmode", "usb_id", "/sys/class/hwmon/hwmon2/device/usb_id_lv",

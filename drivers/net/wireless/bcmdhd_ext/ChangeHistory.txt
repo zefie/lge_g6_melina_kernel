@@ -1,4 +1,21 @@
 BCM43596 DHD 1.80 Release Note.
+
+DHD 1.80.18 - 2018.03.30
+Kernel Panic
+ - CS4625460: Fixed RPM crash due to continuous interrupt between D3 inform and D3 ack
+
+Security Patch
+ - CS4757701: CVE-2017-13292. fix overflow in DHD CFG80211 wl_get_assoc_ies when handling assoc_info iovar results
+
+Others
+ - CS4549263: Fix Rxchain setting failure problem during OTA test
+
+DHD 1.80.17 - 2017.12.28
+Security Patch
+ - CS4158886: CVE-2017-13221. fix buffer overrun in DHD wls_parse_batching_cmd
+              CVE-2017-13213. fix buffer overrun in DHD wl_cfgvendor_set_bssid_blacklist
+              NOTE: CVE-2017-13213 requires HAL change also. HAL updated is mandatory to apply CVE-2017-13213 in DHD
+
 DHD 1.80.16 - 2017.11.23
 Security Patch
  - CS4002429: CVE-2017-13161. fix buffer overrun in DHD wl_parse_ssid_list_tlv

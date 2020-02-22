@@ -455,7 +455,11 @@ print_vbus_state:
 
 		if (dev->is_present) {
 			int sbu_adc = chg_get_sbu_adc(dev);
+#ifdef CONFIG_MACH_MSM8996_FALCON
+			if (sbu_adc > SBU_VBUS_SHORT_THRESHOLD) {
+#else
 			if (sbu_adc > SBU_WET_THRESHOLD) {
+#endif
 				PRINT("%s: VBUS/SBU SHORT!!! %d\n", __func__, sbu_adc);
 				tcpm_cc_fault_set(0, TCPC_STATE_CC_FAULT_SBU_ADC);
 				tcpm_cc_fault_timer(0, false);
@@ -464,6 +468,11 @@ print_vbus_state:
 
 		enable_irq(dev->cc_protect_irq);
 		break;
+
+#ifdef CONFIG_LGE_USB_MOISTURE_DETECT_EDGE
+	case PD_DPM_PE_EVENT_GET_EDGE_ADC:
+		return chg_get_edge_adc(dev);
+#endif
 #endif
 
 	default:
@@ -489,11 +498,15 @@ int hw_pd_dev_init(struct device *dev)
 #ifdef CONFIG_LGE_USB_FACTORY
 	if (!IS_FACTORY_MODE)
 #endif
+#if defined(CONFIG_MACH_MSM8996_LUCYE_KR_F) || defined (CONFIG_MACH_MSM8996_FALCON)
+	_hw_pd_dev.moisture_detect_use_sbu = true;
+#elif defined(CONFIG_MACH_MSM8996_LUCYE_KR)
 	if (lge_get_board_rev_no() >= HW_REV_1_3)
 		_hw_pd_dev.moisture_detect_use_sbu = true;
 #endif
 #ifndef CONFIG_MACH_MSM8996_LUCYE_KR
 		_hw_pd_dev.moisture_detect_use_sbu = false;
+#endif
 #endif
 #endif /* CONFIG_LGE_USB_MOISTURE_DETECT */
 

@@ -202,7 +202,7 @@ static int calc_average(int a, int b)
 
 static int lge_acc_nt_probe(struct platform_device *pdev)
 {
-	struct qpnp_vadc_chip *vadc_dev;
+	struct qpnp_vadc_chip *vadc_dev = NULL;
 	struct qpnp_vadc_result result;
 
 	int range_num = sizeof(lge_acc_nt_data) / sizeof(struct lge_acc_nt);
@@ -210,20 +210,22 @@ static int lge_acc_nt_probe(struct platform_device *pdev)
 	int i, j, rc = 0;
 	int adc = ADC_NOT_INIT;
 
-	if (of_find_property(pdev->dev.of_node, "qcom,acc-nt-vadc", NULL)) {
-		vadc_dev = qpnp_get_vadc(&pdev->dev, "acc-nt");
-		if (IS_ERR(vadc_dev)) {
-			rc = PTR_ERR(vadc_dev);
-			if (rc != -EPROBE_DEFER) {
-				pr_err("%s : fail to get acc_nt adc channel\n",
-						__func__);
-			} else
-				pr_err("%s : adc is not ready\n", __func__);
-
-			goto fail_dump;
-		}
+	if (!of_find_property(pdev->dev.of_node, "qcom,acc-nt-vadc", NULL)){
+		pr_err("%s : fail to find qcom,acc-nt-vadc on dts \n", __func__);
+		return 0;
 	}
 
+	vadc_dev = qpnp_get_vadc(&pdev->dev, "acc-nt");
+	if (IS_ERR(vadc_dev)) {
+		rc = PTR_ERR(vadc_dev);
+		if (rc != -EPROBE_DEFER) {
+			pr_err("%s : fail to get acc_nt adc channel\n",
+					__func__);
+		} else {
+			pr_err("%s : adc is not ready\n", __func__);
+		}
+		goto fail_dump;
+	}
 	/*
 	 * - vadc result averaging three times
 	 * - each time, if vadc error, try more two times

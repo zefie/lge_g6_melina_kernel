@@ -11,4 +11,3 @@ ecryptfs-y += events.o
 endif
 
 ecryptfs-$(CONFIG_ECRYPT_FS_MESSAGING) += messaging.o miscdev.o
-ecryptfs-$(CONFIG_SDP) += mm.o sdp.o

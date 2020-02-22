@@ -43,7 +43,11 @@
 #define RESTRICTED_CHG_CURRENT_500  500
 #define RESTRICTED_CHG_CURRENT_400  400
 #define RESTRICTED_CHG_CURRENT_300  300
+#ifdef CONFIG_MACH_MSM8996_FALCON
+#define CHG_CURRENT_MAX 2800
+#else
 #define CHG_CURRENT_MAX 3200
+#endif
 
 struct lge_charging_controller {
 	struct device 			*dev;
@@ -1154,6 +1158,7 @@ static void lge_check_typec_work(struct work_struct *work) {
 		counter = 0;
 		ibat_temp = 0;
 		lgcc_vote_fcc(LGCC_REASON_CTYPE, -EINVAL);
+		goto skip_ctype;
 	}
 #else
 	cc->lge_cd_lpc->get_property(cc->lge_cd_lpc,
@@ -1248,7 +1253,7 @@ skip_ctype:
 
 #ifdef CONFIG_LGE_PM_LGE_POWER_CLASS_TYPE_HVDCP
 #define HVDCP_IUSB_MAX 3000
-#if defined (CONFIG_MACH_MSM8996_LUCYE)
+#if defined (CONFIG_MACH_MSM8996_LUCYE) || defined (CONFIG_MACH_MSM8996_FALCON)
 #define HVDCP_IUSB_MIN 1900
 #else
 #define HVDCP_IUSB_MIN 1800   /* Because of charging for ieee1725 at ocp part on datesheet */
@@ -1538,14 +1543,16 @@ static void lge_cc_external_lge_power_changed(struct lge_power *lpc) {
 				rc = cc->ctype_psy->get_property(cc->ctype_psy,
 					POWER_SUPPLY_PROP_TYPE, &prop);
 				if (rc == 0)
-					cc->ctype_type = lge_val.intval;
+					cc->ctype_type = prop.intval;
 				pr_info("chg_type:%d, ctype_type:%d, before_ctype_type:%d\n",
 						cc->chg_type, cc->ctype_type,
 						cc->before_ctype_type);
 				if (cc->chg_type == POWER_SUPPLY_TYPE_USB_DCP) {
-					if (cc->ctype_type != cc->before_ctype_type)
+					if (cc->ctype_type != cc->before_ctype_type) {
 						if (!delayed_work_pending(&cc->ctype_detect_work))
 							schedule_delayed_work(&cc->ctype_detect_work, 0);
+						cc->before_ctype_type = cc->ctype_type;
+					}
 				}
 			}
 #endif
@@ -1559,7 +1566,6 @@ static void lge_cc_external_lge_power_changed(struct lge_power *lpc) {
 			}
 #endif
 			cc->before_chg_type = cc->chg_type;
-			cc->before_ctype_type = cc->ctype_type;
 #else
 #ifdef CONFIG_LGE_USB_TYPE_C
 			if (cc->chg_type == POWER_SUPPLY_TYPE_USB_DCP) {

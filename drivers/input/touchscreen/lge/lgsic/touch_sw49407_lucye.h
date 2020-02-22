@@ -18,8 +18,8 @@
 #ifndef LGE_TOUCH_SW49407_H
 #define LGE_TOUCH_SW49407_H
 
-#include "touch_sw49407_watch.h"
-#include "touch_sw49407_asc.h"	/* ASC */
+#include "touch_sw49407_watch_lucye.h"
+#include "touch_sw49407_asc_lucye.h"	/* ASC */
 #include <linux/pm_qos.h>
 
 /* debug info */

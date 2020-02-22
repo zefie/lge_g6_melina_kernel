@@ -631,6 +631,10 @@ void migrate_page_copy(struct page *newpage, struct page *page)
 		SetPageChecked(newpage);
 	if (PageMappedToDisk(page))
 		SetPageMappedToDisk(newpage);
+#ifdef CONFIG_NON_SWAP
+	if (TestClearPageNonSwap(page))
+		SetPageNonSwap(newpage);
+#endif
 
 	if (PageDirty(page)) {
 		clear_page_dirty_for_io(page);

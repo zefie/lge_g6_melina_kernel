@@ -1630,7 +1630,6 @@ static int qpnp_labibb_regulator_ttw(struct qpnp_labibb *labibb, unsigned int mo
 	return 0;
 }
 
-#if defined(CONFIG_LGE_DISPLAY_LUCYE_COMMON)
 static int qpnp_labibb_pulldown(struct qpnp_labibb *labibb, unsigned int mode)
 {
 	int rc;
@@ -1682,7 +1681,6 @@ static int qpnp_labibb_pulldown(struct qpnp_labibb *labibb, unsigned int mode)
 
 	return 0;
 }
-#endif
 #endif
 
 static int qpnp_lab_regulator_enable(struct regulator_dev *rdev)
@@ -1931,13 +1929,11 @@ static int qpnp_lab_regulator_setmode(struct regulator_dev *rdev, unsigned int m
 		if (!labibb->standalone)
 			return qpnp_labibb_regulator_ttw(labibb, mode);
 	break;
-#if defined(CONFIG_LGE_DISPLAY_LUCYE_COMMON)
 	case REGULATOR_MODE_ENABLE_PULLDOWN:
 	case REGULATOR_MODE_DISABLE_PULLDOWN:
 		if (!labibb->standalone)
 			return qpnp_labibb_pulldown(labibb, mode);
 	break;
-#endif
 	default:
 		pr_err("%s: unknown mode %x\n", __func__, mode);
 		rc = -EINVAL;

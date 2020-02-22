@@ -99,37 +99,56 @@
 		reg = <0>;
 		interrupt-parent = <&tlmm>; // [Fixed] tlmm is the parent
 		interrupts = <21 0x0>; // [Modified] Set INT GPIO, first # is gpio #, second flag keep it 0.
-		
+
 		// [Fixed] Specifies maximum SPI clock frequency of DMB chipset(38.4 MHz). (ref. FC8080 datasheet)
 		spi-max-frequency = <38400000>;
 
-		// [Fixed] Must contain "gpio_tdmb_suspend" if pinctrl is to be used. Keep the same names.
-		pinctrl-names = "gpio_tdmb_suspend";
 		/* [Modified] List of phandles, each pointing at a pin configuration node within a pin controller.
-				The list of names to assign states, List entry 0 defines the name for integer state ID 0...
-				Ex. control cases are INT(tdmb_int), EN(tdmb_ctrl), ANT SW(tdmb_ant) */
-		pinctrl-0 = <&tdmb_int &tdmb_ctrl &tdmb_lna_ctrl>;
+			The list of names to assign states, List entry 0,1,2... define the name for integer state ID 0,1,2...
+			Ex. control cases are INT(tdmb_int), EN(tdmb_ctrl), ANT SW(tdmb_ant) LNA Gain Ctrl(tdmb_lna_ctrl) LNA EN(tdmb_lna_en)*/
+		pinctrl-names = "tdmb_int", "tdmb_ctrl", "tdmb_lna_ctrl";
+		pinctrl-0 = <&tdmb_int>;
+		pinctrl-1 = <&tdmb_ctrl>;
+		pinctrl-2= <&tdmb_lna_ctrl>;
+
+		/* [Modified] set hw configure here
+			when use pmic clk buffer, change use-xtal to 0
+			and set xtal-freq(DMB Chipset Core clk), interface-freq(SPI interface clk) inter value. */
+		use-xtal = <1>;
+	        xtal-freq = <27120>;
+		interface-freq = <19200>;
+
+		/* [Modified] when using clock buffer,
+			 you should check which clock buffer used for dmb device */
+		//clock-names = "tdmb_xo";
+		// Ex. clocks = <&clock_gcc clk_?>;
 
 		/* [Modified] Set DMB-EN, DMB-INT GPIO
 			tlmm is the parent, second # is gpio #, third flag keep it 0. */
 		tdmb-fc8080,irq-gpio = <&tlmm 21 0x00>;
 		tdmb-fc8080,en-gpio = <&tlmm 39 0x00>;
 
-		/* [Modified] set hw configure here
-			when use pmic clk buffer, change use-xtal to 0, and set xtal-freq value. */
-		use-xtal = <1>;
-		xtal-freq = <27120>;
 
-		// [Modified] when use ant switching, change use-ant-sw to 1, and set ant-gpio.
+		/* [Modified] when use ant switching, change use-ant-sw to 1,
+                          and set ant active mode (high(1) or low(0)), ant-gpio. */
 		use-ant-sw = <0>;
-		// Ex. tdmb-fc8080,ant-gpio = <&tlmm ?? 0x00>;
+		//ant-active-mode = <0>;
+		//tdmb-fc8080,ant-gpio = <&tlmm 45 0x00>;
 
-		// [Modified] when use ldo for LDO_IN, chage ctrl-ldo to 1, and set ldo-supply.
-		ctrl-ldo = <0>;
-		// Ex. ldo-supply = <&pm8994_l10>;
+		// [Modified] when use ldo for LDO_IN, chage ctrl-dmb-ldo to 1, and set dmb_ldo-supply.
+		ctrl-dmb-ldo = <0>;
+		// Ex. dmb_ldo-supply = <&pm8994_l10>;
 
-		// [Modified] when use LNA, chage use-lna to 1, and set lna-gpio.
-		use-lna = <1>;
-		tdmb-fc8080,lna-gpio = <&tlmm 82 0x00>;
+		// [Modified] when use ldo for LNA(U1800), chage ctrl-lna-ldo to 1, and set lna_ldo-supply.
+		ctrl-lna-ldo = <0>;
+		// Ex. lna_ldo-supply = <&pm8994_l16>;
+
+		// [Modified] when use LNA, chage use-lna-ctrl to 1, and set lna-ctrl-gpio.
+		use-lna-ctrl = <1>;
+		tdmb-fc8080,lna-ctrl-gpio = <&tlmm 82 0x00>;
+
+		// [Modified] when use LNA EN, chage use-lna-en to 1, and set lna-en-gpio.
+		use-lna-en = <0>;
+		//tdmb-fc8080,lna-en-gpio = <&tlmm ?? 0x00>;
 	};
 };

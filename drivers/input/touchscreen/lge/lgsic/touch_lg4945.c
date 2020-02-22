@@ -25,8 +25,8 @@
 /*
  *  Include to touch core Header File
  */
-#include <touch_core.h>
-#include <touch_hwif.h>
+#include <touch_core_nos.h>
+#include <touch_hwif_nos.h>
 
 /*
  *  Include to Local Header File

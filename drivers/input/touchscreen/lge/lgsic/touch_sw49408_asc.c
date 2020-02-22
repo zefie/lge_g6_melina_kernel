@@ -16,7 +16,7 @@
  */
 #define TS_MODULE "[asc]"
 
-#include <touch_core.h>
+#include <touch_core_nos.h>
 #include "touch_sw49408.h"
 
 #define TOUCH_SHOW(ret, buf, fmt, args...) \

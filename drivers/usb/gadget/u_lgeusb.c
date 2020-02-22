@@ -176,7 +176,7 @@ static DEVICE_ATTR(field, S_IRUGO | S_IWUSR, field ## _show, field ## _store);
 
 LGE_ID_ATTR(vendor_id, "%04X\n")
 LGE_ID_ATTR(factory_pid, "%04X\n")
-LGE_ID_ATTR(iSerialNumber, "%d\n")
+LGE_ID_ATTR(iSerialNumber, "%X\n")
 LGE_RDONLY_STRING_ATTR(product_name, product)
 LGE_RDONLY_STRING_ATTR(manufacturer_name, manufacturer)
 LGE_RDONLY_STRING_ATTR(fcomposition, fcomposition)
@@ -474,8 +474,9 @@ int user_diag_enable = DIAG_DISABLE;
 #ifdef CONFIG_LGE_USB_DIAG_LOCK_SPR
 typedef struct {
 	int hw_rev;
+	uint32 hw_hydra;
 	char model_name[10];
-#ifdef CONFIG_MACH_MSM8996_LUCYE
+#if defined (CONFIG_MACH_MSM8996_LUCYE) || defined (CONFIG_MACH_MSM8996_FALCON)
 	char sw_version[64];
 #endif
 	// LGE_ONE_BINARY ???

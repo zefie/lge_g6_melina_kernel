@@ -1,5 +1,5 @@
 /*
- * touch_core.c
+ * touch_notify.c
  *
  * Copyright (c) 2015 LGE.
  *

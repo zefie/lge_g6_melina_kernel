@@ -27,7 +27,7 @@
 static enum hw_rev_no lge_bd_rev = HW_REV_MAX;
 
 /* CAUTION: These strings are come from LK. */
-#if defined(CONFIG_MACH_MSM8996_LUCYE)
+#if defined(CONFIG_MACH_MSM8996_LUCYE) || defined (CONFIG_MACH_MSM8996_FALCON)
 char *rev_str[] = {"evb1", "evb2", "evb3", "rev_0", "rev_01", "rev_02", "rev_03", "rev_04",
 	"rev_a", "rev_b", "rev_c", "rev_d", "rev_10", "rev_11", "rev_12", "rev_13", "rev_14", "rev_15", "rev_16",
 	"reserved"};
@@ -182,7 +182,7 @@ static int __init board_revno_setup(char *rev_info)
 
 	return 1;
 }
-__setup("lge.rev=", board_revno_setup);
+__setup("androidboot.vendor.lge.hw.revision=", board_revno_setup);
 
 MODULE_DESCRIPTION("LGE power monitor class");
 MODULE_LICENSE("GPL");

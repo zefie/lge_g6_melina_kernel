@@ -221,6 +221,12 @@ void usb_pd_pm_evaluate_src_caps(unsigned int port)
 
 		// Extract the offer params from the source PDO.
 		new_offer->supply_type = (enum supply_type_t)PDO_SUPPLY_TYPE(pdo);
+#ifdef CONFIG_LGE_USB_TYPE_C
+		if (new_offer->supply_type == SUPPLY_TYPE_AUGMENTED) {
+			INFO("PDO-%u APDO is not supported.\n", src_pdo_idx + 1);
+			continue;
+		}
+#endif
 		new_offer->min_voltage = PDO_MIN_VOLTAGE(pdo);
 
 		if (new_offer->supply_type == SUPPLY_TYPE_FIXED)

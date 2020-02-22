@@ -44,17 +44,6 @@
 #include "sreadahead_prof.h"
 /* LGE_CHAGE_E */
 
-#ifdef CONFIG_MDFPP_CCAUDIT
-#include <linux/cc_mode.h>
-#define ccaudit_permck(error, fname, flags) \
-{ \
-	if (unlikely((error == -EACCES) || (error == -EPERM) || (error == -EROFS))) \
-		if ((flags && (flags & (O_WRONLY | O_RDWR | O_TRUNC | O_APPEND))) || !flags ) \
-                        if(!strstr(fname,"@classes.dex.flock")) \
-                                printk("[CCAudit] %s error=%d file=%s flag=%d proc=%s parent=%s\n", __func__, (int)error, fname /*tmp->name*/, flags, current->comm, current->real_parent->comm); \
-}
-#endif
-
 int do_truncate2(struct vfsmount *mnt, struct dentry *dentry, loff_t length,
 		unsigned int time_attrs, struct file *filp)
 {
@@ -521,17 +510,9 @@ static int chmod_common(struct path *path, umode_t mode)
 	struct inode *delegated_inode = NULL;
 	struct iattr newattrs;
 	int error;
-#ifdef CONFIG_MDFPP_CCAUDIT
-        int cc_flag = get_cc_mode_state();
-#endif
 
 	error = mnt_want_write(path->mnt);
 	if (error){
-#ifdef CONFIG_MDFPP_CCAUDIT
-	if ((cc_flag & FLAG_CC_AUDIT_LOGGING) == FLAG_CC_AUDIT_LOGGING) {
-		ccaudit_permck(error, path->dentry->d_iname, 0);
-        }
-#endif
 		return error;
 	}
 retry_deleg:
@@ -550,11 +531,6 @@ out_unlock:
 			goto retry_deleg;
 	}
 	mnt_drop_write(path->mnt);
-#ifdef CONFIG_MDFPP_CCAUDIT
-	if ((cc_flag & FLAG_CC_AUDIT_LOGGING) == FLAG_CC_AUDIT_LOGGING) {
-	        ccaudit_permck(error, path->dentry->d_iname, 0);
-        }
-#endif
 	return error;
 }
 
@@ -1034,9 +1010,6 @@ long do_sys_open(int dfd, const char __user *filename, int flags, umode_t mode)
 	struct open_flags op;
 	int fd = build_open_flags(flags, mode, &op);
 	struct filename *tmp;
-#ifdef CONFIG_MDFPP_CCAUDIT
-        int cc_flag = get_cc_mode_state();
-#endif
 
 	if (fd)
 		return fd;
@@ -1049,11 +1022,6 @@ long do_sys_open(int dfd, const char __user *filename, int flags, umode_t mode)
 	if (fd >= 0) {
 		struct file *f = do_filp_open(dfd, tmp, &op);
 		if (IS_ERR(f)) {
-#ifdef CONFIG_MDFPP_CCAUDIT
-	                if ((cc_flag & FLAG_CC_AUDIT_LOGGING) == FLAG_CC_AUDIT_LOGGING) {
-		                ccaudit_permck(PTR_ERR(f), tmp->name, flags);
-                        }
-#endif
 			put_unused_fd(fd);
 			fd = PTR_ERR(f);
 		} else {

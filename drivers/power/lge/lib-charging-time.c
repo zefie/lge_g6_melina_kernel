@@ -95,7 +95,7 @@ static struct charging_time {
 
 	/* for debugging */
 	int		evaluate_native[100];
-	int		evaluate_reporting[100];
+	int		evaluate_reporting[100+1];
 	int		evaluate_emf[100];	// should be divided by smoothing_base
 } time_me = {
 /* For EMF : weight for the latest delta */

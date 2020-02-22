@@ -29,8 +29,18 @@
 /* must uncomment MOISTURE_DETECT_USE_SBU_TEST */
 //#define MOISTURE_DETECT_USE_SBU_TEST
 
+#if defined (CONFIG_MACH_MSM8996_LUCYE_KR_F)
+#define SBU_WET_THRESHOLD 1750000
+#else
+#ifndef CONFIG_MACH_MSM8996_FALCON
 #define SBU_WET_THRESHOLD \
 	(lge_get_board_rev_no() >= HW_REV_1_3 ? 1750000 : 1796000)	/* uV */
+#endif
+#endif
+
+#ifdef CONFIG_MACH_MSM8996_FALCON
+#define SBU_VBUS_SHORT_THRESHOLD 1750000	/* uV */
+#endif
 #endif
 
 #ifdef CONFIG_LGE_USB_FACTORY
@@ -103,6 +113,7 @@ enum pd_dpm_pe_evt {
 #ifdef CONFIG_LGE_USB_MOISTURE_DETECT
 	PD_DPM_PE_EVENT_GET_SBU_ADC,
 	PD_DPM_PE_EVENT_SET_MOISTURE_DETECT_USE_SBU,
+	PD_DPM_PE_EVENT_GET_EDGE_ADC,
 #endif
 };
 

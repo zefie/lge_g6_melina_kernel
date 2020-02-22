@@ -1,8 +1,9 @@
-/* touch_model.c
+/*
+ * touch_model.c
  *
- * Copyright (C) 2015 LGE.
+ * Copyright (c) 2015 LGE.
  *
- * Author: hoyeon.jang@lge.com
+ * author : hoyeon.jang@lge.com
  *
  * This software is licensed under the terms of the GNU General Public
  * License version 2, as published by the Free Software Foundation, and
@@ -14,14 +15,8 @@
  * GNU General Public License for more details.
  *
  */
-#define TS_MODULE "[model]"
 
 #include <linux/string.h>
-
-#if defined(CONFIG_MTK_PLATFORM)
-#include <mach/mt_gpio.h>
-#include <mach/mt_pm_ldo.h>
-#endif
 
 /*
  *  Include to touch core Header File
@@ -52,13 +47,12 @@ int touch_get_dts_base(struct touch_core_data *ts)
 
 	/* Role */
 	PROPERTY_BOOL(np, "use_lpwg", ts->role.use_lpwg);
-	PROPERTY_U32(np, "use_lpwg_test", ts->role.use_lpwg_test);
-	PROPERTY_BOOL(np, "use_upgrade", ts->role.use_upgrade);
+	PROPERTY_BOOL(np, "use_lpwg_test", ts->role.use_lpwg_test);
 	PROPERTY_BOOL(np, "hide_coordinate", ts->role.hide_coordinate);
 
 	/* Power */
+	PROPERTY_GPIO(np, "vcl-gpio", ts->vcl_pin);
 	PROPERTY_GPIO(np, "vdd-gpio", ts->vdd_pin);
-	PROPERTY_GPIO(np, "vio-gpio", ts->vio_pin);
 
 	/* Firmware */
 	PROPERTY_STRING_ARRAY(np, "fw_image", ts->def_fwpath, ts->def_fwcnt);
@@ -71,11 +65,48 @@ int touch_get_dts_base(struct touch_core_data *ts)
 				i, ts->def_fwpath[i]);
 		}
 	}
+#if defined(CONFIG_LGE_TOUCH_MODULE_DETECT)
+	PROPERTY_STRING_ARRAY(np, "panel_spec", ts->dual_panel_spec, ts->def_fwcnt);
+	{
+		int i;
+
+		for (i = 0; i < ts->def_fwcnt; i++) {
+			TOUCH_I("panel_spec - %d:%s\n",
+				i, ts->dual_panel_spec[i]);
+		}
+	}
+	PROPERTY_STRING_ARRAY(np, "panel_spec_mfts_folder", ts->dual_panel_spec_mfts, ts->def_fwcnt);
+	{
+		int i;
+
+		for (i = 0; i < ts->def_fwcnt; i++) {
+			TOUCH_I("panel_spec_mfts - %d:%s\n",
+				i, ts->dual_panel_spec_mfts[i]);
+		}
+	}
+#else
 	PROPERTY_STRING(np, "panel_spec", ts->panel_spec);
 	PROPERTY_STRING(np, "panel_spec_mfts_folder", ts->panel_spec_mfts);
+#endif
 	PROPERTY_STRING(np, "panel_spec_mfts_flat", ts->panel_spec_mfts_flat);
 	PROPERTY_STRING(np, "panel_spec_mfts_curved",
 					ts->panel_spec_mfts_curved);
+
+	/* Performance Test */
+	PROPERTY_U32(np, "test_jig_size", ts->perf_test.jig_size);
+	PROPERTY_BOOL(np, "use_perf_test", ts->perf_test.enable);
+	PROPERTY_U32(np, "test_delay", ts->perf_test.delay);
+	PROPERTY_U32(np, "test_pressure", ts->perf_test.pressure);
+	PROPERTY_U32(np, "test_width", ts->perf_test.width);
+	PROPERTY_U32(np, "click_test_x", ts->perf_test.click_x);
+	PROPERTY_U32(np, "click_test_y", ts->perf_test.click_y);
+	PROPERTY_U32(np, "v_drag_test_x", ts->perf_test.v_drag_x);
+	PROPERTY_U32(np, "v_drag_test_start_y", ts->perf_test.v_drag_start_y);
+	PROPERTY_U32(np, "v_drag_test_end_y", ts->perf_test.v_drag_end_y);
+	PROPERTY_U32(np, "h_drag_test_start_x", ts->perf_test.h_drag_start_x);
+	PROPERTY_U32(np, "h_drag_test_end_x", ts->perf_test.h_drag_end_x);
+	PROPERTY_U32(np, "h_drag_test_y", ts->perf_test.h_drag_y);
+
 	TOUCH_I("end dev.of_node\n");
 
 	return 0;
@@ -90,42 +121,6 @@ int touch_get_dts(struct touch_core_data *ts)
 	return 0;
 }
 
-#if defined(TARGET_MT6582_Y70)
-int __initdata touch_i2c_bus_num = 1;
-int __initdata touch_spi_bus_num = 0;
-int touch_get_platform_data(struct touch_core_data *ts)
-{
-	ts->irqflags = 0;
-	ts->int_pin = GPIO_TOUCH_INT;
-	ts->reset_pin = GPIO_TOUCH_RESET;
-	ts->maker_id_pin = 0;
-
-	/* Caps */
-	ts->caps.max_x = 720;
-	ts->caps.max_y = 1280;
-	ts->caps.max_pressure = 255;
-	ts->caps.max_width = 15;
-	ts->caps.max_orientation = 1;
-	ts->caps.max_id = 10;
-
-	ts->caps.hw_reset_delay = 80;
-	ts->caps.sw_reset_delay = 100;
-
-	/* Role */
-	ts->role.use_lpwg = 1;
-	ts->role.use_firmware = 0;
-
-	/* Power */
-	ts->vdd_pin = -1;
-	ts->vio_pin = -1;
-
-	ts->vdd_id = MT65XX_POWER_NONE;
-	ts->vio_id = MT65XX_POWER_NONE;
-
-
-	return 0;
-}
-#else
 int __initdata touch_i2c_bus_num = 0;
 int __initdata touch_spi_bus_num = 0;
 int touch_get_platform_data(struct touch_core_data *ts)
@@ -133,6 +128,3 @@ int touch_get_platform_data(struct touch_core_data *ts)
 	TOUCH_I("%s - dummy\n", __func__);
 	return 0;
 }
-#endif
-
-

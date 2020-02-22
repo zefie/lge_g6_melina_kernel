@@ -44,6 +44,11 @@ mdss-dsi-objs += mdss_dsi_clk.o
 obj-$(CONFIG_FB_MSM_MDSS) += mdss-dsi.o
 obj-$(CONFIG_FB_MSM_MDSS) += mdss_panel.o
 
+ifeq ($(CONFIG_SPI_QUP), y)
+obj-$(CONFIG_FB_MSM_MDSS_SPI_PANEL) += mdss_spi_client.o
+obj-$(CONFIG_FB_MSM_MDSS_SPI_PANEL) += mdss_spi_panel.o
+endif
+
 ifneq ($(CONFIG_FB_MSM_MDSS_MDP3), y)
 obj-$(CONFIG_FB_MSM_MDSS) += mdss_hdmi_util.o
 obj-$(CONFIG_FB_MSM_MDSS) += mdss_hdmi_edid.o
@@ -71,3 +76,5 @@ obj-$(CONFIG_FB_MSM_QPIC_ILI_QVGA_PANEL) += qpic_panel_ili_qvga.o
 obj-$(CONFIG_FB_MSM_MDSS) += mdss_fb.o mdss_util.o
 obj-$(CONFIG_COMPAT) += mdss_compat_utils.o
 
+obj-$(CONFIG_LGE_INTERVAL_MONITOR) += lge/lge_interval_monitor.o
+obj-$(CONFIG_LGE_FBCN) += lge/lge_fbcn.o

@@ -106,6 +106,31 @@ static int chg_get_sbu_adc(struct hw_pd_dev *dev)
 
 	return (int)lge_val.int64val;
 }
+
+#ifdef CONFIG_LGE_USB_MOISTURE_DETECT_EDGE
+static int chg_get_edge_adc(struct hw_pd_dev *dev)
+{
+	union lge_power_propval lge_val;
+	int rc;
+
+	if (!dev->lge_adc_lpc) {
+		dev_err(dev->dev, "%s: lge_adc_lpc is NULL\n", __func__);
+		return -ENODEV;
+	}
+
+	rc = dev->lge_adc_lpc->get_property(dev->lge_adc_lpc,
+					    LGE_POWER_PROP_USB_EDGE_PHY,
+					    &lge_val);
+	if (rc) {
+		dev_err(dev->dev, "failed to get edge_adc %d\n", rc);
+		return rc;
+	}
+
+	PRINT("EDGE_ADC: %d\n", (int)lge_val.int64val);
+
+	return (int)lge_val.int64val;
+}
+#endif
 #endif
 
 static int chg_get_property(struct power_supply *psy,
@@ -169,6 +194,9 @@ static int chg_get_property(struct power_supply *psy,
 	return 0;
 }
 
+#ifdef CONFIG_MACH_MSM8996_FALCON
+static int firstboot_check;
+#endif
 static int chg_set_property(struct power_supply *psy,
 			    enum power_supply_property prop,
 			    const union power_supply_propval *val)
@@ -197,10 +225,18 @@ static int chg_set_property(struct power_supply *psy,
 			tcpm_cc_fault_timer(0, dev->is_present ? false : true);
 			break;
 		}
-
+#ifdef CONFIG_MACH_MSM8996_FALCON
+		if ((dev->moisture_detect_use_sbu && val->intval) && (IS_CHARGERLOGO || firstboot_check)) {
+#else
 		if (dev->moisture_detect_use_sbu && IS_CHARGERLOGO && val->intval) {
+#endif
 			int sbu_adc = chg_get_sbu_adc(dev);
+#ifdef CONFIG_MACH_MSM8996_FALCON
+			firstboot_check = 0;
+			if (sbu_adc > SBU_VBUS_SHORT_THRESHOLD) {
+#else
 			if (sbu_adc > SBU_WET_THRESHOLD) {
+#endif
 				PRINT("%s: VBUS/SBU SHORT!!! %d\n", __func__, sbu_adc);
 				tcpm_cc_fault_set(0, TCPC_STATE_CC_FAULT_SBU_ADC);
 				tcpm_cc_fault_timer(0, false);
@@ -252,6 +288,9 @@ int charger_init(struct hw_pd_dev *dev)
 {
 	struct device *cdev = dev->dev;
 	int rc;
+#ifdef CONFIG_MACH_MSM8996_FALCON
+	firstboot_check = 1;
+#endif
 
 	dev->usb_psy = power_supply_get_by_name("usb");
 	if (!dev->usb_psy) {

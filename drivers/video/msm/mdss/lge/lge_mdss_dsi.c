@@ -64,48 +64,6 @@ int lge_mdss_dsi_parse_extra_params(struct platform_device *ctrl_pdev,
 	return 0;
 }
 
-extern int mdss_dsi_get_dt_vreg_data(struct device *dev,
-        struct device_node *of_node, struct dss_module_power *mp,
-        enum dsi_pm_type module);
-
-int lge_mdss_dsi_init_extra_pm(struct platform_device *ctrl_pdev,
-	struct device_node *pan_node, struct mdss_dsi_ctrl_pdata *ctrl_pdata)
-{
-	int rc;
-
-        rc = mdss_dsi_get_dt_vreg_data(&ctrl_pdev->dev, pan_node,
-		&ctrl_pdata->lge_extra.extra_power_data, DSI_EXTRA_PM);
-        if (rc) {
-		DEV_ERR("%s: '%s' get_dt_vreg_data failed.rc=%d\n",
-			__func__, __mdss_dsi_pm_name(DSI_EXTRA_PM), rc);
-                return 0;
-        }
-
-        rc = msm_dss_config_vreg(&ctrl_pdev->dev,
-		ctrl_pdata->lge_extra.extra_power_data.vreg_config,
-		ctrl_pdata->lge_extra.extra_power_data.num_vreg, 1);
-        if (rc) {
-                pr_err("%s: failed to init regulator, rc=%d\n", __func__, rc);
-        }
-
-	return rc;
-}
-
-extern void mdss_dsi_put_dt_vreg_data(struct device *dev,
-        struct dss_module_power *module_power);
-
-void lge_mdss_dsi_deinit_extra_pm(struct platform_device *pdev,
-        struct mdss_dsi_ctrl_pdata *ctrl_pdata)
-{
-	if (msm_dss_config_vreg(&pdev->dev,
-                        ctrl_pdata->lge_extra.extra_power_data.vreg_config,
-                        ctrl_pdata->lge_extra.extra_power_data.num_vreg, 1) < 0)
-                pr_err("%s: failed to de-init vregs for %s\n",
-                                __func__, __mdss_dsi_pm_name(DSI_EXTRA_PM));
-        mdss_dsi_put_dt_vreg_data(&pdev->dev,
-				&ctrl_pdata->lge_extra.extra_power_data);
-}
-
 void lge_extra_gpio_set_value(struct mdss_dsi_ctrl_pdata *ctrl_pdata,
 			const char *name, int value)
 {
@@ -124,4 +82,9 @@ void lge_extra_gpio_set_value(struct mdss_dsi_ctrl_pdata *ctrl_pdata,
 	} else {
 		pr_err("%s: couldn't get gpio by name %s\n", __func__, name);
 	}
+}
+
+void __weak lge_mdss_post_dsi_event_handler(struct mdss_dsi_ctrl_pdata *ctrl, int event, void *arg)
+{
+	return;
 }

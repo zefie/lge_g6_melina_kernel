@@ -8660,21 +8660,40 @@ static int dhd_preinit_proc(dhd_pub_t *dhd, int ifidx, char *name, char *value)
 		}
 		/* Setup timeout bcm_timeout from dhd driver 4.217.48 */
 
-		DHD_INFO(("%s:[%s]=[%d]\n", __FUNCTION__, name, var_int));
+        /* LGE_Patch, setup rsdb_mode from dhd driver DHD 1.80.16 */
+        if (!strcmp(name, "rsdb_mode")) {
+            wl_config_t rsdb_mode;
 
-		if ((ret = dhd_iovar(dhd, 0, name, (char *)&var_int, sizeof(var_int),
-			NULL, 0, TRUE)) < 0) {
-			DHD_ERROR(("%s: wl command failed \n", __FUNCTION__));
-			return ret;
-		}
+            if (FW_SUPPORTED(dhd, rsdb)) {
+                memset(&rsdb_mode, 0, sizeof(rsdb_mode));
+                rsdb_mode.config = var_int;
+                DHD_INFO(("%s rsdb_mode=%d set\n",
+                    __FUNCTION__, rsdb_mode.config));
+                ret = dhd_iovar(dhd, 0, "rsdb_mode", (char *)&rsdb_mode, sizeof(rsdb_mode),
+                       NULL, 0, TRUE);
+                if (ret < 0) {
+                    DHD_ERROR(("%s rsdb_mode=%d set failed ret= %d\n",
+                        __FUNCTION__, rsdb_mode.config, ret));
+                    return ret;
+                }
+            }
+        } else {
+        /* LGE_Patch, setup rsdb_mode from dhd driver DHD 1.80.16 */
+            DHD_INFO(("%s:[%s]=[%d]\n", __FUNCTION__, name, var_int));
 
-		if ((ret = dhd_wl_ioctl_cmd(dhd, WLC_UP, NULL, 0, TRUE, 0)) < 0) {
-			DHD_ERROR(("%s: wl up failed\n", __FUNCTION__));
-			return ret;
-		}
-	}
+            if ((ret = dhd_iovar(dhd, 0, name, (char *)&var_int, sizeof(var_int),
+                NULL, 0, TRUE)) < 0) {
+                DHD_ERROR(("%s: wl command failed \n", __FUNCTION__));
+                return ret;
+            }
+        }/* LGE_Patch, setup rsdb_mode from dhd driver DHD 1.80.16 */
 
-	return 0;
+        if ((ret = dhd_wl_ioctl_cmd(dhd, WLC_UP, NULL, 0, TRUE, 0)) < 0) {
+            DHD_ERROR(("%s: wl up failed\n", __FUNCTION__));
+            return ret;
+        }
+    }
+    return 0;
 }
 
 static int dhd_preinit_config(dhd_pub_t *dhd, int ifidx)
@@ -9570,7 +9589,6 @@ dhd_preinit_ioctls(dhd_pub_t *dhd)
 #if defined(SHOW_LOGTRACE) && defined(LOGTRACE_FROM_FILE)
 	if (dhd_logtrace_from_file(dhd)) {
 		setbit(eventmask, WLC_E_TRACE);
-        dhd_msg_level |= DHD_MSGTRACE_VAL;
 	} else {
 		clrbit(eventmask, WLC_E_TRACE);
 	}

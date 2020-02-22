@@ -41,8 +41,6 @@ long set_media_ext(const char *media_ext_list)
 	if (check_uid(uid)) {
 		pr_err("%s: %s not permitted.\n",
 				__func__, current->comm);
-		pr_err(" [CCAudit] %s: %s not permitted.\n",
-				__func__, current->comm);
 		return -EPERM;
 	}
 
@@ -61,7 +59,6 @@ long set_media_ext(const char *media_ext_list)
 	/* check if media_ext_list is not userspace */
 	if (!media_ext_list || ((len = strlen(media_ext_list)) <= 0)) {
 		pr_err("%s: media_ext_list is Null value.\n", __func__);
-		pr_err(" [CCAudit] %s: media_ext_list is Null value.\n", __func__);
 		rc = -EFAULT;
 		goto out;
 	}
@@ -69,7 +66,6 @@ long set_media_ext(const char *media_ext_list)
 	/* check overflow */
 	if (len >= MAX_MEDIA_EXT_LENGTH) {
 		pr_err("%s: media_ext_list is too large.\n", __func__);
-		pr_err(" [CCAudit] %s: media_ext_list is too large.\n", __func__);
 		rc = -EOVERFLOW;
 		goto out;
 	}

@@ -13,6 +13,8 @@
 #include <linux/device.h>
 #include "msm_eeprom_util.h"
 
+extern struct class* get_camera_class(void);
+
 static struct class *camera_vendor_id_class = NULL;
 static uint8_t module_maker_id = 0;
 
@@ -64,7 +66,7 @@ void msm_eeprom_create_sysfs(void)
 {
 	struct device*  camera_vendor_id_dev;
 	if(!camera_vendor_id_class) {
-		camera_vendor_id_class = class_create(THIS_MODULE, "camera");
+		camera_vendor_id_class = get_camera_class();
 		camera_vendor_id_dev   = device_create(camera_vendor_id_class, NULL,
 											   0, NULL, "vendor_id");
 		device_create_file(camera_vendor_id_dev, &dev_attr_vendor_id);

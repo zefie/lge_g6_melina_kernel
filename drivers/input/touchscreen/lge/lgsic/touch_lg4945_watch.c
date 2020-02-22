@@ -23,8 +23,8 @@
 /*
  *  Include to touch core Header File
  */
-#include <touch_core.h>
-#include <touch_hwif.h>
+#include <touch_core_nos.h>
+#include <touch_hwif_nos.h>
 
 /*
  *  Include to Local Header File
@@ -112,7 +112,7 @@ static int ext_watch_get_position(struct device *dev)
 {
 	struct lg4945_data *d = to_lg4945_data(dev);
 	u8 *ptr = (u8 *)(&d->watch.ext_wdata.position);
-	struct ext_watch_status_cfg status_cfg;
+	struct ext_watch_status_cfg status_cfg = {0, };
 	int ret = 0;
 
 	TOUCH_I("start\n");

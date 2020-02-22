@@ -505,7 +505,7 @@ static int eeprom_parse_memory_map(struct msm_eeprom_ctrl_t *e_ctrl,
 		CDBG("memory_data[%d] = 0x%X\n", i, memptr[i]);
 
 #if 1 //def CONFIG_MACH_LGE
-#ifdef CONFIG_MACH_MSM8996_LUCYE
+#if defined (CONFIG_MACH_MSM8996_LUCYE)
 	{
 		// Read from EEPROM
 		// 0xA80    VCM, infinity code_0 DEGREE   (LSB)
@@ -542,8 +542,9 @@ static int eeprom_parse_memory_map(struct msm_eeprom_ctrl_t *e_ctrl,
 			af_infinity = (uint16_t)((memptr[0xA81] << 8) | (memptr[0xA80]));
 			af_threshold = (uint16_t)(((af_macro - af_infinity) * 16 / 100) + af_macro);
 
-			CDBG("[EEP_DBG][main] macro(%d) infinity(%d) threshold(%d) VendorID(%d) slave_addr(%d) default(%d) AF_THRESHOLD(%d)\n",
-				af_macro, af_infinity, af_threshold, vendorID, eeprom_map->slave_addr, (e_ctrl->i2c_client).cci_client->retries, AF_THRESHOLD);
+			if (e_ctrl->i2c_client.cci_client)
+				CDBG("[EEP_DBG][main] macro(%d) infinity(%d) threshold(%d) VendorID(%d) slave_addr(%d) default(%d) AF_THRESHOLD(%d)\n",
+					af_macro, af_infinity, af_threshold, vendorID, eeprom_map->slave_addr, (e_ctrl->i2c_client).cci_client->retries, AF_THRESHOLD);
 
 			if (vendorID == 20 && af_threshold > AF_THRESHOLD)
 			{
@@ -561,8 +562,9 @@ static int eeprom_parse_memory_map(struct msm_eeprom_ctrl_t *e_ctrl,
 				memptr[0xA8C] = (0x00FF & (uint16_t)checksum);
 				memptr[0xA8D] = (0xFF00 & (uint16_t)checksum) >> 8;
 
-				pr_err("[EEP_DBG][AFTER] macro(%d) infinity(%d) threshold(%d) change_value (%d) checksum (0x%x) default(%d)\n",
-					af_macro, af_infinity, af_threshold, change_value, checksum, (e_ctrl->i2c_client).cci_client->retries);
+				if (e_ctrl->i2c_client.cci_client)
+					pr_err("[EEP_DBG][AFTER] macro(%d) infinity(%d) threshold(%d) change_value (%d) checksum (0x%x) default(%d)\n",
+						af_macro, af_infinity, af_threshold, change_value, checksum, (e_ctrl->i2c_client).cci_client->retries);
 				// ReWrite AF macro,                 EEPROM
 				rc = e_ctrl->i2c_client.i2c_func_tbl->i2c_write(
 					&(e_ctrl->i2c_client), 0xA82,
@@ -1705,7 +1707,7 @@ static int eeprom_init_config32(struct msm_eeprom_ctrl_t *e_ctrl,
 		pr_err("%s:%d Power down failed rc %d\n",
 			__func__, __LINE__, rc);
 
-#ifdef CONFIG_MACH_MSM8996_LUCYE
+#if defined (CONFIG_MACH_MSM8996_LUCYE)
 	pr_err("%s:%d e_ctrl->eeprom_device_type %d\n",
 				__func__, __LINE__, e_ctrl->eeprom_device_type);
     if(e_ctrl->eeprom_device_type)

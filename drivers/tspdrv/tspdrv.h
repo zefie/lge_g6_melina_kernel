@@ -65,7 +65,7 @@
 
 #define VIBE_MAX_DEVICE_NAME_LENGTH         64
 #define SPI_HEADER_SIZE                     3   /* DO NOT CHANGE - SPI buffer header size */
-#define VIBE_OUTPUT_SAMPLE_SIZE             50  /* DO NOT CHANGE - maximum number of samples */
+#define VIBE_OUTPUT_SAMPLE_SIZE             60  /* DO NOT CHANGE - maximum number of samples */
 #define MAX_DEBUG_BUFFER_LENGTH             1024
 
 /* Type definitions */

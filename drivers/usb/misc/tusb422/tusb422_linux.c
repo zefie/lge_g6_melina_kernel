@@ -56,6 +56,12 @@
 
 #define TUSB422_I2C_NAME "tusb422"
 
+/* Uncomment the following line to delay the start of IRQ processing to allow
+ * other drivers to load first. Delay time is defined as START_WORK_DELAY.
+ * The default delay is 500ms but the vendor may adjust this value as required. */
+#define TUSB422_DELAYED_START
+#define START_WORK_DELAY	msecs_to_jiffies(500)
+
 //#define TUSB422_USE_POLLING
 
 /* Remove the following line to disable sysfs debug */
@@ -87,6 +93,10 @@ struct tusb422_pwr_delivery {
 	int alert_irq;
 #ifdef CONFIG_LGE_USB_TYPE_C
 	struct workqueue_struct *wq;
+#endif
+#ifdef TUSB422_DELAYED_START
+	struct delayed_work start_work;
+	int start_done;
 #endif
 };
 
@@ -456,7 +466,7 @@ void tusb422_wake_lock_attach(void)
 	return;
 }
 
-#define WAKE_LOCK_TIMEOUT_MS  5000
+#define WAKE_LOCK_TIMEOUT_MS  4000
 
 void tusb422_wake_lock_detach(void)
 {
@@ -528,6 +538,11 @@ int tusb422_set_vconn_enable(int enable)
 static irqreturn_t tusb422_event_handler(int irq, void *data)
 {
 	struct tusb422_pwr_delivery *tusb422_pwr = data;
+
+#ifdef TUSB422_DELAYED_START
+	if (!tusb422_pwr->start_done)
+		return IRQ_HANDLED;
+#endif
 
 #if defined(CONFIG_WAKELOCK) && defined(CONFIG_LGE_USB_TYPE_C)
 	wake_lock_timeout(&tusb422_pd->attach_wakelock,
@@ -963,6 +978,19 @@ static void tusb422_work(struct work_struct *work)
 	return;
 }
 
+#ifdef TUSB422_DELAYED_START
+static void tusb422_start_work(struct work_struct *work)
+{
+	struct delayed_work *dwork = to_delayed_work(work);
+	struct tusb422_pwr_delivery *tusb422_pwr = container_of(dwork, struct tusb422_pwr_delivery, start_work);
+
+	PRINT("->%s\n", __func__);
+	tusb422_pwr->start_done = 1;
+	tusb422_schedule_work(&tusb422_pwr->work);
+
+	return;
+}
+#endif
 
 static const struct regmap_config tusb422_regmap_config = {
 	.reg_bits = 8,
@@ -1013,11 +1041,12 @@ static int tusb422_tcpm_init(struct tusb422_pwr_delivery *tusb422_pd)
 		tusb422_pd->configuration->moisture_detect_disable = true;
 	else
 #endif
+#if defined(CONFIG_MACH_MSM8996_LUCYE_KR_F) || defined (CONFIG_MACH_MSM8996_FALCON)
+	tusb422_pd->configuration->moisture_detect_use_sbu = true;
+#elif defined(CONFIG_MACH_MSM8996_LUCYE_KR)
 	if (lge_get_board_rev_no() >= HW_REV_1_3)
 		tusb422_pd->configuration->moisture_detect_use_sbu = true;
 #endif
-#ifndef CONFIG_MACH_MSM8996_LUCYE_KR
-		tusb422_pd->configuration->moisture_detect_use_sbu = false;
 #endif
 #endif /* CONFIG_LGE_USB_MOISTURE_DETECT */
 
@@ -1124,6 +1153,9 @@ static int tusb422_i2c_probe(struct i2c_client *client,
 #endif
 	hrtimer_init(&tusb422_pd->timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
 	INIT_WORK(&tusb422_pd->work, tusb422_work);
+#ifdef TUSB422_DELAYED_START
+	INIT_DELAYED_WORK(&tusb422_pd->start_work, tusb422_start_work);
+#endif
 
 #ifdef CONFIG_WAKELOCK
 	wake_lock_init(&tusb422_pd->attach_wakelock, WAKE_LOCK_SUSPEND, "typec_attach_wakelock");
@@ -1179,7 +1211,11 @@ static int tusb422_i2c_probe(struct i2c_client *client,
 	tcpm_connection_state_machine(0);
 #endif
 
+#ifdef TUSB422_DELAYED_START
+	schedule_delayed_work(&tusb422_pd->start_work, START_WORK_DELAY);
+#else
 	tusb422_schedule_work(&tusb422_pd->work);
+#endif
 
 	return 0;
 
@@ -1194,6 +1230,9 @@ err_sysfs:
 err_init:
 	hrtimer_cancel(&tusb422_pd->timer);
 	cancel_work_sync(&tusb422_pd->work);
+#ifdef TUSB422_DELAYED_START
+	cancel_delayed_work_sync(&tusb422_pd->start_work);
+#endif
 #ifdef CONFIG_WAKELOCK
 	wake_lock_destroy(&tusb422_pd->attach_wakelock);
 	wake_lock_destroy(&tusb422_pd->detach_wakelock);
@@ -1217,6 +1256,9 @@ static int tusb422_remove(struct i2c_client *client)
 {
 	disable_irq_wake(tusb422_pd->alert_irq);
 	hrtimer_cancel(&tusb422_pd->timer);
+#ifdef TUSB422_DELAYED_START
+	cancel_delayed_work_sync(&tusb422_pd->start_work);
+#endif
 	cancel_work_sync(&tusb422_pd->work);
 #ifdef CONFIG_WAKELOCK
 	wake_lock_destroy(&tusb422_pd->attach_wakelock);

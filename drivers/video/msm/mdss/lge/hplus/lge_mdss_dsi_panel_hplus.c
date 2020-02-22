@@ -16,11 +16,8 @@
 #include "../../mdss_dsi.h"
 #include "../lge_mdss_display.h"
 #include "../../mdss_dba_utils.h"
-#include <linux/input/lge_touch_notify.h>
+#include <linux/input/lge_touch_notify_nos.h>
 #include <soc/qcom/lge/board_lge.h>
-#if IS_ENABLED(CONFIG_LGE_DISPLAY_READER_MODE)
-#include "../lge_reader_mode.h"
-#endif
 
 #if defined(CONFIG_LGE_DISPLAY_MFTS_DET_SUPPORTED) && !defined(CONFIG_LGE_DISPLAY_DYN_DSI_MODE_SWITCH)
 #include <soc/qcom/lge/board_lge.h>
@@ -191,7 +188,7 @@ pr_err("<<<<<<<<<<< DSP : %d // Mode : %d \n",pinfo->dynamic_switch_pending ,pin
 		}
 
 		if (gpio_is_valid(ctrl_pdata->mode_gpio)) {
-			bool out;
+			bool out = false;
 
 			if (pinfo->mode_gpio_state == MODE_GPIO_HIGH)
 				out = true;
@@ -284,39 +281,18 @@ int mdss_dsi_panel_on(struct mdss_panel_data *pdata)
 #if defined(CONFIG_LGE_DISPLAY_DYN_DSI_MODE_SWITCH)
 			on_cmds = &ctrl->v_to_c_on_cmds;
 #endif
-#if IS_ENABLED(CONFIG_LGE_DISPLAY_READER_MODE)
-			lge_mdss_dsi_panel_send_on_cmds(ctrl, on_cmds, lge_get_reader_mode());
-#else
 			if (on_cmds->cmd_cnt)
 				mdss_dsi_panel_cmds_send(ctrl, on_cmds, CMD_REQ_COMMIT);
-#endif
 
 #if defined(CONFIG_LGE_LCD_DYNAMIC_CABC_MIE_CTRL)
 			if (ctrl->ie_on == 0)
 			{
-#if IS_ENABLED(CONFIG_LGE_DISPLAY_READER_MODE)
-				if(lge_get_reader_mode()){
-					pr_info("[Display]%s: reader mode on\n",__func__);
-					ctrl->ie_off_cmds.cmds[1].payload[1] = 0x81;
-				}
-				else
-				{
-					pr_info("[Display]%s: reader mode off\n",__func__);
-					ctrl->ie_off_cmds.cmds[1].payload[1] = 0x01;
-				}
-#endif
 				mdss_dsi_panel_cmds_send(ctrl, &ctrl->ie_off_cmds, CMD_REQ_COMMIT);
 			}
 #endif
 #if defined(CONFIG_LGE_ENHANCE_GALLERY_SHARPNESS)
 			if (ctrl->sharpness_on_cmds.cmds[2].payload[3] == 0x29)
 			{
-#if IS_ENABLED(CONFIG_LGE_DISPLAY_READER_MODE)
-				if(lge_get_reader_mode())
-					ctrl->sharpness_on_cmds.cmds[1].payload[1] = 0x8A;
-				else
-					ctrl->sharpness_on_cmds.cmds[1].payload[1] = 0x82;
-#endif
 				mdss_dsi_panel_cmds_send(ctrl, &ctrl->sharpness_on_cmds, CMD_REQ_COMMIT);
 			}
 #endif
@@ -360,26 +336,11 @@ int mdss_dsi_panel_on(struct mdss_panel_data *pdata)
 			break;
 	}
 #endif
-#if IS_ENABLED(CONFIG_LGE_DISPLAY_READER_MODE)
-	lge_mdss_dsi_panel_send_on_cmds(ctrl, on_cmds, lge_get_reader_mode());
-#else
 	if (on_cmds->cmd_cnt)
 		mdss_dsi_panel_cmds_send(ctrl, on_cmds, CMD_REQ_COMMIT);
-#endif
 #if defined(CONFIG_LGE_LCD_DYNAMIC_CABC_MIE_CTRL)
 	if (ctrl->ie_on == 0)
 	{
-#if IS_ENABLED(CONFIG_LGE_DISPLAY_READER_MODE)
-				if(lge_get_reader_mode()){
-					pr_info("[Display]%s: reader mode on\n",__func__);
-					ctrl->ie_off_cmds.cmds[1].payload[1] = 0x81;
-				}
-				else
-				{
-					pr_info("[Display]%s: reader mode off\n",__func__);
-					ctrl->ie_off_cmds.cmds[1].payload[1] = 0x01;
-				}
-#endif
 		mdss_dsi_panel_cmds_send(ctrl, &ctrl->ie_off_cmds, CMD_REQ_COMMIT);
 	}
 #endif
@@ -506,3 +467,12 @@ end:
 	return 0;
 }
 #endif
+
+int lge_ddic_ops_init(struct mdss_dsi_ctrl_pdata *ctrl_pdata)
+{
+	int rc = 0;
+
+	pr_info("%s: ddic_ops is not configured\n", __func__);
+
+	return rc;
+}

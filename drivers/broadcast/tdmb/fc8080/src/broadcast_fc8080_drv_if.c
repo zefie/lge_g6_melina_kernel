@@ -131,10 +131,10 @@ int broadcast_fc8080_drv_if_set_channel(unsigned int freq_num, unsigned int subc
     int8 rc = ERROR;
     boolean retval = FALSE;
     s_opmode = op_mode;
-    gBBBuffer_ridx = gBBBuffer_widx = 0;
 
     retval = tunerbb_drv_fc8080_set_channel(freq_num, subch_id, op_mode);
     printk("broadcast_drv_if_set_channel result = (%d)\n", retval);
+    gBBBuffer_ridx = gBBBuffer_widx = 0;
 
     if(retval == TRUE)
     {

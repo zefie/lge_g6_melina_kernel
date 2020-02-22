@@ -15,7 +15,7 @@
 #include <linux/delay.h>
 #include "../../mdss_dsi.h"
 #include <soc/qcom/lge/board_lge.h>
-#include <linux/input/lge_touch_notify.h>
+#include <linux/input/lge_touch_notify_nos.h>
 
 #if IS_ENABLED(CONFIG_LGE_DISPLAY_OVERRIDE_MDSS_DSI_CTRL_SHUTDOWN)
 void mdss_dsi_ctrl_shutdown(struct platform_device *pdev)

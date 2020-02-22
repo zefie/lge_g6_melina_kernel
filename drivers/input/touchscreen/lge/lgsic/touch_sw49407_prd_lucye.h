@@ -17,12 +17,12 @@
 /*
  *  Include to touch core Header File
  */
-#include <touch_core.h>
+#include <touch_core_nos.h>
 
 /*
  *  Include to Local Header File
  */
-#include "touch_sw49407.h"
+#include "touch_sw49407_lucye.h"
 
 #ifndef PRODUCTION_TEST_H
 #define PRODUCTION_TEST_H

@@ -61,6 +61,9 @@ static struct device_attribute dual_role_attrs[] = {
 	DUAL_ROLE_ATTR(pdo2),
 	DUAL_ROLE_ATTR(pdo3),
 	DUAL_ROLE_ATTR(pdo4),
+	DUAL_ROLE_ATTR(pdo5),
+	DUAL_ROLE_ATTR(pdo6),
+	DUAL_ROLE_ATTR(pdo7),
 	DUAL_ROLE_ATTR(rdo),
 #endif
 };
@@ -422,7 +425,10 @@ static ssize_t dual_role_show_property(struct device *dev,
 	} else if (off == DUAL_ROLE_PROP_PDO1 ||
 		   off == DUAL_ROLE_PROP_PDO2 ||
 		   off == DUAL_ROLE_PROP_PDO3 ||
-		   off == DUAL_ROLE_PROP_PDO4) {
+		   off == DUAL_ROLE_PROP_PDO4 ||
+		   off == DUAL_ROLE_PROP_PDO5 ||
+		   off == DUAL_ROLE_PROP_PDO6 ||
+		   off == DUAL_ROLE_PROP_PDO7) {
 		if (value == 0) {
 			*buf = '\0';
 			return 0;
@@ -431,18 +437,23 @@ static ssize_t dual_role_show_property(struct device *dev,
 		switch (DUAL_ROLE_PROP_PDO_GET_TYPE(value)) {
 		case DUAL_ROLE_PROP_PDO_TYPE_FIXED:
 			return snprintf(buf, PAGE_SIZE, "[F] %umV, %umA\n",
-					DUAL_ROLE_PROP_PDO_GET_FIXED_VOLT(value),
-					DUAL_ROLE_PROP_PDO_GET_FIXED_CURR(value));
+				DUAL_ROLE_PROP_PDO_GET_FIXED_VOLT(value),
+				DUAL_ROLE_PROP_PDO_GET_FIXED_CURR(value));
 		case DUAL_ROLE_PROP_PDO_TYPE_BATTERY:
 			return snprintf(buf, PAGE_SIZE, "[B] Max %umV, Min %umV, %umW \n",
-					DUAL_ROLE_PROP_PDO_GET_BATTERY_MAX_VOLT(value),
-					DUAL_ROLE_PROP_PDO_GET_BATTERY_MIN_VOLT(value),
-					DUAL_ROLE_PROP_PDO_GET_BATTERY_MAX_POWER(value));
+				DUAL_ROLE_PROP_PDO_GET_BATTERY_MAX_VOLT(value),
+				DUAL_ROLE_PROP_PDO_GET_BATTERY_MIN_VOLT(value),
+				DUAL_ROLE_PROP_PDO_GET_BATTERY_MAX_POWER(value));
 		case DUAL_ROLE_PROP_PDO_TYPE_VARIABLE:
 			return snprintf(buf, PAGE_SIZE, "[V] Max %umV, Min %umV, %umA\n",
-					DUAL_ROLE_PROP_PDO_GET_VARIABLE_MAX_VOLT(value),
-					DUAL_ROLE_PROP_PDO_GET_VARIABLE_MIN_VOLT(value),
-					DUAL_ROLE_PROP_PDO_GET_VARIABLE_MAX_CURR(value));
+				DUAL_ROLE_PROP_PDO_GET_VARIABLE_MAX_VOLT(value),
+				DUAL_ROLE_PROP_PDO_GET_VARIABLE_MIN_VOLT(value),
+				DUAL_ROLE_PROP_PDO_GET_VARIABLE_MAX_CURR(value));
+		case DUAL_ROLE_PROP_PDO_TYPE_AUGMENTED:
+			return snprintf(buf, PAGE_SIZE, "[A] Max %umV, Min %umV, %umA\n",
+				DUAL_ROLE_PROP_PDO_GET_AUGMENTED_MAX_VOLT(value),
+				DUAL_ROLE_PROP_PDO_GET_AUGMENTED_MIN_VOLT(value),
+				DUAL_ROLE_PROP_PDO_GET_AUGMENTED_MAX_CURR(value));
 		default:
 			*buf = '\0';
 			return 0;
@@ -456,19 +467,28 @@ static ssize_t dual_role_show_property(struct device *dev,
 		}
 
 		ret = dual_role_get_property(dual_role,
-		     DUAL_ROLE_PROP_PDO1 + (DUAL_ROLE_PROP_RDO_GET_OBJ_POS(value) - 1),
+		     DUAL_ROLE_PROP_PDO1 +
+		     (DUAL_ROLE_PROP_RDO_GET_OBJ_POS(value) - 1),
 		     &pdo);
 
 		switch (DUAL_ROLE_PROP_PDO_GET_TYPE(pdo)) {
 		case DUAL_ROLE_PROP_PDO_TYPE_FIXED:
-		case DUAL_ROLE_PROP_PDO_TYPE_VARIABLE:
-			return snprintf(buf, PAGE_SIZE, "[%u] %umA\n",
-					DUAL_ROLE_PROP_RDO_GET_OBJ_POS(value),
-					DUAL_ROLE_PROP_RDO_GET_OP_CURR(value));
+			return snprintf(buf, PAGE_SIZE, "[%u:F] %umA\n",
+				DUAL_ROLE_PROP_RDO_GET_OBJ_POS(value),
+				DUAL_ROLE_PROP_RDO_GET_FIXED_OP_CURR(value));
 		case DUAL_ROLE_PROP_PDO_TYPE_BATTERY:
-			return snprintf(buf, PAGE_SIZE, "[%u] %umW\n",
-					DUAL_ROLE_PROP_RDO_GET_OBJ_POS(value),
-					DUAL_ROLE_PROP_RDO_GET_OP_POWER(value));
+			return snprintf(buf, PAGE_SIZE, "[%u:B] %umW\n",
+				DUAL_ROLE_PROP_RDO_GET_OBJ_POS(value),
+				DUAL_ROLE_PROP_RDO_GET_BATTERY_OP_POWER(value));
+		case DUAL_ROLE_PROP_PDO_TYPE_VARIABLE:
+			return snprintf(buf, PAGE_SIZE, "[%u:V] %umA\n",
+				DUAL_ROLE_PROP_RDO_GET_OBJ_POS(value),
+				DUAL_ROLE_PROP_RDO_GET_VARIABLE_OP_CURR(value));
+		case DUAL_ROLE_PROP_PDO_TYPE_AUGMENTED:
+			return snprintf(buf, PAGE_SIZE, "[%u:A] %umV, %umA\n",
+				DUAL_ROLE_PROP_RDO_GET_OBJ_POS(value),
+				DUAL_ROLE_PROP_RDO_GET_AUGMENTED_VOLT(value),
+				DUAL_ROLE_PROP_RDO_GET_AUGMENTED_CURR(value));
 		default:
 			*buf = '\0';
 			return 0;

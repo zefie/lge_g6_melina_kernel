@@ -143,7 +143,11 @@ static const struct soc_enum msm8996_auxpcm_enum[] = {
 static struct afe_clk_set mi2s_tx_clk = {
 	AFE_API_VERSION_I2S_CONFIG,
 	Q6AFE_LPASS_CLK_ID_TER_MI2S_IBIT,
+#ifdef CONFIG_SND_SOC_TFA9872
+	Q6AFE_LPASS_IBIT_CLK_3_P072_MHZ,
+#else
 	Q6AFE_LPASS_IBIT_CLK_1_P536_MHZ,
+#endif
 	Q6AFE_LPASS_CLK_ATTRIBUTE_COUPLE_NO,
 	Q6AFE_LPASS_CLK_ROOT_DEFAULT,
 	0,
@@ -206,8 +210,11 @@ static struct afe_clk_set tert_mi2s_clk = {
 
 static atomic_t tert_mi2s_rsc_ref;
 static int tert_mi2s_sample_rate = SAMPLING_RATE_48KHZ;
+#ifdef CONFIG_SND_SOC_TFA9872
+static int tert_mi2s_bit_format = SNDRV_PCM_FORMAT_S24_LE;
+#else
 static int tert_mi2s_bit_format = SNDRV_PCM_FORMAT_S16_LE;
-
+#endif
 #endif /*#ifdef CONFIG_SND_USE_TERT_MI2S*/
 
 struct msm8996_asoc_wcd93xx_codec {
@@ -643,6 +650,10 @@ static const struct snd_soc_dapm_widget msm8996_dapm_widgets[] = {
 	SND_SOC_DAPM_SPK("hifi amp", msm_hifi_ctrl_event),
 	SND_SOC_DAPM_MIC("Handset Mic", NULL),
 	SND_SOC_DAPM_MIC("Headset Mic", NULL),
+#ifdef CONFIG_MACH_LGE
+	SND_SOC_DAPM_MIC("Handset 2nd Mic", NULL),
+#endif
+
 	SND_SOC_DAPM_MIC("ANCRight Headset Mic", NULL),
 	SND_SOC_DAPM_MIC("ANCLeft Headset Mic", NULL),
 	SND_SOC_DAPM_MIC("Analog Mic4", NULL),
@@ -650,11 +661,6 @@ static const struct snd_soc_dapm_widget msm8996_dapm_widgets[] = {
 	SND_SOC_DAPM_MIC("Analog Mic7", NULL),
 	SND_SOC_DAPM_MIC("Analog Mic8", NULL),
 
-#ifdef CONFIG_MACH_LGE
-	SND_SOC_DAPM_MIC("Analog Mic1", NULL),
-	SND_SOC_DAPM_MIC("Analog Mic2", NULL),
-	SND_SOC_DAPM_MIC("Analog Mic3", NULL),
-#endif
 
 	SND_SOC_DAPM_MIC("Digital Mic0", NULL),
 	SND_SOC_DAPM_MIC("Digital Mic1", NULL),
@@ -1490,6 +1496,10 @@ static int msm_tx_be_hw_params_fixup(struct snd_soc_pcm_runtime *rtd,
 					SNDRV_PCM_HW_PARAM_CHANNELS);
 
 	pr_debug("%s: channel:%d\n", __func__, msm_tert_mi2s_tx_ch);
+#ifdef CONFIG_SND_SOC_TFA9872
+	param_set_mask(params, SNDRV_PCM_HW_PARAM_FORMAT,
+			SNDRV_PCM_FORMAT_S24_LE);
+#endif
 	rate->min = rate->max = SAMPLING_RATE_48KHZ;
 	channels->min = channels->max = msm_tert_mi2s_tx_ch;
 	return 0;
@@ -1511,9 +1521,13 @@ static int msm8996_mi2s_snd_startup(struct snd_pcm_substream *substream)
 		pr_err("%s: afe lpass clock failed, err:%d\n", __func__, ret);
 		goto err;
 	}
+#ifdef CONFIG_SND_USE_TERT_MI2S
+	snd_soc_dai_set_fmt(cpu_dai, SND_SOC_DAIFMT_CBS_CFS);
+#else
 	ret = snd_soc_dai_set_fmt(cpu_dai, SND_SOC_DAIFMT_CBS_CFS);
 	if (ret < 0)
 		pr_err("%s: set fmt cpu dai failed, err:%d\n", __func__, ret);
+#endif
 err:
 	return ret;
 }
@@ -1640,6 +1654,7 @@ static struct snd_soc_ops msm8996_sec_mi2s_be_ops = {
 static int msm8996_tert_mi2s_snd_startup(struct snd_pcm_substream *substream)
 {
 	int ret = 0;
+
 	struct snd_soc_pcm_runtime *rtd = substream->private_data;
 	struct snd_soc_dai *cpu_dai = rtd->cpu_dai;
 
@@ -1674,6 +1689,7 @@ static int msm8996_tert_mi2s_snd_startup(struct snd_pcm_substream *substream)
 					break;
 			}
 		}
+		pr_info("%s : tert_mi2s_clk.clk_freq_in_hz = %d\n", __func__, tert_mi2s_clk.clk_freq_in_hz);
 		tert_mi2s_clk.enable = 1;
 		ret = afe_set_lpass_clock_v2(AFE_PORT_ID_TERTIARY_MI2S_RX, &tert_mi2s_clk);
 		if (ret < 0) {
@@ -1681,9 +1697,8 @@ static int msm8996_tert_mi2s_snd_startup(struct snd_pcm_substream *substream)
 			goto err;
 		}
 
-		ret = snd_soc_dai_set_fmt(cpu_dai, SND_SOC_DAIFMT_CBS_CFS);
-		if (ret < 0)
-			pr_err("%s: set fmt cpu dai failed, err:%d\n", __func__, ret);
+		snd_soc_dai_set_fmt(cpu_dai, SND_SOC_DAIFMT_CBS_CFS);
+
 	}
 err:
 	return ret;
@@ -2266,6 +2281,9 @@ static int msm_audrx_init(struct snd_soc_pcm_runtime *rtd)
 	snd_soc_dapm_ignore_suspend(dapm, "ultrasound amp");
 	snd_soc_dapm_ignore_suspend(dapm, "Handset Mic");
 	snd_soc_dapm_ignore_suspend(dapm, "Headset Mic");
+#ifdef CONFIG_MACH_LGE
+	snd_soc_dapm_ignore_suspend(dapm, "Handset 2nd Mic");
+#endif
 	snd_soc_dapm_ignore_suspend(dapm, "ANCRight Headset Mic");
 	snd_soc_dapm_ignore_suspend(dapm, "ANCLeft Headset Mic");
 	snd_soc_dapm_ignore_suspend(dapm, "Digital Mic1");
@@ -2355,13 +2373,6 @@ static int msm_audrx_init(struct snd_soc_pcm_runtime *rtd)
 		}
 	}
 	/* Start mbhc */
-#if defined(CONFIG_SND_SOC_ES9218P)
-	if(enable_es9218p) {
-		wcd_mbhc_cfg.moist_cfg.m_vref_ctl = V_OFF;
-		wcd_mbhc_cfg.moist_cfg.m_iref_ctl = I_OFF;
-		pr_info("%s : set moist_cfg installed es9218p chip : m_vref_ctl %d, m_iref_ctl %d",__func__,wcd_mbhc_cfg.moist_cfg.m_vref_ctl,wcd_mbhc_cfg.moist_cfg.m_iref_ctl);
-	}
-#endif
 	tasha_mbhc_zdet_gpio_ctrl(msm8996_config_hph_en0_gpio, rtd->codec);
 	mbhc_calibration = def_tasha_mbhc_cal();
 	if (mbhc_calibration) {
@@ -3988,21 +3999,37 @@ static struct snd_soc_dai_link msm8996_lge_dai_links[] = {
 	},
 #endif /* CONFIG_SND_USE_TERT_MI2S */
 	{
-        .name = "SLIMBUS_3 Hostless Capture",
-        .stream_name = "SLIMBUS3_HOSTLESS Capture",
-        .cpu_dai_name = "SLIMBUS3_HOSTLESS",
-        .platform_name = "msm-pcm-hostless",
-        .dynamic = 1,
-        .dpcm_capture = 1,
-        .trigger = {SND_SOC_DPCM_TRIGGER_POST,
-                SND_SOC_DPCM_TRIGGER_POST},
-        .no_host_mode = SND_SOC_DAI_LINK_NO_HOST,
-        .ignore_suspend = 1,
-        .ignore_pmdown_time = 1,
-        .codec_dai_name = "snd-soc-dummy-dai",
-        .codec_name = "snd-soc-dummy",
+		.name = "SLIMBUS_3 Hostless Capture",
+		.stream_name = "SLIMBUS3_HOSTLESS Capture",
+		.cpu_dai_name = "SLIMBUS3_HOSTLESS",
+		.platform_name = "msm-pcm-hostless",
+		.dynamic = 1,
+		.dpcm_capture = 1,
+		.trigger = {SND_SOC_DPCM_TRIGGER_POST,
+			SND_SOC_DPCM_TRIGGER_POST},
+		.no_host_mode = SND_SOC_DAI_LINK_NO_HOST,
+		.ignore_suspend = 1,
+		.ignore_pmdown_time = 1,
+		.codec_dai_name = "snd-soc-dummy-dai",
+		.codec_name = "snd-soc-dummy",
 	},
-
+#ifdef CONFIG_SND_USE_TERT_MI2S
+	{
+		.name = "Tertiary_MI2S_RX Hostless Playback",
+		.stream_name = "Tertiary_MI2S_RX Hostless",
+		.cpu_dai_name = "TERT_MI2S_RX_HOSTLESS",
+		.platform_name = "msm-pcm-hostless",
+		.dynamic = 1,
+		.dpcm_playback = 1,
+		.trigger = {SND_SOC_DPCM_TRIGGER_POST,
+			SND_SOC_DPCM_TRIGGER_POST},
+		.no_host_mode = SND_SOC_DAI_LINK_NO_HOST,
+		.ignore_suspend = 1,
+		.ignore_pmdown_time = 1,
+		.codec_dai_name = "snd-soc-dummy-dai",
+		.codec_name = "snd-soc-dummy",
+	},
+#endif
 };
 
 static struct snd_soc_dai_link msm8996_dummy_dai_link[] = {
@@ -4043,6 +4070,42 @@ static struct snd_soc_dai_link msm8996_sec_mi2s_dai_link[] = {
 	},
 };
 #endif
+#if defined(CONFIG_SND_USE_TERT_MI2S) && defined(CONFIG_SND_SOC_TFA9872)
+static struct snd_soc_dai_link msm8996_tert_mi2s_rx_dai_link[] = {
+	{
+		.name = LPASS_BE_TERT_MI2S_RX,
+		.stream_name = "Tertiary MI2S Playback",
+		.cpu_dai_name = "msm-dai-q6-mi2s.2",
+		.platform_name = "msm-pcm-routing",
+		.codec_name = "tfa98xx.3-0034",
+		.codec_dai_name = "tfa98xx-aif-3-34",
+		.no_pcm = 1,
+		.dpcm_playback = 1,
+		.be_id = MSM_BACKEND_DAI_TERTIARY_MI2S_RX,
+		.be_hw_params_fixup = msm_tert_mi2s_rx_be_hw_params_fixup,
+		.ops = &msm8996_tert_mi2s_be_ops,
+		.ignore_suspend = 1,
+	},
+};
+static struct snd_soc_dai_link msm8996_tert_mi2s_tx_dai_link[] = {
+	{
+		.name = LPASS_BE_TERT_MI2S_TX,
+		.stream_name = "Tertiary MI2S Capture",
+		.cpu_dai_name = "msm-dai-q6-mi2s.2",
+		.platform_name = "msm-pcm-hostless",
+		.codec_name = "tfa98xx.3-0034",
+		.codec_dai_name = "tfa98xx-aif-3-34",
+		.dpcm_capture = 1,
+		.be_id = MSM_BACKEND_DAI_TERTIARY_MI2S_TX,
+		.be_hw_params_fixup = msm_tx_be_hw_params_fixup,
+		.ops = &msm8996_mi2s_be_ops,
+		.no_host_mode = SND_SOC_DAI_LINK_NO_HOST,
+		.ignore_suspend = 1,
+
+	},
+};
+#endif
+
 #endif	/* CONFIG_SND_DISABLE_DUMMY_DAI */
 
 static struct snd_soc_dai_link msm8996_tasha_dai_links[
@@ -4338,6 +4401,17 @@ static struct snd_soc_card *populate_snd_card_dailinks(struct device *dev)
 					break;
 				}
 			}
+		}
+#endif
+#ifdef CONFIG_SND_SOC_TFA9872
+		if (of_property_read_bool(dev->of_node, "lge,tfa9872-codec")) {
+			int rx_pcm_id = 84; // TFA tert i2s rx pcm
+			int tx_pcm_id = 57; // TFA tert i2s tx pcm
+			struct snd_soc_dai_link *rx_link = msm8996_tasha_dai_links + rx_pcm_id;
+			struct snd_soc_dai_link *tx_link = msm8996_tasha_dai_links + tx_pcm_id;
+			dev_info(dev, "%s(): register mi2s dai for tfa9872 codec\n", __func__);
+			memcpy(rx_link, msm8996_tert_mi2s_rx_dai_link, sizeof(msm8996_tert_mi2s_rx_dai_link));
+			memcpy(tx_link, msm8996_tert_mi2s_tx_dai_link, sizeof(msm8996_tert_mi2s_tx_dai_link));
 		}
 #endif
 	}

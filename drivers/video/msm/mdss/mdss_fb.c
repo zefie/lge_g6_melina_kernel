@@ -2,7 +2,7 @@
  * Core MDSS framebuffer driver.
  *
  * Copyright (C) 2007 Google Incorporated
- * Copyright (c) 2008-2017, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2008-2019, The Linux Foundation. All rights reserved.
  *
  * This software is licensed under the terms of the GNU General Public
  * License version 2, as published by the Free Software Foundation, and
@@ -75,6 +75,9 @@
 #include <linux/debugfs.h>
 #endif
 
+#if defined(CONFIG_LGE_INTERVAL_MONITOR)
+#include "lge/lge_interval_monitor.h"
+#endif
 #ifdef CONFIG_FB_MSM_TRIPLE_BUFFER
 #define MDSS_FB_NUM 3
 #else
@@ -118,10 +121,6 @@ static u32 mdss_fb_pseudo_palette[16] = {
 	0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff
 };
 
-#if defined(CONFIG_LGE_BROADCAST_TDMB) || defined(CONFIG_LGE_BROADCAST_ISDBT_JAPAN)
-extern struct mdp_csc_cfg dmb_csc_convert;
-extern int pp_set_dmb_status(int flag);
-#endif /* LGE_BROADCAST */
 static struct msm_mdp_interface *mdp_instance;
 
 static int mdss_fb_register(struct msm_fb_data_type *mfd);
@@ -418,6 +417,13 @@ static struct led_classdev backlight_led = {
 	.max_brightness = MDSS_MAX_BL_BRIGHTNESS,
 };
 
+#if IS_ENABLED(CONFIG_LGE_DISPLAY_COMMON)
+int lge_mdss_fb_get_bl_brightness(void)
+{
+	return backlight_led.brightness;
+}
+#endif
+
 static ssize_t mdss_fb_get_type(struct device *dev,
 				struct device_attribute *attr, char *buf)
 {
@@ -449,6 +455,9 @@ static ssize_t mdss_fb_get_type(struct device *dev,
 		break;
 	case EDP_PANEL:
 		ret = snprintf(buf, PAGE_SIZE, "edp panel\n");
+		break;
+	case SPI_PANEL:
+		ret = snprintf(buf, PAGE_SIZE, "spi panel\n");
 		break;
 	default:
 		ret = snprintf(buf, PAGE_SIZE, "unknown panel\n");
@@ -1053,7 +1062,6 @@ static DEVICE_ATTR(measured_fps, S_IRUGO | S_IWUSR | S_IWGRP,
 	mdss_fb_get_fps_info, NULL);
 static DEVICE_ATTR(msm_fb_persist_mode, S_IRUGO | S_IWUSR,
 	mdss_fb_get_persist_mode, mdss_fb_change_persist_mode);
-
 static struct attribute *mdss_fb_attrs[] = {
 	&dev_attr_msm_fb_type.attr,
 	&dev_attr_msm_fb_split.attr,
@@ -1092,6 +1100,9 @@ static void mdss_fb_remove_sysfs(struct msm_fb_data_type *mfd)
 static void mdss_fb_shutdown(struct platform_device *pdev)
 {
 	struct msm_fb_data_type *mfd = platform_get_drvdata(pdev);
+
+	if (!mfd)
+		return;
 
 	mfd->shutdown_pending = true;
 
@@ -1355,6 +1366,7 @@ static int mdss_fb_probe(struct platform_device *pdev)
 	struct mdss_panel_data *pdata;
 	struct fb_info *fbi;
 	int rc;
+	const char *data;
 
 	if (fbi_list_index >= MAX_FBI_LIST)
 		return -ENOMEM;
@@ -1393,7 +1405,7 @@ static int mdss_fb_probe(struct platform_device *pdev)
 		mfd->panel_info->bl_max, mfd->panel_info->brightness_max);
 	else
 		mfd->bl_level = 0;
-
+ 
 	mfd->bl_scale = 1024;
 	mfd->bl_min_lvl = 30;
 	mfd->ad_bl_level = 0;
@@ -1406,6 +1418,21 @@ static int mdss_fb_probe(struct platform_device *pdev)
 
 	mfd->pdev = pdev;
 
+	if (mfd->panel.type == SPI_PANEL)
+		mfd->fb_imgType = MDP_RGB_565;
+	if (mfd->panel.type == MIPI_VIDEO_PANEL || mfd->panel.type ==
+		MIPI_CMD_PANEL || mfd->panel.type == SPI_PANEL){
+		rc = of_property_read_string(pdev->dev.of_node,
+			"qcom,mdss-fb-format", &data);
+		if (!rc) {
+			if (!strcmp(data, "rgb888"))
+				mfd->fb_imgType = MDP_RGB_888;
+			else if (!strcmp(data, "rgb565"))
+				mfd->fb_imgType = MDP_RGB_565;
+			else
+				mfd->fb_imgType = MDP_RGBA_8888;
+		}
+	}
 #ifdef CONFIG_LGE_DISPLAY_COMMON
 	lge_mdss_fb_init(mfd);
 #endif
@@ -1488,10 +1515,9 @@ static int mdss_fb_probe(struct platform_device *pdev)
 	}
 #endif
 
-#if defined(CONFIG_LGE_DISPLAY_AOD_SUPPORTED)
-	lge_backlight_register(mfd);
+#if defined(CONFIG_LGE_DISPLAY_AOD_SUPPORTED) || defined(CONFIG_LGE_DISPLAY_AMBIENT_SUPPORTED)
+	lge_ambient_brightness_register(mfd);
 #endif
-
 
 	mdss_fb_init_panel_modes(mfd, pdata);
 
@@ -1638,6 +1664,7 @@ static void mdss_fb_set_mdp_sync_pt_threshold(struct msm_fb_data_type *mfd,
 		mfd->mdp_sync_pt_data.threshold = 1;
 		mfd->mdp_sync_pt_data.retire_threshold = 0;
 		break;
+	case SPI_PANEL:
 	case MIPI_CMD_PANEL:
 		mfd->mdp_sync_pt_data.threshold = 1;
 		mfd->mdp_sync_pt_data.retire_threshold = 1;
@@ -1682,9 +1709,11 @@ static int mdss_fb_remove(struct platform_device *pdev)
 		lcd_backlight_registered = 0;
 		led_classdev_unregister(&backlight_led);
 	}
-#if defined(CONFIG_LGE_DISPLAY_AOD_SUPPORTED)
-	lge_backlight_unregister();
+
+#if defined(CONFIG_LGE_DISPLAY_AOD_SUPPORTED) || defined(CONFIG_LGE_DISPLAY_AMBIENT_SUPPORTED)
+	lge_ambient_brightness_unregister();
 #endif
+
 #if defined(CONFIG_LGE_PM_THERMAL_VTS)
 	if (mfd->index == 0) {
 		vts_unregister_value_sensor(mfd->vs_led);
@@ -1945,6 +1974,7 @@ void mdss_fb_set_backlight(struct msm_fb_data_type *mfd, u32 bkl_lvl)
 	u32 temp = bkl_lvl;
 	bool ad_bl_notify_needed = false;
 	bool bl_notify_needed = false;
+	bool twm_en = false;
 
 #if defined(CONFIG_LGE_SP_MIRRORING_CTRL_BL)
 	if(lge_is_bl_update_blocked(bkl_lvl))
@@ -1997,8 +2027,8 @@ void mdss_fb_set_backlight(struct msm_fb_data_type *mfd, u32 bkl_lvl)
 		} else {
 			if (mfd->bl_level != bkl_lvl)
 				bl_notify_needed = true;
-			pr_debug("backlight sent to panel :%d\n", temp);
-			DISP_DEBUG(BL, "backlight sent to panel :%d\n", temp);
+
+			pr_info("[Display] backlight sent to panel :%d\n", temp);
 #if defined(CONFIG_LGE_DISPLAY_AOD_WITH_MIPI)
 			if (mfd->panel_info->aod_node_from_user == 1 && mfd->panel_info->aod_cur_mode == AOD_PANEL_MODE_U3_UNBLANK && !temp) {
 				oem_mdss_aod_cmd_send(mfd, AOD_CMD_DISPLAY_OFF);
@@ -2009,9 +2039,17 @@ void mdss_fb_set_backlight(struct msm_fb_data_type *mfd, u32 bkl_lvl)
 				pr_info("[AOD] Send display on command when turn on BL\n");
 			}
 #endif
-			pdata->set_backlight(pdata, temp);
-			mfd->bl_level = bkl_lvl;
-			mfd->bl_level_scaled = temp;
+			if (mfd->mdp.is_twm_en)
+				twm_en = mfd->mdp.is_twm_en();
+
+			if (twm_en) {
+				pr_info("TWM Enabled skip backlight update\n");
+			} else {
+				pdata->set_backlight(pdata, temp);
+				mfd->bl_level = bkl_lvl;
+				mfd->bl_level_scaled = temp;
+			}
+
 		}
 		if (ad_bl_notify_needed)
 			mdss_fb_bl_update_notify(mfd,
@@ -2043,7 +2081,7 @@ void mdss_fb_update_backlight(struct msm_fb_data_type *mfd)
 				mdss_fb_bl_update_notify(mfd,
 					NOTIFY_TYPE_BL_AD_ATTEN_UPDATE);
 			mdss_fb_bl_update_notify(mfd, NOTIFY_TYPE_BL_UPDATE);
-			pr_info("[Display] backlight sent to panel :%d in %s\n", temp, __func__);
+			pr_info("[Display] backlight sent to panel :%d\n", temp);
 			pdata->set_backlight(pdata, temp);
 			mfd->bl_level_scaled = mfd->unset_bl_level;
 			mfd->allow_bl_update = true;
@@ -2113,6 +2151,20 @@ static void mdss_panel_validate_debugfs_info(struct msm_fb_data_type *mfd)
 	}
 }
 
+static void mdss_fb_signal_retire_fence(struct msm_fb_data_type *mfd)
+{
+#ifdef TARGET_HW_MDSS_MDP3
+	struct mdp3_session_data *mdp3_session = mfd_to_mdp3_data(mfd);
+	int retire_cnt = mdp3_session->retire_cnt;
+#else
+	struct mdss_overlay_private *mdp5_data = mfd_to_mdp5_data(mfd);
+	int retire_cnt = mdp5_data->retire_cnt;
+#endif
+
+	if (mfd->mdp.signal_retire_fence)
+		mfd->mdp.signal_retire_fence(mfd, retire_cnt);
+}
+
 static int mdss_fb_blank_blank(struct msm_fb_data_type *mfd,
 	int req_power_state)
 {
@@ -2169,10 +2221,13 @@ static int mdss_fb_blank_blank(struct msm_fb_data_type *mfd,
 	mfd->panel_power_state = req_power_state;
 
 	ret = mfd->mdp.off_fnc(mfd);
-	if (ret)
+	if (ret) {
 		mfd->panel_power_state = cur_power_state;
-	else if (mdss_panel_is_power_off(req_power_state))
+	} else if (!mdss_panel_is_power_on_interactive(req_power_state)) {
 		mdss_fb_release_fences(mfd);
+		if (mfd->panel.type == MIPI_CMD_PANEL)
+			mdss_fb_signal_retire_fence(mfd);
+	}
 	mfd->op_enable = true;
 	complete(&mfd->power_off_comp);
 
@@ -2217,7 +2272,7 @@ static int mdss_fb_blank_unblank(struct msm_fb_data_type *mfd)
 		}
 
 		mfd->panel_power_state = MDSS_PANEL_POWER_ON;
-#if defined(CONFIG_LGE_PANEL_RECOVERY)
+#if defined(CONFIG_LGE_DISPLAY_RECOVERY_ESD)
 		if (mfd->panel_info->panel_dead == true) {
 			mutex_lock(&mfd->bl_lock);
 			mfd->allow_bl_update = true;
@@ -2303,6 +2358,9 @@ static int mdss_fb_blank_sub(int blank_mode, struct fb_info *info,
 	int ret = 0;
 	int cur_power_state, req_power_state = MDSS_PANEL_POWER_OFF;
 	char trace_buffer[32];
+#if defined(CONFIG_LGE_DISPLAY_COMMON)
+	struct mdss_dsi_ctrl_pdata *ctrl_pdata = NULL;
+#endif
 
 	if (!mfd || !op_enable)
 		return -EPERM;
@@ -2312,6 +2370,12 @@ static int mdss_fb_blank_sub(int blank_mode, struct fb_info *info,
 
 	pr_info("[Display] %pS mode:%d\n", __builtin_return_address(0),
 		blank_mode);
+
+#if defined(CONFIG_LGE_DISPLAY_COMMON)
+	ctrl_pdata = container_of(dev_get_platdata(&mfd->pdev->dev),
+		struct mdss_dsi_ctrl_pdata, panel_data);
+	ctrl_pdata->lge_extra.blank_mode = blank_mode;
+#endif
 
 	snprintf(trace_buffer, sizeof(trace_buffer), "fb%d blank %d",
 		mfd->index, blank_mode);
@@ -2324,6 +2388,14 @@ static int mdss_fb_blank_sub(int blank_mode, struct fb_info *info,
 	 * supported for command mode panels. For all other panel, treat lp
 	 * mode as full unblank and ulp mode as full blank.
 	 */
+	if ((mfd->panel_info->type == SPI_PANEL) &&
+		((BLANK_FLAG_LP == blank_mode) ||
+		(BLANK_FLAG_ULP == blank_mode))) {
+		pr_debug("lp/ulp mode are not supported for SPI panels\n");
+		if (mdss_fb_is_power_on_interactive(mfd))
+			return 0;
+	}
+
 	if (mfd->panel_info->type != MIPI_CMD_PANEL) {
 		if (BLANK_FLAG_LP == blank_mode) {
 			pr_debug("lp mode only valid for cmd mode panels\n");
@@ -2347,6 +2419,12 @@ static int mdss_fb_blank_sub(int blank_mode, struct fb_info *info,
 	}
 #endif
 
+#if defined(CONFIG_LGE_INTERVAL_MONITOR)
+	if (FB_BLANK_UNBLANK == blank_mode)
+		lge_interval_panel_power_notify(1);
+	else
+		lge_interval_panel_power_notify(0);
+#endif
 	switch (blank_mode) {
 	case FB_BLANK_UNBLANK:
 		pr_debug("unblank called. cur pwr state=%d\n", cur_power_state);
@@ -2475,7 +2553,8 @@ static int mdss_fb_blank(int blank_mode, struct fb_info *info)
 
 	if (pdata->panel_info.is_lpm_mode &&
 			blank_mode == FB_BLANK_UNBLANK) {
-		if (mfd->panel_info->aod_keep_u2 == AOD_MOVE_TO_U3 && blank_mode == FB_BLANK_UNBLANK) {
+		if (mfd->panel_info->aod_node_from_user == 0
+				|| (mfd->panel_info->aod_keep_u2 == AOD_MOVE_TO_U3 && mfd->panel_info->aod_node_from_user == 1)) {
 			pr_info("panel is in lpm mode, will switch video mode\n");
 			mfd->mdp.configure_panel(mfd, 0, 1);
 			mdss_fb_set_mdp_sync_pt_threshold(mfd, mfd->panel.type);
@@ -2488,6 +2567,14 @@ static int mdss_fb_blank(int blank_mode, struct fb_info *info)
 			pdata->panel_info.is_lpm_mode = false;
 		}
 	}
+#if defined(CONFIG_LGE_PANEL_RECOVERY)
+	if (mfd->recovery && blank_mode == FB_BLANK_UNBLANK && mfd->panel_info->mipi.mode == DSI_CMD_MODE){
+		pr_info("panel is recovery, will switch video mode\n");
+		mfd->mdp.configure_panel(mfd, 0, 1);
+		mdss_fb_set_mdp_sync_pt_threshold(mfd, mfd->panel.type);
+		pdata->panel_info.is_lpm_mode = false;
+	}
+#endif
 #else
 	if (pdata->panel_info.is_lpm_mode &&
 			blank_mode == FB_BLANK_UNBLANK) {
@@ -3255,7 +3342,10 @@ static int mdss_fb_release_all(struct fb_info *info, bool release_all)
 		 * enabling ahead of unblank. for some special cases like
 		 * adb shell stop/start.
 		 */
+		mutex_lock(&mfd->bl_lock);
 		mdss_fb_set_backlight(mfd, 0);
+		mutex_unlock(&mfd->bl_lock);
+
 #if defined(CONFIG_LGE_DISPLAY_AOD_SUPPORTED)
 #if defined(CONFIG_LGE_DISPLAY_DYN_DSI_MODE_SWITCH)
 		if(mfd->index == 0 && mfd->panel_info->aod_cur_mode != AOD_PANEL_MODE_U3_UNBLANK &&
@@ -3823,13 +3913,13 @@ int mdss_fb_atomic_commit(struct fb_info *info,
 			__ioctl_transition_dyn_mode_state(mfd,
 				MSMFB_ATOMIC_COMMIT, true, false);
 			if (mfd->panel.type == WRITEBACK_PANEL) {
-				output_layer = commit_v1->output_layer;
-				if (!output_layer) {
+				if (!commit_v1->output_layer) {
 					pr_err("Output layer is null\n");
 					goto end;
 				}
+				output_layer = commit_v1->output_layer;
 				wb_change = !mdss_fb_is_wb_config_same(mfd,
-						commit_v1->output_layer);
+						output_layer);
 				if (wb_change) {
 					old_xres = pinfo->xres;
 					old_yres = pinfo->yres;
@@ -4113,6 +4203,8 @@ skip_commit:
 	if (IS_ERR_VALUE(ret) || !sync_pt_data->flushed) {
 		mdss_fb_release_kickoff(mfd);
 		mdss_fb_signal_timeline(sync_pt_data);
+		if (mfd->panel.type == MIPI_CMD_PANEL)
+			mdss_fb_signal_retire_fence(mfd);
 	}
 
 	if (dynamic_dsi_switch) {
@@ -4940,6 +5032,7 @@ static int mdss_fb_atomic_commit_ioctl(struct fb_info *info,
 	struct mdp_frc_info *frc_info = NULL;
 	struct mdp_frc_info __user *frc_info_user;
 	struct msm_fb_data_type *mfd;
+	struct mdss_overlay_private *mdp5_data = NULL;
 
 	ret = copy_from_user(&commit, argp, sizeof(struct mdp_layer_commit));
 	if (ret) {
@@ -4951,9 +5044,20 @@ static int mdss_fb_atomic_commit_ioctl(struct fb_info *info,
 	if (!mfd)
 		return -EINVAL;
 
+	mdp5_data = mfd_to_mdp5_data(mfd);
+
 	if (mfd->panel_info->panel_dead) {
 		pr_debug("early commit return\n");
 		MDSS_XLOG(mfd->panel_info->panel_dead);
+		/*
+		 * In case of an ESD attack, since we early return from the
+		 * commits, we need to signal the outstanding fences.
+		 */
+		mdss_fb_release_fences(mfd);
+		if ((mfd->panel.type == MIPI_CMD_PANEL) &&
+			mfd->mdp.signal_retire_fence && mdp5_data)
+			mfd->mdp.signal_retire_fence(mfd,
+						mdp5_data->retire_cnt);
 		return 0;
 	}
 
@@ -5260,11 +5364,6 @@ int mdss_fb_do_ioctl(struct fb_info *info, unsigned int cmd,
 	unsigned int dsi_mode = 0;
 	struct mdss_panel_data *pdata = NULL;
 
-#if defined(CONFIG_LGE_BROADCAST_TDMB) || defined(CONFIG_LGE_BROADCAST_ISDBT_JAPAN)
-    int dmb_flag = 0;
-    struct mdp_csc_cfg dmb_csc_cfg;
-#endif /* LGE_BROADCAST */
-
 	if (!info || !info->par)
 		return -EINVAL;
 
@@ -5339,24 +5438,6 @@ int mdss_fb_do_ioctl(struct fb_info *info, unsigned int cmd,
 	case MSMFB_DISPLAY_COMMIT:
 		ret = mdss_fb_display_commit(info, argp);
 		break;
-
-#if defined(CONFIG_LGE_BROADCAST_TDMB) || defined(CONFIG_LGE_BROADCAST_ISDBT_JAPAN)
-	case MSMFB_DMB_SET_FLAG:
-		ret = copy_from_user(&dmb_flag, argp, sizeof(int));
-		if (ret)
-			goto exit;
-		ret = pp_set_dmb_status(dmb_flag);
-		/* pr_debug("[MDP] MSMFB_DMB_SET_FLAG : dmb_flag = %d\n", dmb_flag); */
-		break;
-
-	case MSMFB_DMB_SET_CSC_MATRIX:
-		ret = copy_from_user(&dmb_csc_cfg, argp, sizeof(dmb_csc_cfg));
-		if (ret)
-			goto exit;
-		memcpy(dmb_csc_convert.csc_mv, dmb_csc_cfg.csc_mv, sizeof(dmb_csc_cfg.csc_mv));
-		/* pr_debug("[MDP] MSMFB_DMB_SET_CSC_MATRIX : dmc_csc_cfg.flag = %d\n", dmb_csc_cfg.flags); */
-		break;
-#endif /* LGE_BROADCAST */
 
 	case MSMFB_LPM_ENABLE:
 		ret = copy_from_user(&dsi_mode, argp, sizeof(dsi_mode));
@@ -5612,16 +5693,14 @@ void mdss_fb_report_panel_dead(struct msm_fb_data_type *mfd)
 		pr_err("Panel data not available\n");
 		return;
 	}
-#if !defined(CONFIG_LGE_PANEL_RECOVERY)
-	return;
-#endif
+
 #if defined(CONFIG_LGE_DISPLAY_COMMON)
 	if (mfd->recovery) {
 		pr_info("[Display] Already in recovery!!\n");
 		return;
 	} else {
 		mfd->recovery = true;
-#if defined(CONFIG_LGE_PANEL_RECOVERY)
+#if defined(CONFIG_LGE_DISPLAY_RECOVERY_ESD)
 		mfd->recovery_bl_level= mfd->bl_level;
 		pr_info("[Display] Recovery start. last bl level : %d\n", mfd->recovery_bl_level);
 #if IS_ENABLED(CONFIG_LGE_DISPLAY_BL_EXTENDED)
@@ -5675,3 +5754,16 @@ void mdss_fb_calc_fps(struct msm_fb_data_type *mfd)
 		mfd->fps_info.frame_count = 0;
 	}
 }
+
+#if IS_ENABLED(CONFIG_LGE_DISPLAY_COMMON)
+struct msm_fb_data_type *get_msm_fb_data(void)
+{
+	struct fb_info *fbi = fbi_list[0];
+
+	if (fbi == NULL || fbi_list_index == 0 || fbi->par == NULL) {
+		pr_warn("%pS: fb is not probed, yet\n", __builtin_return_address(0));
+		return NULL;
+	}
+	return (struct msm_fb_data_type*)fbi->par;
+}
+#endif

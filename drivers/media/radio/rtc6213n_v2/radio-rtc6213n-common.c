@@ -35,6 +35,7 @@
 #include <linux/i2c.h>
 #include "radio-rtc6213n.h"
 #define New_VolumeControl
+#define SEEK_TIME_OUT_VALUE 13000
 /**************************************************************************
  * Module Parameters
  **************************************************************************/
@@ -43,7 +44,7 @@
 /* 0: 200 kHz (USA, Australia) */
 /* 1: 100 kHz (Europe, Japan) */
 /* 2:  50 kHz */
-static unsigned short space = 2;
+static unsigned short space = 1;
 module_param(space, ushort, 0444);
 MODULE_PARM_DESC(space, "Spacing: 0=200kHz *1=100kHz* 2=50kHz");
 
@@ -68,9 +69,9 @@ module_param(tune_timeout, uint, 0644);
 MODULE_PARM_DESC(tune_timeout, "Tune timeout: *3000*");
 
 /* Seek timeout */
-static unsigned int seek_timeout = 8000;
+static unsigned int seek_timeout = SEEK_TIME_OUT_VALUE;
 module_param(seek_timeout, uint, 0644);
-MODULE_PARM_DESC(seek_timeout, "Seek timeout: *8000*");
+MODULE_PARM_DESC(seek_timeout, "Seek timeout: *13000*");
 
 static const struct v4l2_frequency_band bands[] = {
 	{
@@ -203,6 +204,7 @@ static int rtc6213n_get_freq(struct rtc6213n_device *radio, unsigned int *freq)
 {
 	unsigned int spacing, band_bottom, temp_freq;
 	unsigned short chan;
+	unsigned short rssi;
 	int retval;
 
 	pr_info("%s enter\n", __func__);
@@ -238,13 +240,22 @@ static int rtc6213n_get_freq(struct rtc6213n_device *radio, unsigned int *freq)
 		pr_info("%s fail to get register\n", __func__);
 		goto end;
 	}
+
 	chan = radio->registers[STATUS] & STATUS_READCH;
+
+	retval = rtc6213n_get_register(radio, RSSI);
+	if (retval < 0){
+		pr_err("%s read fail to RSSI\n", __func__);
+		goto end;
+	}
+
+	rssi = radio->registers[RSSI] & RSSI_RSSI;
 
 	pr_info("%s chan %d\n", __func__, chan);
 	/* Frequency (MHz) = Spacing (kHz) x Channel + Bottom of Band (MHz) */
 	temp_freq = chan * spacing + band_bottom;
 	*freq = temp_freq * 16;
-	pr_info("%s tempfreq=%d, freq=%d\n",__func__, temp_freq, *freq);
+	pr_info("FMRICHWAVE, freq= %d, rssi= %d dBm,   %d dBuV\n",temp_freq, rssi - 113, rssi);
 
 end:
 	return retval;
@@ -308,8 +319,9 @@ static int rtc6213n_set_seek(struct rtc6213n_device *radio,
 	int retval = 0;
 	bool timed_out = 0;
 	unsigned short seekcfg1_val = radio->registers[SEEKCFG1];
+	int i;
 
-	pr_info("%s enter up:%d wrap:%d\n", __func__, seek_up, seek_wrap);
+	pr_info("%s enter up:%d wrap:%d, th:%d\n", __func__, seek_up, seek_wrap, seekcfg1_val);
 	if (seek_wrap)
 		radio->registers[SEEKCFG1] &= ~SEEKCFG1_CSR0_SKMODE;
 	else
@@ -320,6 +332,7 @@ static int rtc6213n_set_seek(struct rtc6213n_device *radio,
 	else
 		radio->registers[SEEKCFG1] &= ~SEEKCFG1_CSR0_SEEKUP;
 
+	radio->registers[SEEKCFG1] &= ~SEEKCFG1_CSR0_SEEK;
 	retval = rtc6213n_set_register(radio, SEEKCFG1);
 	if (retval < 0) {
 		radio->registers[SEEKCFG1] = seekcfg1_val;
@@ -340,23 +353,26 @@ static int rtc6213n_set_seek(struct rtc6213n_device *radio,
 	if (!retval){
 		timed_out = true;
 		pr_err("%s timeout\n",__func__);
+		rtc6213n_get_all_registers(radio);
+		for(i = 0; i < 16; i++ )
+			pr_info("%s registers[%d]:%x\n", __func__, i,radio->registers[i]);
 	}
 
 	if ((radio->registers[STATUS] & STATUS_STD) == 0)
 		pr_info(" %s seek does not complete\n", __func__);
-	if (timed_out){
-		pr_info(" %s seek timed out\n",__func__);
-		retval = -EAGAIN;
+	if (radio->registers[STATUS] & STATUS_SF) {
+		pr_info(" %s seek failed / band limit reached\n", __func__);
+		//retval = -ESPIPE;
 	}
+
 	/* stop seeking : clear STD*/
 	radio->registers[SEEKCFG1] &= ~SEEKCFG1_CSR0_SEEK;
 	retval = rtc6213n_set_register(radio, SEEKCFG1);
 
+	if (retval == 0 && timed_out)
+		retval = -EAGAIN;
+
 done:
-	if (radio->registers[STATUS] & STATUS_SF) {
-		pr_info(" %s seek failed / band limit reached\n", __func__);
-		retval = -ESPIPE;
-	}
 	pr_info("%s exit %d\n", __func__, retval);
 	return retval;
 }
@@ -378,11 +394,10 @@ static void rtc6213n_update_search_list(struct rtc6213n_device *radio, int freq)
 void rtc6213n_scan(struct work_struct *work)
 {
 	struct rtc6213n_device *radio;
-	int current_freq_khz;
+	int current_freq_khz = 0;
 	struct kfifo *data_b;
 	int len = 0;
-	u32 temp_freq_khz;
-	u32 list_khz;
+	u32 next_freq_khz;
 	int retval = 0;
 
 	pr_info("%s enter\n", __func__);
@@ -395,7 +410,7 @@ void rtc6213n_scan(struct work_struct *work)
 		pr_err("%s fail to get freq\n",__func__);
 		goto seek_tune_fail;
 	}
-	pr_info("%s cuurent freq %d\n", __func__, current_freq_khz);
+	pr_info("%s current freq %d\n", __func__, current_freq_khz/16);
 
 	while(1) {
 		if (radio->is_search_cancelled == true) {
@@ -416,18 +431,38 @@ void rtc6213n_scan(struct work_struct *work)
 			goto seek_tune_fail;
 		}
 
-		retval = rtc6213n_get_freq(radio, &temp_freq_khz);
+		if (radio->registers[STATUS] & STATUS_SF){
+			pr_err("%s band limit reached. Seek one more.\n",__func__);
+			seek_timeout = 1000;
+			retval = rtc6213n_set_seek(radio, SRCH_UP, WRAP_ENABLE);
+			seek_timeout = SEEK_TIME_OUT_VALUE;
+			if (retval < 0) {
+				pr_err("%s seek fail %d\n", __func__, retval);
+				goto seek_tune_fail;
+			}
+			retval = rtc6213n_get_freq(radio, &next_freq_khz);
+			if(retval < 0){
+				pr_err("%s fail to get freq\n",__func__);
+				goto seek_tune_fail;
+			}
+			pr_info("%s next freq %d\n", __func__, next_freq_khz/16);
+			rtc6213n_q_event(radio, RTC6213N_EVT_TUNE_SUCC);
+			break;
+		}
+
+		retval = rtc6213n_get_freq(radio, &next_freq_khz);
 		if(retval < 0){
 			pr_err("%s fail to get freq\n",__func__);
 			goto seek_tune_fail;
 		}
-		pr_info("%s next freq %d\n", __func__, temp_freq_khz);
 
-		if (radio->registers[STATUS] & STATUS_SF) {
-			pr_err("%s seek failed / band limit reached\n",__func__);
-			rtc6213n_q_event(radio, RTC6213N_EVT_TUNE_SUCC);
-			break;
+		retval = rtc6213n_get_register(radio, RSSI);
+		if (retval < 0){
+			pr_err("%s read fail to RSSI\n", __func__);
+			goto seek_tune_fail;
 		}
+
+		pr_info("%s valid channel %d, rssi %d\n", __func__, next_freq_khz/16, radio->registers[RSSI] & RSSI_RSSI);
 
 		if (radio->g_search_mode == SCAN)
 			rtc6213n_q_event(radio, RTC6213N_EVT_TUNE_SUCC);
@@ -443,15 +478,15 @@ void rtc6213n_scan(struct work_struct *work)
 			pr_err("%s: FM is not in proper state\n", __func__);
 			return ;
 		}
-
+		pr_info("%s before update search list %d\n", __func__, next_freq_khz/16);
 		if (radio->g_search_mode == SCAN) {
 			/* sleep for dwell period */
 			msleep(radio->dwell_time_sec * 1000);
 			/* need to queue the event when the seek completes */
+			pr_info("%s frequency update list %d\n", __func__, next_freq_khz/16);
 			rtc6213n_q_event(radio, RTC6213N_EVT_SCAN_NEXT);
 		} else if (radio->g_search_mode == SCAN_FOR_STRONG) {
-			list_khz = temp_freq_khz*16;
-			rtc6213n_update_search_list(radio, list_khz);
+			rtc6213n_update_search_list(radio, next_freq_khz);
 		}
 
 	}
@@ -465,12 +500,6 @@ seek_tune_fail:
 				&radio->buf_lock[RTC6213N_FM_BUF_SRCH_LIST]);
 		rtc6213n_q_event(radio, RTC6213N_EVT_NEW_SRCH_LIST);
 	}
-	/* tune to original frequency */
-	retval = rtc6213n_set_freq(radio, current_freq_khz);
-	if (retval < 0)
-		pr_err("%s: Tune to orig freq failed with error %d\n",
-				__func__, retval);
-
 	pr_err("%s seek tune fail %d",__func__, retval);
 
 seek_cancelled:
@@ -491,6 +520,7 @@ int rtc6213n_cancel_seek(struct rtc6213n_device *radio)
 	/* stop seeking */
 	radio->registers[SEEKCFG1] &= ~SEEKCFG1_CSR0_SEEK;
 	retval = rtc6213n_set_register(radio, SEEKCFG1);
+	complete(&radio->completion);
 
 	mutex_unlock(&radio->lock);
 	radio->is_search_cancelled = true;
@@ -543,9 +573,15 @@ int rtc6213n_start(struct rtc6213n_device *radio)
 		0x050F, 0x0E85, 0x5AA6, 0xDC57, 0x8000, 0x00A3, 0x00A3,
 		0xC018, 0x7F80, 0x3C08, 0xB6CF, 0x8100, 0x0000, 0x0140,
 		0x4700, 0x0000};
-	u16 swbk5[] = {
+		
+	/*u16 swbk5[] = {
 		0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x7000, 0x6000,
 		0x3590, 0x6311, 0x3008, 0x0019, 0x0D79, 0x7D2F, 0x8000,
+		0x02A1, 0x771F, 0x323E, 0x262E, 0xA516, 0x8680, 0x0000,
+		0x0000, 0x0000};*/
+	u16 swbk5[] = {
+		0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x7000, 0x6000,
+		0x3590, 0x6311, 0x3008, 0x001C, 0x0D79, 0x7D2F, 0x8000,
 		0x02A1, 0x771F, 0x323E, 0x262E, 0xA516, 0x8680, 0x0000,
 		0x0000, 0x0000};
 	u16 swbk7[] = {
@@ -1387,7 +1423,7 @@ int rtc6213n_power_down(struct rtc6213n_device *radio)
 		/* stop radio */
 	retval = rtc6213n_stop(radio);
 
-	rtc6213n_disable_irq(radio);
+	//rtc6213n_disable_irq(radio); /* move it to fops_release for prevent calling twice */
 	mutex_unlock(&radio->lock);
 	pr_info("%s exit %d\n", __func__, retval);
 
@@ -1435,9 +1471,18 @@ int rtc6213n_power_up(struct rtc6213n_device *radio)
 	if (retval < 0)
 		goto done;
 
+	/* seekconfig1 */
+	radio->rssi_th = 0xc;
+	radio->registers[SEEKCFG1] &= ~SEEKCFG1_CSR0_SEEKRSSITH;
+	radio->registers[SEEKCFG1] |= radio->rssi_th;
+	retval = rtc6213n_set_register(radio, SEEKCFG1);
+	if (retval < 0)
+		goto done;
+
 	/* seekconfig2 */
 	/* Seeking TH */
-	radio->registers[SEEKCFG2] = 0x4050;
+	/* radio->registers[SEEKCFG2] = 0x4050; */	/* DC : 0x40, Spike : 0x50 loose threshold for India region*/
+	radio->registers[SEEKCFG2] = 0x4010;		/* DC : 0x40, Spike : 0x10 strict threshold for European region*/
 	retval = rtc6213n_set_register(radio, SEEKCFG2);
 	if (retval < 0)
 		goto done;
@@ -1656,6 +1701,7 @@ static int rtc6213n_vidioc_dqbuf(struct file *file, void *priv,
 		pr_err("%s radio/buffer is NULL\n",__func__);
 		return -ENXIO;
 	}
+
 	buf_type = buffer->index;
 	buf = (u8 *)buffer->m.userptr;
 	len = buffer->length;
@@ -1670,7 +1716,7 @@ static int rtc6213n_vidioc_dqbuf(struct file *file, void *priv,
 			}
 		}
 	} else {
-		pr_err("%s invalid buffer type\n",__func__);
+		pr_err("%s invalid buffer type\n",__func__);	
 		return -EINVAL;
 	}
 	if (len <= STD_BUF_SIZE) {
@@ -1685,7 +1731,7 @@ static int rtc6213n_vidioc_dqbuf(struct file *file, void *priv,
 		pr_err("%s Failed to copy %d bytes of data\n", __func__, retval);
 		return -EAGAIN;
 	}
-
+	
 	return retval;
 }
 
@@ -1706,8 +1752,9 @@ static int rtc6213n_disable(struct rtc6213n_device *radio)
 	int retval = 0;
 
 	/* disable RDS/STC interrupt */
-	radio->registers[SYSCFG] |= SYSCFG_CSR0_RDSIRQEN;
-	radio->registers[SYSCFG] |= SYSCFG_CSR0_STDIRQEN;
+	radio->registers[SYSCFG] &= ~SYSCFG_CSR0_RDS_EN;
+	radio->registers[SYSCFG] &= ~SYSCFG_CSR0_RDSIRQEN;
+	radio->registers[SYSCFG] &= ~SYSCFG_CSR0_STDIRQEN;
 	retval = rtc6213n_set_register(radio, SYSCFG);
 	if(retval < 0){
 		pr_err("%s fail to disable RDS/SCT interrupt\n",__func__);
@@ -1725,7 +1772,7 @@ static int rtc6213n_disable(struct rtc6213n_device *radio)
 		rtc6213n_q_event(radio, RTC6213N_EVT_RADIO_DISABLED);
 		radio->mode = FM_OFF;
 	}
-//	flush_workqueue(radio->wqueue);
+	/* flush_workqueue(radio->wqueue); */
 
 done:
 	return retval;
@@ -1792,6 +1839,16 @@ int rtc6213n_vidioc_s_ctrl(struct file *file, void *priv, struct v4l2_control *c
 				}
 				radio->mode = FM_RECV_TURNING_ON;
 
+				if (radio->lna_en > 0) {
+					gpio_direction_output(radio->lna_en, 1);
+					pr_info("[LNA ENABLED] gpio_get_value : %d\n", gpio_get_value(radio->lna_en));
+				}
+
+                                if (radio->lna_gain > 0) {
+                                        gpio_direction_output(radio->lna_gain, 1);
+                                        pr_info("[LNA Gain ENABLED] gpio_get_value : %d\n", gpio_get_value(radio->lna_gain));
+                                }
+
 				retval = rtc6213n_enable(radio);
 				if (retval < 0) {
 					pr_err("%s Error while enabling RECV FM %d\n",
@@ -1807,6 +1864,16 @@ int rtc6213n_vidioc_s_ctrl(struct file *file, void *priv, struct v4l2_control *c
 					radio->mode = FM_RECV;
 					goto end;
 				}
+
+				if (radio->lna_en > 0) {
+					gpio_direction_output(radio->lna_en, 0);
+					pr_info("[LNA DISABLED] gpio_get_value : %d\n", gpio_get_value(radio->lna_en));
+				}
+
+                                if (radio->lna_gain > 0) {
+                                        gpio_direction_output(radio->lna_gain, 0);
+                                        pr_info("[LNA Gain DISABLED] gpio_get_value : %d\n", gpio_get_value(radio->lna_gain));
+                                }
 			}
 			break;
 		case V4L2_CID_PRIVATE_RTC6213N_SET_AUDIO_PATH:
@@ -1834,7 +1901,10 @@ int rtc6213n_vidioc_s_ctrl(struct file *file, void *priv, struct v4l2_control *c
 			radio->registers[CHANNEL] &= ~CHANNEL_CSR0_CHSPACE;
 			radio->registers[CHANNEL] |= (space_s << 10);
 			retval = rtc6213n_set_register(radio, CHANNEL);
-			break;
+			break;			
+		case V4L2_CID_PRIVATE_RTC6213N_SRCHON:
+				rtc6213n_search(radio, (bool)ctrl->value);
+				break;
 		case V4L2_CID_PRIVATE_RTC6213N_LP_MODE:
 		case V4L2_CID_PRIVATE_RTC6213N_ANTENNA:
 		case V4L2_CID_PRIVATE_RTC6213N_RDSON:
@@ -1843,10 +1913,42 @@ int rtc6213n_vidioc_s_ctrl(struct file *file, void *priv, struct v4l2_control *c
 		case V4L2_CID_PRIVATE_RTC6213N_RXREPEATCOUNT:
 			retval = 0;
 			break;
+		case V4L2_CID_PRIVATE_RTC6213N_RSSI_TH:
 		case V4L2_CID_PRIVATE_RTC6213N_SINR_THRESHOLD:
+
+			radio->rssi_th = ctrl->value >> 16;
 			radio->registers[SEEKCFG1] &= ~SEEKCFG1_CSR0_SEEKRSSITH;
-			radio->registers[SEEKCFG1] |= 0x0;
+			radio->registers[SEEKCFG1] |= radio->rssi_th;
 			retval = rtc6213n_set_register(radio, SEEKCFG1);
+			if(retval < 0)
+				pr_err("%s fail to set rssi\n",__func__);
+			rtc6213n_get_register(radio, SEEKCFG1);
+			pr_info("FMRICHWAVE RSSI_TH : Decimal = %d , Hexa = %x\n",radio->registers[SEEKCFG1] & 0xFF , radio->registers[SEEKCFG1] & 0xFF);
+
+			radio->registers[SEEKCFG2] &= ~SEEKCFG2_CSR0_OFSTH;
+			radio->registers[SEEKCFG2] &= ~SEEKCFG2_CSR0_QLTTH;
+			radio->registers[SEEKCFG2] |= ctrl->value;
+
+			retval = rtc6213n_set_register(radio, SEEKCFG2);
+			if(retval < 0)
+				pr_err("%s fail to set spike\n",__func__);
+			rtc6213n_get_register(radio, SEEKCFG2);
+			pr_info("FMRICHWAVE DC_OFFSET_TH : Decimal = %d , Hexa = %x\n", (radio->registers[SEEKCFG2] >> 8) & 0xFF, (radio->registers[SEEKCFG2] >> 8) & 0xFF);
+			pr_info("FMRICHWAVE SPIKE_TH : Decimal = %d , Hexa = %x\n",  (radio->registers[SEEKCFG2]) & 0xFF, (radio->registers[SEEKCFG2]) & 0xFF);
+			break;
+		/* case V4L2_CID_PRIVATE_RTC6213N_OFS_THRESHOLD: */
+		case V4L2_CID_PRIVATE_RTC6213N_SPUR_FREQ_RMSSI:
+		#if 0	
+			radio->registers[SEEKCFG2] &= ~SEEKCFG2_CSR0_OFSTH;
+			radio->registers[SEEKCFG2] |= (ctrl->value << 8);
+			pr_info("%s V4L2_CID_PRIVATE_CSR0_OFSTH : SEEKCFG2=0x%4.4hx\n",
+					__func__, radio->registers[SEEKCFG2]);
+			retval = rtc6213n_set_register(radio, SEEKCFG2);
+			if(retval < 0)
+				pr_err("%s fail to set dc offset\n",__func__);
+			rtc6213n_get_register(radio, SEEKCFG2);
+			pr_info("%s SEEKCFG2:%x\n", __func__, radio->registers[SEEKCFG2]);
+		#endif
 			break;
 		case V4L2_CID_PRIVATE_RTC6213N_RDSGROUP_MASK:
 		case V4L2_CID_PRIVATE_RTC6213N_RDSGROUP_PROC:
@@ -1980,6 +2082,7 @@ int rtc6213n_vidioc_s_ctrl(struct file *file, void *priv, struct v4l2_control *c
 			retval = rtc6213n_set_register(radio, SYSCFG);
 			break;
 		case V4L2_CID_PRIVATE_SEEK_CANCEL:
+			#if 0
 			dev_info(&radio->videodev.dev, "V4L2_CID_PRIVATE_SEEK_CANCEL : MPXCFG=0x%4.4hx SEEKCFG1=0x%4.4hx\n",
 					radio->registers[MPXCFG], radio->registers[SEEKCFG1]);
 			if (rtc6213n_wq_flag == SEEK_WAITING) {
@@ -1991,8 +2094,12 @@ int rtc6213n_vidioc_s_ctrl(struct file *file, void *priv, struct v4l2_control *c
 			ctrl->value = 0;
 			dev_info(&radio->videodev.dev, "V4L2_CID_PRIVATE_SEEK_CANCEL : MPXCFG=0x%4.4hx SEEKCFG1=0x%4.4hx\n",
 					radio->registers[MPXCFG], radio->registers[SEEKCFG1]);
+			#else
+			rtc6213n_search(radio, (bool)ctrl->value);
+			#endif
 			break;
 		case V4L2_CID_PRIVATE_CSR0_SEEKRSSITH:
+			radio->rssi_th = ctrl->value;
 			radio->registers[SEEKCFG1] &= ~SEEKCFG1_CSR0_SEEKRSSITH;
 			radio->registers[SEEKCFG1] |= ctrl->value;
 			retval = rtc6213n_set_register(radio, SEEKCFG1);
@@ -2106,7 +2213,8 @@ static int rtc6213n_vidioc_g_tuner(struct file *file, void *priv,
 		tuner->audmode = V4L2_TUNER_MODE_MONO;
 
 	/* min is worst, max is best; rssi: 0..0xff */
-	tuner->signal = (radio->registers[RSSI] & RSSI_RSSI);
+	tuner->signal = (radio->registers[RSSI] & RSSI_RSSI) - 113;
+	pr_info("FMRICHWAVE, getRSSI = %d dBm,   %d dBuV \n",tuner->signal , radio->registers[RSSI] & RSSI_RSSI );
 
 done:
 	pr_info("%s exit %d\n",	__func__, retval);
@@ -2234,7 +2342,8 @@ static int rtc6213n_vidioc_s_hw_freq_seek(struct file *file, void *priv,
 		/* seek */
 		pr_info("%s starting seek\n",__func__);
 		radio->seek_tune_status = SEEK_PENDING;
-		retval = rtc6213n_set_seek(radio, seek->seek_upward, seek->wrap_around);
+		/* retval = rtc6213n_set_seek(radio, seek->seek_upward, seek->wrap_around); */
+		retval = rtc6213n_set_seek(radio, seek->seek_upward, WRAP_ENABLE);
 		rtc6213n_q_event(radio, RTC6213N_EVT_TUNE_SUCC);
 		radio->seek_tune_status = NO_SEEK_TUNE_PENDING;
 		rtc6213n_q_event(radio, RTC6213N_EVT_SCAN_NEXT);

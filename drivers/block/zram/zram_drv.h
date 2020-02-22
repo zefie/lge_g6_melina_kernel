@@ -119,6 +119,9 @@ struct zram {
 	 * zram is claimed so open request will be failed
 	 */
 	bool claim; /* Protected by bdev->bd_mutex */
+#ifdef CONFIG_ZRAM_NON_SWAP
+	unsigned int non_swap;
+#endif
 };
 
 #ifdef CONFIG_HSWAP

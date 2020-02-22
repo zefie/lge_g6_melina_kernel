@@ -1,0 +1,46 @@
+/* Copyright (c) 2015, The Linux Foundation. All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 and
+ * only version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+
+/{
+	aliases {
+		i2c3 = &i2c_3;
+	};
+};
+
+
+&soc {
+
+	i2c_3: i2c@7577000 {
+		rtc6213n@64 { /* Richwave FM Radio chip, slave id 0x64*/
+			status = "ok";
+			compatible = "rtc6213n";
+			#address-cells = <0>;
+			reg = <0x64>;
+			pinctrl-names = "default","pmx_fm_active","pmx_fm_suspend";
+			pinctrl-0 = <&fm_int_default>;
+			pinctrl-1 = <&fm_int_active>;
+			pinctrl-2 = <&fm_int_suspend>;
+			fmint-gpio = <&tlmm 73 0>;
+			rtc,ext-ldo = <&tlmm 25 0>;
+			rtc,fm-sw-gpio = <&tlmm 126 0>;
+			vdd_fm_sw-supply = <&pm8994_l16>;
+			interrupts = <0 1>;
+			#interrupt-cells = <1>;
+			interrupt-map-mask = <0xffffffff>;
+			interrupt-map = <
+				0 &tlmm 73 2
+				>;
+			interrupt-names = "rtc_fm_int";
+		};
+	};
+
+};

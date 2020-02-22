@@ -98,6 +98,24 @@ void switch_set_state(struct switch_dev *sdev, int state)
 }
 EXPORT_SYMBOL_GPL(switch_set_state);
 
+#if defined(CONFIG_LGE_DP_UNSUPPORT_NOTIFY)
+void dp_notify_set_state(struct switch_dev *sdev, int state)
+{
+	char *envp[2];
+	char name_buf[30];
+
+	if (sdev->state != state) {
+		sdev->state = state;
+		snprintf(name_buf, sizeof(name_buf), "SWITCH_NAME=%s%c", sdev->name, sdev->state?'1':'0');
+		envp[0] = name_buf;
+		envp[1] = NULL;
+		kobject_uevent_env(&sdev->dev->kobj, KOBJ_CHANGE, envp);
+		pr_info("check_dp_notify,name_buf = %s state = %d,\n", name_buf, sdev->state);
+	}
+}
+EXPORT_SYMBOL_GPL(dp_notify_set_state);
+#endif
+
 static int create_switch_class(void)
 {
 	if (!switch_class) {

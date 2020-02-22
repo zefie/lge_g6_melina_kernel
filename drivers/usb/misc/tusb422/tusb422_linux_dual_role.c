@@ -45,6 +45,9 @@ static enum dual_role_property tusb422_dual_role_props[] = {
 	DUAL_ROLE_PROP_PDO2,
 	DUAL_ROLE_PROP_PDO3,
 	DUAL_ROLE_PROP_PDO4,
+	DUAL_ROLE_PROP_PDO5,
+	DUAL_ROLE_PROP_PDO6,
+	DUAL_ROLE_PROP_PDO7,
 	DUAL_ROLE_PROP_RDO,
 #endif
 };
@@ -194,6 +197,9 @@ static int tusb422_dual_role_get_prop(struct dual_role_phy_instance *dual_role,
 	case DUAL_ROLE_PROP_PDO2:
 	case DUAL_ROLE_PROP_PDO3:
 	case DUAL_ROLE_PROP_PDO4:
+	case DUAL_ROLE_PROP_PDO5:
+	case DUAL_ROLE_PROP_PDO6:
+	case DUAL_ROLE_PROP_PDO7:
 		if (tcpc_dev->state != TCPC_STATE_UNATTACHED_SRC &&
 		    tcpc_dev->state != TCPC_STATE_UNATTACHED_SNK) {
 			if (pd_dev->power_role == PD_PWR_ROLE_SRC)

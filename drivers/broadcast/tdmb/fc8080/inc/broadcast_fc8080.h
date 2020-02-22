@@ -50,7 +50,10 @@ int tdmb_fc8080_power_on_retry(void);
 #endif
 /*[BCAST002][E]*/
 
-
+int tdmb_lna_power_on(void);
+int tdmb_rf_sw_power_on(void);
+void tdmb_lna_power_off(void);
+void tdmb_rf_sw_power_off(void);
 
 #define __broadcast_dev_exit_p(x)        x
 #define __broadcast_dev_init            __init

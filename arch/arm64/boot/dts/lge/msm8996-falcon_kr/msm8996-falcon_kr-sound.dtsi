@@ -1,0 +1,31 @@
+/* Copyright (c) 2015, The Linux Foundation. All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 and
+ * only version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+
+////////////////////////////////////////////////////////////////////////////
+// 2016 04 11
+// You have to check each Revision Sound dtsi file in ../msm8996-sound/
+//
+////////////////////////////////////////////////////////////////////////////
+#include "../msm8996-sound/msm8996-falcon-sound_es9218p.dtsi"
+#include "../msm8996-sound/msm8996-falcon-sound_fmradio.dtsi"
+
+&soc {
+
+	i2c_3: i2c@7577000 {
+		rtc6213n@64 { /* Richwave FM Radio chip, slave id 0x64*/
+			status = "ok";
+			compatible = "rtc6213n";
+			rtc,lna-en-gpio = <&tlmm 94 0>;
+			// rtc,lna-gain-ctrl = <&tlmm 63 0>; /* for lna-gain-ctrl pin enable GPIO 63 */
+		};
+	};
+};

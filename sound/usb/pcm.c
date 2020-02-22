@@ -567,6 +567,10 @@ int snd_usb_enable_audio_stream(struct snd_usb_substream *subs,
 			return ret;
 
 		iface = usb_ifnum_to_if(subs->dev, subs->cur_audiofmt->iface);
+#ifdef CONFIG_LGE_USB_G_ANDROID
+		if (WARN_ON(!iface))
+			return -EINVAL;
+#endif
 		alts = &iface->altsetting[subs->cur_audiofmt->altset_idx];
 		ret = snd_usb_init_sample_rate(subs->stream->chip,
 					       subs->cur_audiofmt->iface,
@@ -1325,7 +1329,7 @@ static void retire_capture_urb(struct snd_usb_substream *subs,
 		if (bytes % (runtime->sample_bits >> 3) != 0) {
 			int oldbytes = bytes;
 			bytes = frames * stride;
-			dev_warn(&subs->dev->dev,
+			dev_warn_ratelimited(&subs->dev->dev,
 				 "Corrected urb data len. %d->%d\n",
 							oldbytes, bytes);
 		}

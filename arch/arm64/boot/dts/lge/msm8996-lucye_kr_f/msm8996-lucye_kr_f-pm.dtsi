@@ -1,0 +1,82 @@
+/* Copyright (c) 2015, The Linux Foundation. All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 and
+ * only version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+
+#include "../msm8996-lucye-common/msm8996-lucye-common-pm.dtsi"
+
+
+
+&soc {
+        lge,cable_detect {
+                lge,no-init-cable       = <     0       0    0   0    0     0>;
+                lge,cable-mhl-1k        = <     1   50000  500  500  500  500>;
+                lge,cable-56k           = <250001  450000 1500 1500  500  500>;
+                lge,cable-130k          = <470001  660000 1500 1500  500  500>;
+                lge,cable-910k          = <800001  960000 1500 1500  500  500>;
+                lge,cable-none          = <960001 1100000 1800  500 1500 3200>;
+        };
+
+        lge,battery_id_check {
+			compatible = "lge,batt_id";
+			lge,pack_name = "BLT32";
+			lge,batt_capacity = "3500";
+	};
+
+	lge,adc-qct {
+		compatible = "lge,adc-qct";
+		lge,usb_edge_chan = <0x33>;
+	};
+};
+
+/{
+        g6fit_batterydata: lge,battery-data {
+                qcom,batt-id-range-pct = <30>;
+                #include "../LGE_BLT32_Tocad_3500mAh.dtsi"
+                #include "../LGE_BLT32_LGC_3500mAh.dtsi"
+        };
+};
+
+&pmi8994_charger {
+
+	qcom,iterm-ma = <100>;
+	qcom,fastchg-current-ma = <3200>;
+	qcom,float-voltage-mv = <4400>;
+	qcom,aicl-rerun-period-s = <180>;
+	qcom,batt-life-cycle-fcc-ma = <0 100 200 300 400 500>;
+	qcom,batt-life-cycle-vfloat = <0 10  30  50  70  100>;
+
+};
+
+&pmi8994_fg {
+
+	lge,battery-data = <&g6fit_batterydata>;
+	qcom,fg-cc-cv-threshold-mv = <4390>;
+	qcom,fg-batt-life-cycle-set = <0 50 100 200 300 400>;
+	qcom,fg-batt-life-cycle-offset = <0 2 5 9 12 19>;
+	qcom,fg-batt-life-cycle-vfloat = <0 10  30  50  70  100>;
+};
+
+&pmi8994_haptics {
+	qcom,vmax-mv = <3016>;
+};
+
+&i2c_7 {
+	smb1351-charger@1d {
+		qcom,float-voltage-mv = <4400>;
+	};
+};
+
+
+&i2c_6 {
+        idtp9223-charger@61 {
+                status = "ok";
+        };
+};

@@ -270,10 +270,6 @@
 #define CREATE_TRACE_POINTS
 #include <trace/events/random.h>
 
-#ifdef CONFIG_CRYPTO_CCMODE
-#include <linux/cc_mode.h>
-#define RETRY_CNT_SIZE 300
-#endif //CONFIG_CRYPTO_CCMODE
 /* #define ADD_INTERRUPT_BENCH */
 
 /*
@@ -708,7 +704,7 @@ retry:
 
 static void credit_entropy_bits_safe(struct entropy_store *r, int nbits)
 {
-	const int nbits_max = (int)(~0U >> (ENTROPY_SHIFT + 1));
+	const int nbits_max = r->poolinfo->poolwords * 32;
 
 	/* Cap the value to avoid overflows */
 	nbits = min(nbits,  nbits_max);
@@ -867,12 +863,16 @@ static void add_interrupt_bench(cycles_t start)
 static __u32 get_reg(struct fast_pool *f, struct pt_regs *regs)
 {
 	__u32 *ptr = (__u32 *) regs;
+	unsigned int idx;
 
 	if (regs == NULL)
 		return 0;
-	if (f->reg_idx >= sizeof(struct pt_regs) / sizeof(__u32))
-		f->reg_idx = 0;
-	return *(ptr + f->reg_idx++);
+	idx = READ_ONCE(f->reg_idx);
+	if (idx >= sizeof(struct pt_regs) / sizeof(__u32))
+		idx = 0;
+	ptr += idx++;
+	WRITE_ONCE(f->reg_idx, idx);
+	return *ptr;
 }
 
 void add_interrupt_randomness(int irq, int irq_flags)
@@ -1375,49 +1375,6 @@ _random_read(int nonblock, char __user *buf, size_t nbytes)
 }
 
 static ssize_t
-_random_read_cc(int nonblock, char __user *buf, size_t nbytes)
-{
-	ssize_t n = 0;
-	size_t tot_len = 0, ent_len = 0;
-	int retry_cnt = RETRY_CNT_SIZE;
-
-	if (nbytes == 0)
-		return 0;
-
-	nbytes = min_t(size_t, nbytes, SEC_XFER_SIZE);
-	ent_len = nbytes;
-	while (1) {
-		n = extract_entropy_user(&blocking_pool, buf+tot_len, ent_len);
-		if (n < 0)
-			return n;
-		trace_random_read(n*8, (ent_len-n)*8,
-				  ENTROPY_BITS(&blocking_pool),
-				  ENTROPY_BITS(&input_pool));
-
-		tot_len += n;
-		ent_len -= n;
-
-		if(tot_len > nbytes)
-			tot_len = nbytes;
-		else if(ent_len < 0)
-			ent_len = 0;
-
-		if (tot_len == nbytes)
-			return tot_len;
-
-		if(retry_cnt-- < 0)
-			return -EAGAIN;
-
-		wait_event_interruptible(random_read_wait,
-			ENTROPY_BITS(&input_pool) >=
-			random_read_wakeup_bits);
-		if (signal_pending(current))
-			return -ERESTARTSYS;
-	}
-}
-
-
-static ssize_t
 random_read(struct file *file, char __user *buf, size_t nbytes, loff_t *ppos)
 {
 	return _random_read(file->f_flags & O_NONBLOCK, buf, nbytes);
@@ -1426,10 +1383,7 @@ random_read(struct file *file, char __user *buf, size_t nbytes, loff_t *ppos)
 static ssize_t
 urandom_read(struct file *file, char __user *buf, size_t nbytes, loff_t *ppos)
 {
-	ssize_t ret = 0;
-#ifdef CONFIG_CRYPTO_CCMODE
-	int cc_flag = 0;
-#endif //CONFIG_CRYPTO_CCMODE
+	int ret;
 
 	if (unlikely(nonblocking_pool.initialized == 0))
 		printk_once(KERN_NOTICE "random: %s urandom read "
@@ -1437,24 +1391,9 @@ urandom_read(struct file *file, char __user *buf, size_t nbytes, loff_t *ppos)
 			    current->comm, nonblocking_pool.entropy_total);
 
 	nbytes = min_t(size_t, nbytes, INT_MAX >> (ENTROPY_SHIFT + 3));
-#ifdef CONFIG_CRYPTO_CCMODE
-	cc_flag = get_cc_mode_state();
-	if ((cc_flag & FLAG_FORCE_USE_RANDOM_DEV) == FLAG_FORCE_USE_RANDOM_DEV) {
-        /* When SYSCALL(getrandom) is called,
-           If file or ppos pointer is NULL, set nonblock 0 */
-        if (file == NULL || ppos == NULL)
-			ret = _random_read_cc(0, buf, nbytes);
-        else
-			ret = _random_read_cc(file->f_flags & O_NONBLOCK, buf, nbytes);
-	}
-	else {
-#endif
 	ret = extract_entropy_user(&nonblocking_pool, buf, nbytes);
 		trace_urandom_read(8 * nbytes, ENTROPY_BITS(&nonblocking_pool),
 			ENTROPY_BITS(&input_pool));
-#ifdef CONFIG_CRYPTO_CCMODE
-    }
-#endif
 
 	return ret;
 }
@@ -1478,13 +1417,21 @@ static int
 write_pool(struct entropy_store *r, const char __user *buffer, size_t count)
 {
 	size_t bytes;
-	__u32 buf[16];
+	__u32 t, buf[16];
 	const char __user *p = buffer;
 
 	while (count > 0) {
+		int b, i = 0;
+
 		bytes = min(count, sizeof(buf));
 		if (copy_from_user(&buf, p, bytes))
 			return -EFAULT;
+
+		for (b = bytes ; b > 0 ; b -= sizeof(__u32), i++) {
+			if (!arch_get_random_int(&t))
+				break;
+			buf[i] ^= t;
+		}
 
 		count -= bytes;
 		p += bytes;

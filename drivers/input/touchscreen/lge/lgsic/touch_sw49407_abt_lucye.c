@@ -32,13 +32,13 @@
 /*
  *  Include to touch core Header File
  */
-#include <touch_core.h>
+#include <touch_core_nos.h>
 
 /*
  *  Include to Local Header File
  */
-#include "touch_sw49407.h"
-#include "touch_sw49407_abt.h"
+#include "touch_sw49407_lucye.h"
+#include "touch_sw49407_abt_lucye.h"
 
 #define MAX_REPORT_SLOT				16
 #define P_CONTOUR_POINT_MAX			8
@@ -244,7 +244,7 @@ static void abt_ksocket_start_for_pctool(struct device *dev)
 {
 	static int client_connected;
 	int size, err;
-	unsigned char *buf;
+	unsigned char *buf = NULL;
 	struct socket *sock;
 
 	/* kernel thread initialization */

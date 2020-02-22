@@ -1,4 +1,4 @@
-/* Copyright (c) 2014-2017, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2014-2018, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -620,16 +620,13 @@ static int qpnp_hap_play(struct qpnp_hap *hap, int on)
 	}
 
 #endif
-
 	rc = qpnp_hap_write_reg(hap, &val,
 			QPNP_HAP_PLAY_REG(hap->base));
 	if (rc < 0)
 		return rc;
-#ifdef CONFIG_LGE_QPNP_HAPTIC_OV_RB
+
 	dev_info(&hap->spmi->dev, "qpnp_hap_play: on = %d, voltage = %d \n", on, hap->vmax_mv);
-#else
-	dev_info(&hap->spmi->dev, "qpnp_hap_play: on = %d, voltage = %d \n", on, hap->vmax_mv);
-#endif
+
 	hap->reg_play = val;
 
 	return 0;
@@ -1384,76 +1381,6 @@ static ssize_t qpnp_hap_play_mode_show(struct device *dev,
 	return snprintf(buf, PAGE_SIZE, "%s\n", str);
 }
 
-#ifdef CONFIG_LGE_QPNP_HAPTIC_OV_RB
-/* sysfs show for amp */
-static ssize_t qpnp_hap_amp_show(struct device *dev,
-		struct device_attribute *attr, char *buf)
-{
-	struct timed_output_dev *timed_dev = dev_get_drvdata(dev);
-	struct qpnp_hap *hap = container_of(timed_dev, struct qpnp_hap,
-					 timed_dev);
-	u8 reg = 0, temp = 0;
-	int res, ret;
-
-	ret = qpnp_hap_read_reg(hap, &reg, QPNP_HAP_VMAX_REG(hap->base));
-	if (ret < 0) {
-			dev_err(&hap->spmi->dev,
-					"Error reading address: %X\n",
-					QPNP_HAP_VMAX_REG(hap->base));
-	    return ret;
-	}
-
-	reg &= ~QPNP_HAP_VMAX_MASK;
-	temp = reg >> QPNP_HAP_VMAX_SHIFT;
-	res = temp * QPNP_HAP_VMAX_MIN_MV;
-
-	return snprintf(buf, PAGE_SIZE, "%d\n", res);
-}
-
-/* sysfs store for amp */
-static ssize_t qpnp_hap_amp_store(struct device *dev,
-		struct device_attribute *attr, const char *buf, size_t count)
-{
-	struct timed_output_dev *timed_dev = dev_get_drvdata(dev);
-	struct qpnp_hap *hap = container_of(timed_dev, struct qpnp_hap,
-					 timed_dev);
-	u8 reg = 0;
-	int temp, ret, value;
-
-	if (sscanf(buf, "%d", &value) != 1)
-		return -EINVAL;
-
-	if (value < QPNP_HAP_VMAX_MIN_MV)
-		value = QPNP_HAP_VMAX_MIN_MV;
-	else if (value > QPNP_HAP_VMAX_MAX_MV)
-		value = QPNP_HAP_VMAX_MAX_MV;
-
-	ret = qpnp_hap_read_reg(hap, &reg, QPNP_HAP_VMAX_REG(hap->base));
-
-	if (ret < 0) {
-			dev_err(&hap->spmi->dev, "Error reading address: %X\n",
-					QPNP_HAP_VMAX_REG(hap->base));
-	}
-
-	reg &= QPNP_HAP_VMAX_MASK;
-	/* Vmax Controlled by 116mV step. So we divide our input Voltage by 116 */
-	temp = value / QPNP_HAP_VMAX_MIN_MV;
-	/* Changed Vmax have to save to hap->vmax_mv and hap->vmax_mv_orig to
-						recover vmax that changed here */
-	hap->vmax_mv = hap->vmax_mv_orig = temp * QPNP_HAP_VMAX_MIN_MV;
-	reg |= (temp << QPNP_HAP_VMAX_SHIFT);
-
-	ret = qpnp_hap_write_reg(hap, &reg, QPNP_HAP_VMAX_REG(hap->base));
-	if (ret < 0) {
-			dev_err(&hap->spmi->dev,
-					"Error writing address: %X\n",
-					QPNP_HAP_VMAX_REG(hap->base));
-	}
-
-	return count;
-}
-#endif
-
 #ifdef CONFIG_TSPDRV
 /* sysfs show for amp */
 static ssize_t qpnp_hap_amp_show(struct device *dev,
@@ -1528,6 +1455,81 @@ static ssize_t qpnp_hap_elt_store(struct device *dev,
 	} else {
 		elt_state = 0;
 	}
+	return count;
+}
+#else /*CONFIG_TSPDRV*/
+/* sysfs show for amp */
+static ssize_t qpnp_hap_amp_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	struct timed_output_dev *timed_dev = dev_get_drvdata(dev);
+	struct qpnp_hap *hap = container_of(timed_dev, struct qpnp_hap,
+					 timed_dev);
+	u8 reg = 0;
+	int temp = 0;
+	int res, ret;
+
+	ret = qpnp_hap_read_reg(hap, &reg, QPNP_HAP_VMAX_REG(hap->base));
+	if (ret < 0) {
+			dev_err(&hap->spmi->dev,
+					"Error reading address: %X\n",
+					QPNP_HAP_VMAX_REG(hap->base));
+	    return ret;
+	}
+
+	reg &= ~QPNP_HAP_VMAX_MASK;
+	temp = reg >> QPNP_HAP_VMAX_SHIFT;
+	res = temp * QPNP_HAP_VMAX_MIN_MV;
+
+	return snprintf(buf, PAGE_SIZE, "%d\n", res);
+}
+
+/* sysfs store for amp */
+static ssize_t qpnp_hap_amp_store(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t count)
+{
+	struct timed_output_dev *timed_dev = dev_get_drvdata(dev);
+	struct qpnp_hap *hap = container_of(timed_dev, struct qpnp_hap,
+					 timed_dev);
+	u8 reg = 0;
+	int temp, ret, value;
+
+	if (sscanf(buf, "%d", &value) != 1)
+		return -EINVAL;
+
+	if (value < QPNP_HAP_VMAX_MIN_MV)
+		value = QPNP_HAP_VMAX_MIN_MV;
+	else if (value > QPNP_HAP_VMAX_MAX_MV)
+		value = QPNP_HAP_VMAX_MAX_MV;
+
+	ret = qpnp_hap_read_reg(hap, &reg, QPNP_HAP_VMAX_REG(hap->base));
+
+	if (ret < 0) {
+			dev_err(&hap->spmi->dev, "Error reading address: %X\n",
+					QPNP_HAP_VMAX_REG(hap->base));
+	}
+
+	reg &= QPNP_HAP_VMAX_MASK;
+	/* Vmax Controlled by 116mV step. So we divide our input Voltage by 116 */
+	temp = value / QPNP_HAP_VMAX_MIN_MV;
+	#ifdef CONFIG_LGE_QPNP_HAPTIC_OV_RB
+	/* Changed Vmax have to save to hap->vmax_mv and hap->vmax_mv_orig to
+						recover vmax that changed here */
+	hap->vmax_mv = hap->vmax_mv_orig = temp * QPNP_HAP_VMAX_MIN_MV;
+	#else
+	/* Changed Vmax have to save to hap->vmax_mv to
+						recover vmax that changed here */
+	hap->vmax_mv = temp * QPNP_HAP_VMAX_MIN_MV;
+	#endif
+	reg |= (temp << QPNP_HAP_VMAX_SHIFT);
+
+	ret = qpnp_hap_write_reg(hap, &reg, QPNP_HAP_VMAX_REG(hap->base));
+	if (ret < 0) {
+			dev_err(&hap->spmi->dev,
+					"Error writing address: %X\n",
+					QPNP_HAP_VMAX_REG(hap->base));
+	}
+
 	return count;
 }
 #endif
@@ -1623,6 +1625,7 @@ static ssize_t qpnp_hap_ramp_test_data_show(struct device *dev,
 	return count;
 
 }
+
 /* sysfs attributes */
 static struct device_attribute qpnp_hap_attrs[] = {
 	__ATTR(wf_s0, (S_IRUGO | S_IWUSR | S_IWGRP),
@@ -1664,15 +1667,13 @@ static struct device_attribute qpnp_hap_attrs[] = {
 	__ATTR(dump_regs, (S_IRUGO | S_IWUSR | S_IWGRP),
 			qpnp_hap_dump_regs_show,
 			NULL),
-#if defined (CONFIG_LGE_QPNP_HAPTIC_OV_RB) || defined (CONFIG_TSPDRV)
 	__ATTR(amp, (S_IRUGO | S_IWUSR | S_IWGRP),
 			qpnp_hap_amp_show,
 			qpnp_hap_amp_store),
-#endif
 #if defined (CONFIG_TSPDRV)
-        __ATTR(elt, (S_IRUGO | S_IWUSR | S_IWGRP),
-                        qpnp_hap_elt_show,
-                        qpnp_hap_elt_store),
+	__ATTR(elt, (S_IRUGO | S_IWUSR | S_IWGRP),
+			qpnp_hap_elt_show,
+			qpnp_hap_elt_store),
 #endif
 	__ATTR(ramp_test, (S_IRUGO | S_IWUSR | S_IWGRP),
 			qpnp_hap_ramp_test_data_show,
@@ -3001,6 +3002,16 @@ static int qpnp_haptic_remove(struct spmi_device *spmi)
 	return 0;
 }
 
+static void qpnp_haptic_shutdown(struct spmi_device *spmi)
+{
+	struct qpnp_hap *hap = dev_get_drvdata(&spmi->dev);
+
+	cancel_work_sync(&hap->work);
+
+	/* disable haptics */
+	qpnp_hap_mod_enable(hap, false);
+}
+
 static struct of_device_id spmi_match_table[] = {
 	{ .compatible = "qcom,qpnp-haptic", },
 	{ },
@@ -3014,6 +3025,7 @@ static struct spmi_driver qpnp_haptic_driver = {
 	},
 	.probe		= qpnp_haptic_probe,
 	.remove		= qpnp_haptic_remove,
+	.shutdown	= qpnp_haptic_shutdown,
 };
 
 static int __init qpnp_haptic_init(void)

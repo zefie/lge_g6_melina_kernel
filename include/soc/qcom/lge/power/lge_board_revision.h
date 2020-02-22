@@ -13,7 +13,7 @@
 #ifndef _LGE_BOARD_REVISION_H
 #define _LGE_BOARD_REVISION_H
 
-#if defined(CONFIG_MACH_MSM8996_LUCYE)
+#if defined(CONFIG_MACH_MSM8996_LUCYE) || defined (CONFIG_MACH_MSM8996_FALCON)
 enum hw_rev_no {
 	HW_REV_EVB1 = 0,
 	HW_REV_EVB2,

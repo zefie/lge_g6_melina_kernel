@@ -15,21 +15,6 @@
 #include <linux/of_platform.h>
 #include "../mdss_dsi.h"
 #include "lge_mdss_dsi_panel.h"
-#if IS_ENABLED(CONFIG_LGE_DISPLAY_READER_MODE)
-#include "lge_reader_mode.h"
-#include "../mdss_mdp.h"
-struct dsi_panel_cmds reader_mode_step0_cmds;
-struct dsi_panel_cmds reader_mode_step1_cmds;
-struct dsi_panel_cmds reader_mode_step2_cmds;
-struct dsi_panel_cmds reader_mode_step3_cmds;
-struct dsi_panel_cmds reader_mode_step4_cmds;
-struct dsi_panel_cmds reader_mode_step5_cmds;
-struct dsi_panel_cmds reader_mode_step6_cmds;
-struct dsi_panel_cmds reader_mode_step7_cmds;
-struct dsi_panel_cmds reader_mode_step8_cmds;
-struct dsi_panel_cmds reader_mode_step9_cmds;
-struct dsi_panel_cmds reader_mode_step10_cmds;
-#endif
 
 char *lge_blmap_name[] = {
 	"lge,blmap",
@@ -45,8 +30,57 @@ extern int mdss_dsi_parse_dcs_cmds(struct device_node *np,
 extern void mdss_dsi_panel_cmds_send(struct mdss_dsi_ctrl_pdata *ctrl,
 		struct dsi_panel_cmds *pcmds, u32 flags);
 
-static int parse_dt_extra_dcs_cmds(struct device_node *np,
-                        struct mdss_dsi_ctrl_pdata *ctrl_pdata)
+#define	DDIC_NAME_LEN	15
+static char lge_ddic_name[DDIC_NAME_LEN+1];
+
+bool is_ddic_name(char *ddic_name)
+{
+	if (ddic_name == NULL) {
+		pr_err("input ddic name is NULL\n");
+		return false;
+	}
+
+	if(!strcmp(lge_ddic_name, ddic_name)) {
+		return true;
+	}
+
+	pr_info("input ddic_name = %s, lge_ddic = %s\n", ddic_name, lge_ddic_name);
+	return false;
+}
+EXPORT_SYMBOL(is_ddic_name);
+
+void lge_mdss_panel_parse_ddic_name(struct device_node *np,
+				   struct mdss_dsi_ctrl_pdata *ctrl_pdata)
+{
+	const char *ddic_name;
+
+	memset(lge_ddic_name, 0x0, DDIC_NAME_LEN+1);
+	ddic_name = of_get_property(np, "lge,ddic-name", NULL);
+	if (ddic_name) {
+		strncpy(lge_ddic_name, ddic_name, DDIC_NAME_LEN);
+		pr_info("lge_ddic_name=%s\n", lge_ddic_name);
+	} else {
+		strncpy(lge_ddic_name, "undefined", DDIC_NAME_LEN);
+		pr_info("ddic name is not set\n");
+	}
+}
+
+#if IS_ENABLED(CONFIG_LGE_DISPLAY_HT_LCD_TUNE_MODE)
+void ht_tune_mode_set(struct mdss_dsi_ctrl_pdata *ctrl)
+{
+	char ht_tune_name[10];
+	snprintf(ht_tune_name, sizeof(ht_tune_name),"ht-tune-%d", ctrl->lge_extra.ht_mode);
+
+	pr_info("ht_tune_name = %s\n",ht_tune_name);
+	lge_send_extra_cmds_by_name(ctrl, ht_tune_name);
+
+	return;
+}
+#endif
+
+
+int lge_mdss_panel_parse_dt_extra_cmds(struct device_node *np,
+		struct mdss_dsi_ctrl_pdata *ctrl_pdata)
 {
 	int rc;
 	int i;
@@ -57,30 +91,22 @@ static int parse_dt_extra_dcs_cmds(struct device_node *np,
 	rc = of_property_count_strings(np, "lge,mdss-dsi-extra-command-names");
 	if (rc > 0) {
 		ctrl_pdata->lge_extra.num_extra_cmds = rc;
-		pr_info("%s: num_extra_cmds=%d\n", __func__,
-					ctrl_pdata->lge_extra.num_extra_cmds);
-		ctrl_pdata->lge_extra.extra_cmds_array =
-			kmalloc(sizeof(struct lge_cmds_entry) *
-			ctrl_pdata->lge_extra.num_extra_cmds, GFP_KERNEL);
+		pr_info("num_extra_cmds=%d\n", ctrl_pdata->lge_extra.num_extra_cmds);
+		ctrl_pdata->lge_extra.extra_cmds_array = kmalloc(sizeof(struct lge_dsi_cmds_entry)*ctrl_pdata->lge_extra.num_extra_cmds, GFP_KERNEL);
 		if (NULL == ctrl_pdata->lge_extra.extra_cmds_array) {
-			pr_err("%s: no memory\n", __func__);
+			pr_err("no memory\n");
 			ctrl_pdata->lge_extra.num_extra_cmds = 0;
 			return -ENOMEM;
 		}
-		for (i = 0; i < ctrl_pdata->lge_extra.num_extra_cmds; ++i) {
-			of_property_read_string_index(np,
-				"lge,mdss-dsi-extra-command-names", i, &name);
-			strlcpy(ctrl_pdata->lge_extra.extra_cmds_array[i].name,
-					name,
-			sizeof(ctrl_pdata->lge_extra.extra_cmds_array[i].name));
-			snprintf(buf1, sizeof(buf1),
-					"lge,mdss-dsi-extra-command-%s", name);
-			snprintf(buf2, sizeof(buf2),
-				"lge,mdss-dsi-extra-command-state-%s", name);
-			mdss_dsi_parse_dcs_cmds(np,
-				&ctrl_pdata->lge_extra.extra_cmds_array[i].cmds,
-					buf1, buf2);
+		for (i = 0; i < ctrl_pdata->lge_extra.num_extra_cmds; i++) {
+			of_property_read_string_index(np, "lge,mdss-dsi-extra-command-names", i, &name);
+			pr_info("%s\n", name);
+			strlcpy(ctrl_pdata->lge_extra.extra_cmds_array[i].name, name, sizeof(ctrl_pdata->lge_extra.extra_cmds_array[i].name));
+			snprintf(buf1, sizeof(buf1), "lge,mdss-dsi-extra-command-%s", name);
+			snprintf(buf2, sizeof(buf2), "lge,mdss-dsi-extra-command-state-%s", name);
+			mdss_dsi_parse_dcs_cmds(np, &ctrl_pdata->lge_extra.extra_cmds_array[i].lge_dsi_cmds, buf1, buf2);
 		}
+
 	} else {
 		ctrl_pdata->lge_extra.num_extra_cmds = 0;
 	}
@@ -88,205 +114,31 @@ static int parse_dt_extra_dcs_cmds(struct device_node *np,
 	return 0;
 }
 
-#if IS_ENABLED(CONFIG_LGE_DISPLAY_READER_MODE)
-int lge_mdss_dsi_parse_reader_mode_cmds(struct device_node *np, struct mdss_dsi_ctrl_pdata *ctrl_pdata)
+struct dsi_panel_cmds *lge_get_extra_cmds_by_name(struct mdss_dsi_ctrl_pdata *ctrl_pdata, char *name)
 {
-	mdss_dsi_parse_dcs_cmds(np, &reader_mode_step0_cmds,
-			"qcom,panel-reader-mode-step0-command", "qcom,mdss-dsi-reader-mode-command-state");
-	mdss_dsi_parse_dcs_cmds(np, &reader_mode_step1_cmds,
-			"qcom,panel-reader-mode-step1-command", "qcom,mdss-dsi-reader-mode-command-state");
-	mdss_dsi_parse_dcs_cmds(np, &reader_mode_step2_cmds,
-			"qcom,panel-reader-mode-step2-command", "qcom,mdss-dsi-reader-mode-command-state");
-	mdss_dsi_parse_dcs_cmds(np, &reader_mode_step3_cmds,
-			"qcom,panel-reader-mode-step3-command", "qcom,mdss-dsi-reader-mode-command-state");
-	mdss_dsi_parse_dcs_cmds(np, &reader_mode_step4_cmds,
-			"qcom,panel-reader-mode-step4-command", "qcom,mdss-dsi-reader-mode-command-state");
-	mdss_dsi_parse_dcs_cmds(np, &reader_mode_step5_cmds,
-			"qcom,panel-reader-mode-step5-command", "qcom,mdss-dsi-reader-mode-command-state");
-	mdss_dsi_parse_dcs_cmds(np, &reader_mode_step6_cmds,
-			"qcom,panel-reader-mode-step6-command", "qcom,mdss-dsi-reader-mode-command-state");
-	mdss_dsi_parse_dcs_cmds(np, &reader_mode_step7_cmds,
-			"qcom,panel-reader-mode-step7-command", "qcom,mdss-dsi-reader-mode-command-state");
-	mdss_dsi_parse_dcs_cmds(np, &reader_mode_step8_cmds,
-			"qcom,panel-reader-mode-step8-command", "qcom,mdss-dsi-reader-mode-command-state");
-	mdss_dsi_parse_dcs_cmds(np, &reader_mode_step9_cmds,
-			"qcom,panel-reader-mode-step9-command", "qcom,mdss-dsi-reader-mode-command-state");
-	mdss_dsi_parse_dcs_cmds(np, &reader_mode_step10_cmds,
-			"qcom,panel-reader-mode-step10-command", "qcom,mdss-dsi-reader-mode-command-state");
-	return 0;
-}
-
-bool lge_change_reader_mode(struct mdss_dsi_ctrl_pdata *ctrl, int new_mode)
-{
-	switch(new_mode) {
-		char mask;
-	case READER_MODE_STEP_1:
-		pr_info("%s: Reader Mode Step 1\n",__func__);
-		mdss_dsi_panel_cmds_send(ctrl, &reader_mode_step1_cmds, CMD_REQ_COMMIT);
-		mask = MONO_MASK;
-#if defined(CONFIG_LGE_DISPLAY_LUCYE_COMMON)
-		ctrl->reg_55h_cmds.cmds[0].payload[1] &= (~mask);
-		ctrl->reg_f0h_cmds.cmds[0].payload[1] |= READER_GC_MASK;
-#endif
-		break;
-	case READER_MODE_STEP_2:
-		pr_info("%s: Reader Mode Step 2\n",__func__);
-		mdss_dsi_panel_cmds_send(ctrl, &reader_mode_step2_cmds, CMD_REQ_COMMIT);
-		mask = MONO_MASK;
-#if defined(CONFIG_LGE_DISPLAY_LUCYE_COMMON)
-		ctrl->reg_55h_cmds.cmds[0].payload[1] &= (~mask);
-		ctrl->reg_f0h_cmds.cmds[0].payload[1] |= READER_GC_MASK;
-#endif
-		break;
-	case READER_MODE_STEP_3:
-		pr_info("%s: Reader Mode Step 3\n",__func__);
-		mdss_dsi_panel_cmds_send(ctrl, &reader_mode_step3_cmds, CMD_REQ_COMMIT);
-		mask = MONO_MASK;
-#if defined(CONFIG_LGE_DISPLAY_LUCYE_COMMON)
-		ctrl->reg_55h_cmds.cmds[0].payload[1] &= (~mask);
-		ctrl->reg_f0h_cmds.cmds[0].payload[1] |= READER_GC_MASK;
-#endif
-		break;
-	case READER_MODE_STEP_4:
-		pr_info("%s: Reader Mode Step 4\n",__func__);
-		mdss_dsi_panel_cmds_send(ctrl, &reader_mode_step4_cmds, CMD_REQ_COMMIT);
-		mask = MONO_MASK;
-#if defined(CONFIG_LGE_DISPLAY_LUCYE_COMMON)
-		ctrl->reg_55h_cmds.cmds[0].payload[1] &= (~mask);
-		ctrl->reg_f0h_cmds.cmds[0].payload[1] |= READER_GC_MASK;
-#endif
-		break;
-	case READER_MODE_STEP_5:
-		pr_info("%s: Reader Mode Step 5\n",__func__);
-		mdss_dsi_panel_cmds_send(ctrl, &reader_mode_step5_cmds, CMD_REQ_COMMIT);
-		mask = MONO_MASK;
-#if defined(CONFIG_LGE_DISPLAY_LUCYE_COMMON)
-		ctrl->reg_55h_cmds.cmds[0].payload[1] &= (~mask);
-		ctrl->reg_f0h_cmds.cmds[0].payload[1] |= READER_GC_MASK;
-#endif
-		break;
-	case READER_MODE_STEP_6:
-		pr_info("%s: Reader Mode Step 6\n",__func__);
-		mdss_dsi_panel_cmds_send(ctrl, &reader_mode_step6_cmds, CMD_REQ_COMMIT);
-		mask = MONO_MASK;
-#if defined(CONFIG_LGE_DISPLAY_LUCYE_COMMON)
-		ctrl->reg_55h_cmds.cmds[0].payload[1] &= (~mask);
-		ctrl->reg_f0h_cmds.cmds[0].payload[1] |= READER_GC_MASK;
-#endif
-		break;
-	case READER_MODE_STEP_7:
-		pr_info("%s: Reader Mode Step 7\n",__func__);
-		mdss_dsi_panel_cmds_send(ctrl, &reader_mode_step7_cmds, CMD_REQ_COMMIT);
-		mask = MONO_MASK;
-#if defined(CONFIG_LGE_DISPLAY_LUCYE_COMMON)
-		ctrl->reg_55h_cmds.cmds[0].payload[1] &= (~mask);
-		ctrl->reg_f0h_cmds.cmds[0].payload[1] |= READER_GC_MASK;
-#endif
-		break;
-	case READER_MODE_STEP_8:
-		pr_info("%s: Reader Mode Step 8\n",__func__);
-		mdss_dsi_panel_cmds_send(ctrl, &reader_mode_step8_cmds, CMD_REQ_COMMIT);
-		mask = MONO_MASK;
-#if defined(CONFIG_LGE_DISPLAY_LUCYE_COMMON)
-		ctrl->reg_55h_cmds.cmds[0].payload[1] &= (~mask);
-		ctrl->reg_f0h_cmds.cmds[0].payload[1] |= READER_GC_MASK;
-#endif
-		break;
-	case READER_MODE_STEP_9:
-		pr_info("%s: Reader Mode Step 9\n",__func__);
-		mdss_dsi_panel_cmds_send(ctrl, &reader_mode_step9_cmds, CMD_REQ_COMMIT);
-		mask = MONO_MASK;
-#if defined(CONFIG_LGE_DISPLAY_LUCYE_COMMON)
-		ctrl->reg_55h_cmds.cmds[0].payload[1] &= (~mask);
-		ctrl->reg_f0h_cmds.cmds[0].payload[1] |= READER_GC_MASK;
-#endif
-		break;
-	case READER_MODE_STEP_10:
-		pr_info("%s: Reader Mode Step 10\n",__func__);
-		mdss_dsi_panel_cmds_send(ctrl, &reader_mode_step10_cmds, CMD_REQ_COMMIT);
-		mask = MONO_MASK;
-#if defined(CONFIG_LGE_DISPLAY_LUCYE_COMMON)
-		ctrl->reg_55h_cmds.cmds[0].payload[1] &= (~mask);
-		ctrl->reg_f0h_cmds.cmds[0].payload[1] |= READER_GC_MASK;
-#endif
-		break;
-
-	case READER_MODE_OFF:
-	default:
-		pr_info("%s: Reader Mode Step OFF\n",__func__);
-		mdss_dsi_panel_cmds_send(ctrl, &reader_mode_step0_cmds, CMD_REQ_COMMIT);
-		mask = MONO_MASK;
-#if defined(CONFIG_LGE_DISPLAY_LUCYE_COMMON)
-		ctrl->reg_55h_cmds.cmds[0].payload[1] &= (~mask);
-		mask = READER_GC_MASK;
-		ctrl->reg_f0h_cmds.cmds[0].payload[1] &= (~mask);
-#endif
-	}
-#if defined(CONFIG_LGE_DISPLAY_LUCYE_COMMON)
-	mdss_dsi_panel_cmds_send(ctrl, &ctrl->reg_55h_cmds, CMD_REQ_COMMIT);
-	mdss_dsi_panel_cmds_send(ctrl, &ctrl->reg_f0h_cmds, CMD_REQ_COMMIT);
-	pr_info("%s : 55h:0x%02x, f0h:0x%02x, f2h(SH):0x%02x, fbh(CABC):0x%02x \n",__func__,
-		ctrl->reg_55h_cmds.cmds[0].payload[1],	ctrl->reg_f0h_cmds.cmds[0].payload[1],
-		ctrl->reg_f2h_cmds.cmds[0].payload[3], ctrl->reg_fbh_cmds.cmds[0].payload[4]);
-#endif
-	return true;
-}
-
-int lge_mdss_dsi_panel_send_on_cmds(struct mdss_dsi_ctrl_pdata *ctrl, struct dsi_panel_cmds *default_on_cmds, int cur_mode)
-{
-	if (default_on_cmds->cmd_cnt)
-		mdss_dsi_panel_cmds_send(ctrl, default_on_cmds, CMD_REQ_COMMIT);
-
-	lge_change_reader_mode(ctrl, cur_mode);
-
-	return 0;
-}
-#endif
-
-int lge_mdss_panel_parse_dt_extra(struct device_node *np,
-			struct mdss_dsi_ctrl_pdata *ctrl_pdata)
-{
-	int rc;
-	u32 tmp;
-
-	rc = of_property_read_u32(np, "lge,pre-on-cmds-delay", &tmp);
-	ctrl_pdata->lge_extra.pre_on_cmds_delay = (!rc ? tmp : 0);
-
-	rc = of_property_read_u32(np, "lge,pre-off-cmds-extra-delay", &tmp);
-	ctrl_pdata->lge_extra.pre_off_cmds_extra_delay = (!rc ? tmp : 0);
-
-	rc = of_property_read_u32(np, "lge,post-off-cmds-delay", &tmp);
-	ctrl_pdata->lge_extra.post_off_cmds_delay = (!rc ? tmp : 0);
-
-#if IS_ENABLED(CONFIG_LGE_DISPLAY_READER_MODE)
-	lge_mdss_dsi_parse_reader_mode_cmds(np, ctrl_pdata);
-#endif
-
-	parse_dt_extra_dcs_cmds(np, ctrl_pdata);
-
-	return 0;
-}
-
-void lge_mdss_dsi_panel_extra_cmds_send(struct mdss_dsi_ctrl_pdata *ctrl,
-					const char *name)
-{
-	int i, index = -1;
-	for (i = 0; i < ctrl->lge_extra.num_extra_cmds; ++i) {
-		if (!strcmp(ctrl->lge_extra.extra_cmds_array[i].name, name)) {
-			index = i;
-			break;
-		}
+	int i;
+	if (ctrl_pdata == NULL) {
+		pr_err("ctrl_pdata is NULL\n");
+		return NULL;
 	}
 
-	if (index != -1) {
-		if (ctrl->lge_extra.extra_cmds_array[index].cmds.cmd_cnt)
-			mdss_dsi_panel_cmds_send(ctrl,
-			&ctrl->lge_extra.extra_cmds_array[index].cmds,
-			CMD_REQ_COMMIT);
+	for (i = 0; i < ctrl_pdata->lge_extra.num_extra_cmds; ++i) {
+		if (!strcmp(ctrl_pdata->lge_extra.extra_cmds_array[i].name, name))
+			return &ctrl_pdata->lge_extra.extra_cmds_array[i].lge_dsi_cmds;
+	}
+	return NULL;
+}
+
+void lge_send_extra_cmds_by_name(struct mdss_dsi_ctrl_pdata *ctrl_pdata, char *name)
+{
+	struct dsi_panel_cmds *pcmds = lge_get_extra_cmds_by_name(ctrl_pdata, name);
+	if (pcmds) {
+		mdss_dsi_panel_cmds_send(ctrl_pdata, pcmds, CMD_REQ_COMMIT);
 	} else {
-		pr_err("%s: extra cmds %s not found\n", __func__, name);
+		pr_err("unsupported cmds: %s\n", name);
 	}
 }
+
 
 char *lge_get_blmapname(enum lge_bl_map_type  blmaptype)
 {
@@ -345,6 +197,82 @@ error:
 	kfree(array);
 }
 
+void lge_mdss_panel_parse_dt_bl_list_maps(struct device_node *np,
+				   struct mdss_dsi_ctrl_pdata *ctrl_pdata)
+{
+	const char *name;
+	int i, rc;
+
+	rc = of_property_count_strings(np, "lge,blmap-list");
+	if (rc > 0) {
+		ctrl_pdata->lge_extra.blmap_list_size = rc;
+		pr_info("blmap_list_size=%d\n", ctrl_pdata->lge_extra.blmap_list_size);
+		ctrl_pdata->lge_extra.blmap_list = kzalloc(sizeof(char*) * ctrl_pdata->lge_extra.blmap_list_size, GFP_KERNEL);
+		ctrl_pdata->lge_extra.blmap = kzalloc(sizeof(int*) * ctrl_pdata->lge_extra.blmap_list_size, GFP_KERNEL);
+		ctrl_pdata->lge_extra.blmap_size = kzalloc(sizeof(int) * ctrl_pdata->lge_extra.blmap_list_size, GFP_KERNEL);
+		if (NULL == ctrl_pdata->lge_extra.blmap_list || NULL == ctrl_pdata->lge_extra.blmap || NULL == ctrl_pdata->lge_extra.blmap_size) {
+			pr_err("allocation failed\n");
+			ctrl_pdata->lge_extra.blmap_list_size = 0;
+			goto error;
+		}
+		for (i = 0; i < ctrl_pdata->lge_extra.blmap_list_size; i++) {
+			of_property_read_string_index(np, "lge,blmap-list", i, &name);
+			ctrl_pdata->lge_extra.blmap_list[i] = kzalloc(strlen(name)+1, GFP_KERNEL);
+			if (NULL == ctrl_pdata->lge_extra.blmap_list[i]) {
+				pr_err("allocation for blmap name %s failed\n", name);
+				goto error;
+			}
+			strcpy(ctrl_pdata->lge_extra.blmap_list[i], name);
+			pr_info("%s\n", ctrl_pdata->lge_extra.blmap_list[i]);
+			if (of_find_property(np, name, &ctrl_pdata->lge_extra.blmap_size[i])) {
+				ctrl_pdata->lge_extra.blmap_size[i] /= sizeof(u32);
+				ctrl_pdata->lge_extra.blmap[i] = kzalloc(sizeof(int) * ctrl_pdata->lge_extra.blmap_size[i], GFP_KERNEL);
+				pr_info("blmap_size for blmap %s = %d\n", name, ctrl_pdata->lge_extra.blmap_size[i]);
+				if (NULL == ctrl_pdata->lge_extra.blmap[i]) {
+					pr_err("allocation for blmap %s failed\n", name);
+					goto error;
+				}
+				if (of_property_read_u32_array(np, name, ctrl_pdata->lge_extra.blmap[i], ctrl_pdata->lge_extra.blmap_size[i])) {
+					pr_err("parsing %s failed\n", name);
+					kfree(ctrl_pdata->lge_extra.blmap[i]);
+					ctrl_pdata->lge_extra.blmap[i] = NULL;
+				}
+			} else {
+				ctrl_pdata->lge_extra.blmap_size[i] = 0;
+				ctrl_pdata->lge_extra.blmap[i] = NULL;
+			}
+		}
+	} else {
+		ctrl_pdata->lge_extra.blmap_list_size = 0;
+	}
+	return;
+
+error:
+	for (i = 0; i < ctrl_pdata->lge_extra.blmap_list_size; ++i) {
+		if (ctrl_pdata->lge_extra.blmap_list[i]) {
+			kfree(ctrl_pdata->lge_extra.blmap_list[i]);
+			ctrl_pdata->lge_extra.blmap_list[i] = NULL;
+		}
+		if (ctrl_pdata->lge_extra.blmap[i]) {
+			kfree(ctrl_pdata->lge_extra.blmap[i]);
+			ctrl_pdata->lge_extra.blmap[i] = NULL;
+		}
+	}
+	if (ctrl_pdata->lge_extra.blmap_list) {
+		kfree(ctrl_pdata->lge_extra.blmap_list);
+		ctrl_pdata->lge_extra.blmap_list = NULL;
+	}
+	if (ctrl_pdata->lge_extra.blmap) {
+		kfree(ctrl_pdata->lge_extra.blmap);
+		ctrl_pdata->lge_extra.blmap = NULL;
+	}
+	if (ctrl_pdata->lge_extra.blmap_size) {
+		kfree(ctrl_pdata->lge_extra.blmap_size);
+		ctrl_pdata->lge_extra.blmap_size = NULL;
+	}
+	ctrl_pdata->lge_extra.blmap_list_size = 0;
+}
+
 #ifdef CONFIG_LGE_DISPLAY_BL_EXTENDED
 int mdss_panel_parse_blex_settings(struct device_node *np,
 			struct mdss_dsi_ctrl_pdata *ctrl_pdata)
@@ -367,3 +295,203 @@ int mdss_panel_parse_blex_settings(struct device_node *np,
 	return 0;
 }
 #endif
+
+static int find_blmap_index_by_name(struct mdss_dsi_ctrl_pdata *ctrl_pdata, const char *name)
+{
+	int index = -1;
+	int i;
+
+	for (i = 0; i < ctrl_pdata->lge_extra.blmap_list_size; ++i) {
+		if (ctrl_pdata->lge_extra.blmap_list[i] && !strncmp(ctrl_pdata->lge_extra.blmap_list[i], name, strlen(name))) {
+			index = i;
+			break;
+		}
+	}
+	if (index == -1)
+		pr_err("index of blmap %s not found, blmap_list_size=%d\n", name, ctrl_pdata->lge_extra.blmap_list_size);
+	return index;
+}
+
+static int lge_mdss_panel_parse_mplus_dt(struct device_node *np,
+						struct mdss_dsi_ctrl_pdata *ctrl_pdata)
+{
+	const char *name;
+	int i, rc;
+
+	ctrl_pdata->lge_extra.mp_to_blmap_tbl = NULL;
+	ctrl_pdata->lge_extra.mp_to_blmap_tbl_size = 0;
+
+	ctrl_pdata->lge_extra.use_mplus =
+		LGE_DDIC_OP_CHECK(ctrl_pdata, mplus_mode_set)
+		&& LGE_DDIC_OP_CHECK(ctrl_pdata, mplus_mode_get)
+		&& LGE_DDIC_OP_CHECK(ctrl_pdata, mplus_max_set)
+		&& LGE_DDIC_OP_CHECK(ctrl_pdata, mplus_max_get)
+		&& LGE_DDIC_OP_CHECK(ctrl_pdata, mplus_hd_set)
+		&& LGE_DDIC_OP_CHECK(ctrl_pdata, mplus_hd_get);
+
+	if (!ctrl_pdata->lge_extra.use_mplus)
+		return 0;
+
+	rc = of_property_count_strings(np, "lge,blmap-for-mplus-mode");
+	if (rc > 0) {
+		ctrl_pdata->lge_extra.mp_to_blmap_tbl_size = rc;
+		pr_info("mp_to_blmap_tbl_size=%d\n", ctrl_pdata->lge_extra.mp_to_blmap_tbl_size);
+		ctrl_pdata->lge_extra.mp_to_blmap_tbl = kzalloc(sizeof(int) * ctrl_pdata->lge_extra.blmap_list_size, GFP_KERNEL);
+		if (NULL == ctrl_pdata->lge_extra.mp_to_blmap_tbl) {
+			pr_err("allocation failed\n");
+			ctrl_pdata->lge_extra.use_mplus = false;
+			ctrl_pdata->lge_extra.mp_to_blmap_tbl_size = 0;
+			return -ENOMEM;
+		}
+		for (i = 0; i < ctrl_pdata->lge_extra.mp_to_blmap_tbl_size; i++) {
+			of_property_read_string_index(np, "lge,blmap-for-mplus-mode", i, &name);
+			pr_info("%s\n", name);
+			ctrl_pdata->lge_extra.mp_to_blmap_tbl[i] = find_blmap_index_by_name(ctrl_pdata, name);
+		}
+	} else {
+		pr_err("lge,blmap-for-mplus-mode not exist");
+		ctrl_pdata->lge_extra.use_mplus = false;
+	}
+	return 0;
+}
+
+static int lge_mdss_panel_parse_feature_dt(struct device_node *np,
+						struct mdss_dsi_ctrl_pdata *ctrl_pdata)
+{
+	struct lge_mdss_dsi_ctrl_pdata *lge_extra;
+	int rc = 0;
+	u32 tmp = 0;
+
+	if (np == NULL || ctrl_pdata == NULL) {
+		pr_err("Invalid input\n");
+		return -EINVAL;
+	}
+
+	lge_extra = &(ctrl_pdata->lge_extra);
+
+	lge_extra->use_u2_fsc = of_property_read_bool(np, "lge,use-u2-fsc");
+	if (lge_extra->use_u2_fsc) {
+		rc = of_property_read_u32(np, "lge,fsc-curr-ua-u3", &tmp);
+		if (rc) {
+			lge_extra->fsc_u3 = DEFAULT_LGE_FSC_U3;
+			pr_err("fail to parse lge,fsc-curr-ua-u3 Set to Default %d\n", lge_extra->fsc_u3);
+		} else {
+			lge_extra->fsc_u3 = tmp;
+			pr_info("fsc_u3 %d\n", lge_extra->fsc_u3);
+		}
+		rc = of_property_read_u32(np, "lge,fsc-curr-ua-u2", &tmp);
+		if (rc) {
+			lge_extra->fsc_u2 = DEFAULT_LGE_FSC_U2;
+			pr_err("fail to parse lge,fsc-curr-ua-u2 Set to Default %d\n", lge_extra->fsc_u2);
+		} else {
+			lge_extra->fsc_u2 = tmp;
+			pr_info("fsc_u2 %d\n", lge_extra->fsc_u2);
+		}
+	} else {
+		pr_err("lge,use-u2-fsc not exist");
+	}
+
+	return 0;
+}
+
+static int lge_mdss_panel_parse_dt(struct device_node *np,
+						struct mdss_dsi_ctrl_pdata *ctrl_pdata)
+{
+	lge_mdss_panel_parse_ddic_name(np, ctrl_pdata);
+
+	lge_mdss_panel_parse_dt_bl_list_maps(np, ctrl_pdata);
+	if (ctrl_pdata->lge_extra.blmap_list_size == 0)
+		lge_mdss_panel_parse_dt_blmaps(np, ctrl_pdata);
+
+	lge_mdss_panel_parse_mplus_dt(np, ctrl_pdata);
+	lge_mdss_panel_parse_dt_extra_cmds(np, ctrl_pdata);
+	lge_mdss_panel_parse_feature_dt(np, ctrl_pdata);
+
+	return 0;
+}
+
+int lge_ddic_feature_init(struct mdss_dsi_ctrl_pdata *ctrl_pdata)
+{
+	if (ctrl_pdata == NULL)
+		return -ENODEV;
+
+	ctrl_pdata->lge_extra.hdr_mode = HDR_OFF;
+	ctrl_pdata->lge_extra.dolby_mode = DOLBY_OFF;
+	ctrl_pdata->lge_extra.sre_mode = SRE_OFF;
+	ctrl_pdata->lge_extra.hl_mode = HL_MODE_OFF;
+	ctrl_pdata->lge_extra.aod_interface = 0x144;
+	ctrl_pdata->lge_extra.cm_preset_step = RGB_DEFAULT_PRESET;
+	ctrl_pdata->lge_extra.cm_red_step = RGB_DEFAULT_RED;
+	ctrl_pdata->lge_extra.cm_green_step = RGB_DEFAULT_GREEN;
+	ctrl_pdata->lge_extra.cm_blue_step = RGB_DEFAULT_BLUE;
+	ctrl_pdata->lge_extra.sharpness = SHA_OFF;
+	ctrl_pdata->lge_extra.ie_control = IE_OFF;
+
+	ctrl_pdata->lge_extra.sc_sat_step = SC_MODE_DEFAULT;
+	ctrl_pdata->lge_extra.sc_hue_step = SC_MODE_DEFAULT;
+	ctrl_pdata->lge_extra.sc_sha_step = SC_MODE_DEFAULT;
+	ctrl_pdata->lge_extra.color_filter = SC_MODE_DEFAULT;
+
+	if (ctrl_pdata->lge_extra.use_mplus) {
+		ctrl_pdata->lge_extra.mplus_hd = LGE_MP_OFF;
+		ctrl_pdata->lge_extra.mp_max = LGE_MP_OFF;
+		ctrl_pdata->lge_extra.mp_mode = LGE_MP_OFF;
+		ctrl_pdata->lge_extra.adv_mp_mode = LGE_MP_OFF;
+		ctrl_pdata->lge_extra.cur_mp_mode = LGE_MP_NOR;
+		ctrl_pdata->lge_extra.mplus_dim_cnt = LGE_MPLUS_BR_DIM_CNT;
+		ctrl_pdata->lge_extra.mplus_dim_delay = LGE_MPLUS_BR_DIM_DELAY;
+	}
+	return 0;
+}
+
+int lge_mdss_dsi_panel_init(struct device_node *node, struct mdss_dsi_ctrl_pdata *ctrl_pdata)
+{
+	lge_ddic_ops_init(ctrl_pdata);
+
+	lge_mdss_panel_parse_dt(node, ctrl_pdata);
+
+	lge_ddic_feature_init(ctrl_pdata);
+	return 0;
+}
+
+static int lge_panel_get_blmap_type(struct mdss_dsi_ctrl_pdata *ctrl)
+{
+#if defined(CONFIG_LGE_DISPLAY_AMBIENT_SUPPORTED)
+	if (mdss_dsi_is_panel_on_lp(&ctrl->panel_data))
+		return find_blmap_index_by_name(ctrl, "lge,blmap-ex");
+#endif
+
+	if (!LGE_DDIC_OP_CHECK(ctrl, get_blmap_type))
+		return 0;
+
+	return LGE_DDIC_OP(ctrl, get_blmap_type);
+}
+
+int lge_panel_br_to_bl(struct mdss_dsi_ctrl_pdata *ctrl, int br_lvl)
+{
+	int type = 0;
+	int *blmap = NULL;
+	int blmap_size = 0;
+
+	if (ctrl) {
+		type = lge_panel_get_blmap_type(ctrl);
+		if (ctrl->lge_extra.blmap_list_size && type >= 0 && type < ctrl->lge_extra.blmap_list_size) {
+			blmap = ctrl->lge_extra.blmap[type];
+			blmap_size = ctrl->lge_extra.blmap_size[type];
+			pr_debug("blmap type = %s\n", ctrl->lge_extra.blmap_list[type]);
+		}
+	} else {
+		pr_err("ctrl is NULL\n");
+	}
+
+	if (blmap == NULL || blmap_size == 0) {
+		pr_err("there is no blmap\n");
+		return 100;
+	}
+	if (br_lvl < 0)
+		br_lvl = 0;
+	if (br_lvl >= blmap_size)
+		br_lvl = blmap_size-1;
+
+	return blmap[br_lvl];
+}

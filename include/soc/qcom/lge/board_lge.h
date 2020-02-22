@@ -3,7 +3,7 @@
 
 #ifdef CONFIG_LGE_PM_LGE_POWER_CLASS_BOARD_REVISION
 #else
-#if defined(CONFIG_MACH_MSM8996_LUCYE)
+#if defined(CONFIG_MACH_MSM8996_LUCYE) || defined (CONFIG_MACH_MSM8996_FALCON)
 enum hw_rev_type {
 	HW_REV_EVB1 = 0,
 	HW_REV_EVB2,
@@ -119,10 +119,9 @@ int get_lge_frst_status(void);
 int lge_get_mfts_mode(void);
 
 extern int lge_get_bootreason(void);
+extern bool lge_check_recoveryboot(void);
 
-#ifdef CONFIG_LGE_LCD_OFF_DIMMING
 extern int lge_get_bootreason_with_lcd_dimming(void);
-#endif
 
 extern int lge_get_fota_mode(void);
 extern int lge_get_boot_partition_recovery(void);

@@ -3497,6 +3497,9 @@ void show_free_areas(unsigned int filter)
 #ifdef CONFIG_MIGRATE_HIGHORDER
 		"free_highorder:%lu\n"
 #endif
+#ifdef CONFIG_NON_SWAP
+		" non_swap:%lu\n"
+#endif
 		,
 		global_page_state(NR_ACTIVE_ANON),
 		global_page_state(NR_INACTIVE_ANON),
@@ -3518,6 +3521,9 @@ void show_free_areas(unsigned int filter)
 		global_page_state(NR_FREE_CMA_PAGES)
 #ifdef CONFIG_MIGRATE_HIGHORDER
 		,global_page_state(NR_FREE_HIGHORDER_PAGES)
+#endif
+#ifdef CONFIG_NON_SWAP
+		,global_page_state(NR_NON_SWAP)
 #endif
 		);
 
@@ -3556,6 +3562,9 @@ void show_free_areas(unsigned int filter)
 #ifdef CONFIG_MIGRATE_HIGHORDER
 			" free_highorder:%lukB"
 #endif
+#ifdef CONFIG_NON_SWAP
+			" non_swap:%lukB"
+#endif
 			" writeback_tmp:%lukB"
 			" pages_scanned:%lu"
 			" all_unreclaimable? %s"
@@ -3589,6 +3598,9 @@ void show_free_areas(unsigned int filter)
 			K(zone_page_state(zone, NR_FREE_CMA_PAGES)),
 #ifdef CONFIG_MIGRATE_HIGHORDER
 			K(zone_page_state(zone, NR_FREE_HIGHORDER_PAGES)),
+#endif
+#ifdef CONFIG_NON_SWAP
+			K(zone_page_state(zone, NR_NON_SWAP)),
 #endif
 			K(zone_page_state(zone, NR_WRITEBACK_TEMP)),
 			K(zone_page_state(zone, NR_PAGES_SCANNED)),

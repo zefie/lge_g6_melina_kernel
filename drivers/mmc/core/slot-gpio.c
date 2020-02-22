@@ -70,14 +70,7 @@ static irqreturn_t mmc_gpio_cd_irqt(int irq, void *dev_id)
 		"HIGH" : "LOW");
 #endif
 
-#ifdef CONFIG_MACH_LGE
-	/* LGE_CHANGE, 2015-09-23, H1-BSP-FS@lge.com
-	 * Reduce debounce time to make it more sensitive
-	 */
-	mmc_detect_change(host, 0);
-#else
 	mmc_detect_change(host, msecs_to_jiffies(200));
-#endif
 
 #ifdef CONFIG_LGE_TRAY_EVENT //support the TRAY uevent
 	if (send_sd_slot_tray_state(host, mmc_gpio_get_cd(host)) < 0)

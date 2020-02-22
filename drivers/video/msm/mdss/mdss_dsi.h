@@ -87,8 +87,9 @@
 #define SRE_MASK_BLANK	0x8F
 /* F0h */
 #define SAT_MASK	0x80
-#define READER_GC_MASK   0x04
 #define SH_MASK	0x02
+#define HUE_MASK 0x40
+#define DG_MASK 0x04
 /* F2h */
 #define SHARPNESS_VALUE	0x24
 /* FBh */
@@ -164,9 +165,6 @@ enum dsi_lane_map_type {
 enum dsi_pm_type {
 	/* PANEL_PM not used as part of power_data in dsi_shared_data */
 	DSI_PANEL_PM,
-#if IS_ENABLED(CONFIG_LGE_DISPLAY_COMMON)
-	DSI_EXTRA_PM,
-#endif
 	DSI_CORE_PM,
 	DSI_CTRL_PM,
 	DSI_PHY_PM,
@@ -394,7 +392,6 @@ struct dsi_panel_timing {
 #endif
 #if defined(CONFIG_LGE_ENHANCE_GALLERY_SHARPNESS)
 	struct dsi_panel_cmds sharpness_on_cmds;
-	struct dsi_panel_cmds ce_on_cmds;
 #endif
 #if defined(CONFIG_LGE_DISPLAY_COMMON)
 	struct dsi_panel_cmds vcom_cmds;
@@ -406,11 +403,6 @@ struct dsi_panel_timing {
 #if defined(CONFIG_LGE_DISPLAY_LUCYE_COMMON)
 	struct dsi_panel_cmds display_on_cmds;
 	struct dsi_panel_cmds display_on_and_aod_comds;
-	struct dsi_panel_cmds reg_55h_cmds;
-	struct dsi_panel_cmds reg_f0h_cmds;
-	struct dsi_panel_cmds reg_f2h_cmds;
-	struct dsi_panel_cmds reg_f3h_cmds;
-	struct dsi_panel_cmds reg_fbh_cmds;
 	struct dsi_panel_cmds vgho_vglo_8p8v_cmd;
 	struct dsi_panel_cmds vgho_vglo_11p6v_cmd;
 	int mux_gate_voltage_status;
@@ -418,12 +410,6 @@ struct dsi_panel_timing {
 #if defined(CONFIG_LGE_DISPLAY_LINEAR_GAMMA)
 	struct dsi_panel_cmds linear_gamma_default_cmds;
 	struct dsi_panel_cmds linear_gamma_tuning_cmds;
-#endif
-#if defined(CONFIG_LGE_DISPLAY_SRE_MODE)
-	int sre_status;
-#endif
-#if defined(CONFIG_LGE_DISPLAY_HDR_MODE)
-	int hdr_status;
 #endif
 #if defined(CONFIG_LGE_DISPLAY_DOLBY_MODE)
 	int dolby_status;
@@ -584,35 +570,21 @@ struct mdss_dsi_ctrl_pdata {
 #if defined(CONFIG_LGE_DISPLAY_LUCYE_COMMON)
 	struct dsi_panel_cmds display_on_cmds;
 	struct dsi_panel_cmds display_on_and_aod_comds;
-	struct dsi_panel_cmds reg_55h_cmds;
-	struct dsi_panel_cmds reg_f0h_cmds;
-	struct dsi_panel_cmds reg_f2h_cmds;
-	struct dsi_panel_cmds reg_f3h_cmds;
-	struct dsi_panel_cmds reg_fbh_cmds;
 	struct dsi_panel_cmds vgho_vglo_8p8v_cmd;
 	struct dsi_panel_cmds vgho_vglo_11p6v_cmd;
 	int mux_gate_voltage_status;
 #endif
 #if defined(CONFIG_LGE_ENHANCE_GALLERY_SHARPNESS)
 	struct dsi_panel_cmds sharpness_on_cmds;
-	struct dsi_panel_cmds ce_on_cmds;
 #endif
 #if defined(CONFIG_LGE_LCD_DYNAMIC_CABC_MIE_CTRL)
 	struct dsi_panel_cmds ie_on_cmds;
 	struct dsi_panel_cmds ie_off_cmds;
-	struct dsi_panel_cmds cabc_20_cmds;
-	struct dsi_panel_cmds cabc_30_cmds;
 	int ie_on;
 #endif
 #if defined(CONFIG_LGE_DISPLAY_LINEAR_GAMMA)
 	struct dsi_panel_cmds linear_gamma_default_cmds;
 	struct dsi_panel_cmds linear_gamma_tuning_cmds;
-#endif
-#if defined(CONFIG_LGE_DISPLAY_SRE_MODE)
-	int sre_status;
-#endif
-#if defined(CONFIG_LGE_DISPLAY_HDR_MODE)
-	int hdr_status;
 #endif
 #if defined(CONFIG_LGE_DISPLAY_DOLBY_MODE)
 	int dolby_status;
@@ -769,6 +741,7 @@ int mdss_dsi_wait_for_lane_idle(struct mdss_dsi_ctrl_pdata *ctrl);
 
 irqreturn_t mdss_dsi_isr(int irq, void *ptr);
 irqreturn_t hw_vsync_handler(int irq, void *data);
+void disable_esd_thread(void);
 void mdss_dsi_irq_handler_config(struct mdss_dsi_ctrl_pdata *ctrl_pdata);
 
 void mdss_dsi_set_tx_power_mode(int mode, struct mdss_panel_data *pdata);
@@ -856,9 +829,6 @@ static inline const char *__mdss_dsi_pm_name(enum dsi_pm_type module)
 	case DSI_CTRL_PM:	return "DSI_CTRL_PM";
 	case DSI_PHY_PM:	return "DSI_PHY_PM";
 	case DSI_PANEL_PM:	return "PANEL_PM";
-#if IS_ENABLED(CONFIG_LGE_DISPLAY_COMMON)
-	case DSI_EXTRA_PM:	return "EXTRA_PM";
-#endif
 	default:		return "???";
 	}
 }
@@ -871,9 +841,6 @@ static inline const char *__mdss_dsi_pm_supply_node_name(
 	case DSI_CTRL_PM:	return "qcom,ctrl-supply-entries";
 	case DSI_PHY_PM:	return "qcom,phy-supply-entries";
 	case DSI_PANEL_PM:	return "qcom,panel-supply-entries";
-#if IS_ENABLED(CONFIG_LGE_DISPLAY_COMMON)
-	case DSI_EXTRA_PM:	return "lge,extra-supply-entries";
-#endif
 	default:		return "???";
 	}
 }

@@ -207,4 +207,11 @@ int usb_pd_pal_set_moisture_detect_use_sbu(void)
 {
 	return pd_dpm_handle_pe_event(PD_DPM_PE_EVENT_SET_MOISTURE_DETECT_USE_SBU, NULL);
 }
+
+#ifdef CONFIG_LGE_USB_MOISTURE_DETECT_EDGE
+int usb_pd_pal_get_edge_adc(unsigned int port)
+{
+	return pd_dpm_handle_pe_event(PD_DPM_PE_EVENT_GET_EDGE_ADC, NULL);
+}
+#endif
 #endif

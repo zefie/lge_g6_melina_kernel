@@ -423,7 +423,7 @@ static ssize_t slimport_sysfs_rda_hdmi_vga(struct device *dev, struct device_att
 static ssize_t ctrl_reg0_show(struct device *dev, struct device_attribute *attr,
 		 char *buf)
 {
-	unchar c;
+	unchar c = 0;
 	sp_read_reg(TX_P1, SP_TX_LT_CTRL_REG0, &c);
 	return sprintf(buf, "0x%x\n", c);
 }
@@ -445,7 +445,7 @@ static ssize_t ctrl_reg0_store(struct device *dev, struct device_attribute *attr
 static ssize_t ctrl_reg1_show(struct device *dev, struct device_attribute *attr,
 		 char *buf)
 {
-	unchar c;
+	unchar c = 0;
 	sp_read_reg(TX_P1, SP_TX_LT_CTRL_REG1, &c);
 	return sprintf(buf, "0x%x\n", c);
 }
@@ -467,7 +467,7 @@ static ssize_t ctrl_reg1_store(struct device *dev, struct device_attribute *attr
 static ssize_t ctrl_reg2_show(struct device *dev, struct device_attribute *attr,
 		 char *buf)
 {
-	unchar c;
+	unchar c = 0;
 	sp_read_reg(TX_P1, SP_TX_LT_CTRL_REG2, &c);
 	return sprintf(buf, "0x%x\n", c);
 }
@@ -489,7 +489,7 @@ static ssize_t ctrl_reg2_store(struct device *dev, struct device_attribute *attr
 static ssize_t ctrl_reg3_show(struct device *dev, struct device_attribute *attr,
 		 char *buf)
 {
-	unchar c;
+	unchar c = 0;
 	sp_read_reg(TX_P1, SP_TX_LT_CTRL_REG3, &c);
 	return sprintf(buf, "0x%x\n", c);
 }
@@ -511,7 +511,7 @@ static ssize_t ctrl_reg3_store(struct device *dev, struct device_attribute *attr
 static ssize_t ctrl_reg4_show(struct device *dev, struct device_attribute *attr,
 		 char *buf)
 {
-	unchar c;
+	unchar c = 0;
 	sp_read_reg(TX_P1, SP_TX_LT_CTRL_REG4, &c);
 	return sprintf(buf, "0x%x\n", c);
 }
@@ -533,7 +533,7 @@ static ssize_t ctrl_reg4_store(struct device *dev, struct device_attribute *attr
 static ssize_t ctrl_reg5_show(struct device *dev, struct device_attribute *attr,
 		 char *buf)
 {
-	unchar c;
+	unchar c = 0;
 	sp_read_reg(TX_P1, SP_TX_LT_CTRL_REG5, &c);
 	return sprintf(buf, "0x%x\n", c);
 }
@@ -555,7 +555,7 @@ static ssize_t ctrl_reg5_store(struct device *dev, struct device_attribute *attr
 static ssize_t ctrl_reg6_show(struct device *dev, struct device_attribute *attr,
 		 char *buf)
 {
-	unchar c;
+	unchar c = 0;
 	sp_read_reg(TX_P1, SP_TX_LT_CTRL_REG6, &c);
 	return sprintf(buf, "0x%x\n", c);
 }
@@ -577,7 +577,7 @@ static ssize_t ctrl_reg6_store(struct device *dev, struct device_attribute *attr
 static ssize_t ctrl_reg7_show(struct device *dev, struct device_attribute *attr,
 		 char *buf)
 {
-	unchar c;
+	unchar c = 0;
 	sp_read_reg(TX_P1, SP_TX_LT_CTRL_REG7, &c);
 	return sprintf(buf, "0x%x\n", c);
 }
@@ -599,7 +599,7 @@ static ssize_t ctrl_reg7_store(struct device *dev, struct device_attribute *attr
 static ssize_t ctrl_reg8_show(struct device *dev, struct device_attribute *attr,
 		 char *buf)
 {
-	unchar c;
+	unchar c = 0;
 	sp_read_reg(TX_P1, SP_TX_LT_CTRL_REG8, &c);
 	return sprintf(buf, "0x%x\n", c);
 }
@@ -621,7 +621,7 @@ static ssize_t ctrl_reg8_store(struct device *dev, struct device_attribute *attr
 static ssize_t ctrl_reg9_show(struct device *dev, struct device_attribute *attr,
 		 char *buf)
 {
-	unchar c;
+	unchar c = 0;
 	sp_read_reg(TX_P1, SP_TX_LT_CTRL_REG9, &c);
 	return sprintf(buf, "0x%x\n", c);
 }
@@ -643,7 +643,7 @@ static ssize_t ctrl_reg9_store(struct device *dev, struct device_attribute *attr
 static ssize_t ctrl_reg10_show(struct device *dev, struct device_attribute *attr,
 		 char *buf)
 {
-	unchar c;
+	unchar c = 0;
 	sp_read_reg(TX_P1, SP_TX_LT_CTRL_REG10, &c);
 	return sprintf(buf, "0x%x\n", c);
 }
@@ -665,7 +665,7 @@ static ssize_t ctrl_reg10_store(struct device *dev, struct device_attribute *att
 static ssize_t ctrl_reg11_show(struct device *dev, struct device_attribute *attr,
 		 char *buf)
 {
-	unchar c;
+	unchar c = 0;
 	sp_read_reg(TX_P1, SP_TX_LT_CTRL_REG11, &c);
 	return sprintf(buf, "0x%x\n", c);
 }
@@ -688,7 +688,7 @@ static ssize_t ctrl_reg11_store(struct device *dev, struct device_attribute *att
 static ssize_t ctrl_reg12_show(struct device *dev, struct device_attribute *attr,
 		 char *buf)
 {
-	unchar c;
+	unchar c = 0;
 	sp_read_reg(TX_P1, SP_TX_LT_CTRL_REG12, &c);
 	return sprintf(buf, "0x%x\n", c);
 }
@@ -710,7 +710,7 @@ static ssize_t ctrl_reg12_store(struct device *dev, struct device_attribute *att
 static ssize_t ctrl_reg13_show(struct device *dev, struct device_attribute *attr,
 		 char *buf)
 {
-	unchar c;
+	unchar c = 0;
 	sp_read_reg(TX_P1, SP_TX_LT_CTRL_REG13, &c);
 	return sprintf(buf, "0x%x\n", c);
 }
@@ -732,7 +732,7 @@ static ssize_t ctrl_reg13_store(struct device *dev, struct device_attribute *att
 static ssize_t ctrl_reg14_show(struct device *dev, struct device_attribute *attr,
 		 char *buf)
 {
-	unchar c;
+	unchar c = 0;
 	sp_read_reg(TX_P1, SP_TX_LT_CTRL_REG14, &c);
 	return sprintf(buf, "0x%x\n", c);
 }
@@ -754,7 +754,7 @@ static ssize_t ctrl_reg14_store(struct device *dev, struct device_attribute *att
 static ssize_t ctrl_reg15_show(struct device *dev, struct device_attribute *attr,
 		 char *buf)
 {
-	unchar c;
+	unchar c = 0;
 	sp_read_reg(TX_P1, SP_TX_LT_CTRL_REG15, &c);
 	return sprintf(buf, "0x%x\n", c);
 }
@@ -776,7 +776,7 @@ static ssize_t ctrl_reg15_store(struct device *dev, struct device_attribute *att
 static ssize_t ctrl_reg16_show(struct device *dev, struct device_attribute *attr,
 		 char *buf)
 {
-	unchar c;
+	unchar c = 0;
 	sp_read_reg(TX_P1, SP_TX_LT_CTRL_REG16, &c);
 	return sprintf(buf, "0x%x\n", c);
 }
@@ -798,7 +798,7 @@ static ssize_t ctrl_reg16_store(struct device *dev, struct device_attribute *att
 static ssize_t ctrl_reg17_show(struct device *dev, struct device_attribute *attr,
 		 char *buf)
 {
-	unchar c;
+	unchar c = 0;
 	sp_read_reg(TX_P1, SP_TX_LT_CTRL_REG17, &c);
 	return sprintf(buf, "0x%x\n", c);
 }
@@ -820,7 +820,7 @@ static ssize_t ctrl_reg17_store(struct device *dev, struct device_attribute *att
 static ssize_t ctrl_reg18_show(struct device *dev, struct device_attribute *attr,
 		 char *buf)
 {
-	unchar c;
+	unchar c = 0;
 	sp_read_reg(TX_P1, SP_TX_LT_CTRL_REG18, &c);
 	return sprintf(buf, "0x%x\n", c);
 }
@@ -843,7 +843,7 @@ static ssize_t ctrl_reg18_store(struct device *dev, struct device_attribute *att
 static ssize_t ctrl_reg19_show(struct device *dev, struct device_attribute *attr,
 		 char *buf)
 {
-	unchar c;
+	unchar c = 0;
 	sp_read_reg(TX_P1, SP_TX_LT_CTRL_REG19, &c);
 	return sprintf(buf, "0x%x\n", c);
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2017 TRUSTONIC LIMITED
+ * Copyright (c) 2013-2018 TRUSTONIC LIMITED
  * All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or
@@ -51,6 +51,8 @@ struct tee_client {
 	struct mutex		sessions_lock;	/* sessions list + closing */
 	/* Client lock for quick WSMs and operations changes */
 	struct mutex		quick_lock;
+	/* Client lock for CWSMs release functions */
+	struct mutex		cwsm_release_lock;
 	/* List of WSMs for a client */
 	struct list_head	cwsms;
 	/* List of GP operation for a client */
@@ -118,15 +120,14 @@ static inline void cbuf_get(struct cbuf *cbuf)
 	kref_get(&cbuf->kref);
 }
 
+/* Must only be called by tee_cbuf_put */
 static void cbuf_release(struct kref *kref)
 {
 	struct cbuf *cbuf = container_of(kref, struct cbuf, kref);
 	struct tee_client *client = cbuf->client;
 
 	/* Unlist from client */
-	mutex_lock(&client->cbufs_lock);
 	list_del_init(&cbuf->list);
-	mutex_unlock(&client->cbufs_lock);
 	/* Release client token */
 	client_put(client);
 	/* Free */
@@ -140,7 +141,11 @@ static void cbuf_release(struct kref *kref)
 
 static inline void cbuf_put(struct cbuf *cbuf)
 {
+	struct tee_client *client = cbuf->client;
+
+	mutex_lock(&client->cbufs_lock);
 	kref_put(&cbuf->kref, cbuf_release);
+	mutex_unlock(&client->cbufs_lock);
 }
 
 /*
@@ -257,7 +262,7 @@ static struct cwsm *cwsm_create(struct tee_client *client,
 		goto err_cwsm;
 	}
 
-	/* Intialise maps */
+	/* Initialise maps */
 	memset(&map, 0, sizeof(map));
 	tee_mmu_buffer(cwsm->mmu, &map);
 	/* FIXME Flags must be stored in MMU (needs recent trunk change) */
@@ -294,7 +299,7 @@ static inline void cwsm_get(struct cwsm *cwsm)
 	kref_get(&cwsm->kref);
 }
 
-/* Do not call directly */
+/* Must only be called by cwsm_put */
 static void cwsm_release(struct kref *kref)
 {
 	struct cwsm *cwsm = container_of(kref, struct cwsm, kref);
@@ -302,9 +307,7 @@ static void cwsm_release(struct kref *kref)
 	struct mcp_buffer_map map;
 
 	/* Unlist from client */
-	mutex_lock(&client->quick_lock);
 	list_del_init(&cwsm->list);
-	mutex_unlock(&client->quick_lock);
 	/* Unmap buffer from SWd (errors ignored) */
 	tee_mmu_buffer(cwsm->mmu, &map);
 	map.secure_va = cwsm->sva;
@@ -322,7 +325,11 @@ static void cwsm_release(struct kref *kref)
 
 static inline void cwsm_put(struct cwsm *cwsm)
 {
+	struct tee_client *client = cwsm->client;
+
+	mutex_lock(&client->quick_lock);
 	kref_put(&cwsm->kref, cwsm_release);
+	mutex_unlock(&client->quick_lock);
 }
 
 static inline struct cwsm *cwsm_find(struct tee_client *client,
@@ -337,9 +344,9 @@ static inline struct cwsm *cwsm_find(struct tee_client *client,
 		mc_dev_devel("candidate buf %llx size %llu flags %x",
 			     candidate->memref.buffer, candidate->memref.size,
 			     candidate->memref.flags);
-		if ((candidate->memref.buffer == memref->buffer) &&
-		    (candidate->memref.size == memref->size) &&
-		    (candidate->memref.flags == memref->flags)) {
+		if (candidate->memref.buffer == memref->buffer &&
+		    candidate->memref.size == memref->size &&
+		    candidate->memref.flags == memref->flags) {
 			cwsm = candidate;
 			cwsm_get(cwsm);
 			mc_dev_devel("match");
@@ -386,14 +393,18 @@ void client_get(struct tee_client *client)
 
 void client_put_cwsm_sva(struct tee_client *client, u32 sva)
 {
-	struct cwsm *cwsm = cwsm_find_by_sva(client, sva);
+	struct cwsm *cwsm;
 
+	mutex_lock(&client->cwsm_release_lock);
+	cwsm = cwsm_find_by_sva(client, sva);
 	if (!cwsm)
-		return;
+		goto end;
 
-	/* Release reference taken by cwsm_find */
+	/* Release reference taken by cwsm_find_by_sva */
 	cwsm_put(cwsm);
 	cwsm_put(cwsm);
+end:
+	mutex_unlock(&client->cwsm_release_lock);
 }
 
 /*
@@ -421,6 +432,7 @@ struct tee_client *client_create(bool is_from_kernel)
 	mutex_init(&client->sessions_lock);
 	INIT_LIST_HEAD(&client->list);
 	mutex_init(&client->quick_lock);
+	mutex_init(&client->cwsm_release_lock);
 	INIT_LIST_HEAD(&client->cwsms);
 	INIT_LIST_HEAD(&client->operations);
 	/* Add client to list of clients */
@@ -431,20 +443,14 @@ struct tee_client *client_create(bool is_from_kernel)
 	return client;
 }
 
-/*
- * Free client object + all objects it contains.
- * Can be called only by last user referencing the client,
- * therefore mutex lock seems overkill
- */
+/* Must only be called by client_put */
 static void client_release(struct kref *kref)
 {
 	struct tee_client *client;
 
 	client = container_of(kref, struct tee_client, kref);
 	/* Client is closed, remove from closing list */
-	mutex_lock(&client_ctx.closing_clients_lock);
 	list_del(&client->list);
-	mutex_unlock(&client_ctx.closing_clients_lock);
 	mc_dev_devel("freed client %p", client);
 	if (client->task)
 		put_task_struct(client->task);
@@ -454,9 +460,14 @@ static void client_release(struct kref *kref)
 	atomic_dec(&g_ctx.c_clients);
 }
 
-void client_put(struct tee_client *client)
+int client_put(struct tee_client *client)
 {
-	kref_put(&client->kref, client_release);
+	int ret;
+
+	mutex_lock(&client_ctx.closing_clients_lock);
+	ret = kref_put(&client->kref, client_release);
+	mutex_unlock(&client_ctx.closing_clients_lock);
+	return ret;
 }
 
 /*
@@ -1015,15 +1026,22 @@ int client_gp_register_shared_mem(struct tee_client *client,
 int client_gp_release_shared_mem(struct tee_client *client,
 				 const struct gp_shared_memory *memref)
 {
-	struct cwsm *cwsm = cwsm_find(client, memref);
+	struct cwsm *cwsm;
+	int ret = 0;
 
-	if (!cwsm)
-		return -ENOENT;
+	mutex_lock(&client->cwsm_release_lock);
+	cwsm = cwsm_find(client, memref);
+	if (!cwsm) {
+		ret = -ENOENT;
+		goto end;
+	}
 
 	/* Release reference taken by cwsm_find */
 	cwsm_put(cwsm);
 	cwsm_put(cwsm);
-	return 0;
+end:
+	mutex_unlock(&client->cwsm_release_lock);
+	return ret;
 }
 
 /*
@@ -1188,7 +1206,7 @@ int client_cbuf_create(struct tee_client *client, u32 len, uintptr_t *addr,
 	if (!client)
 		return -EINVAL;
 
-	if (!len || (len > BUFFER_LENGTH_MAX))
+	if (!len || len > BUFFER_LENGTH_MAX)
 		return -EINVAL;
 
 	order = get_order(len);
@@ -1276,7 +1294,7 @@ static struct cbuf *cbuf_get_by_addr(struct tee_client *client, uintptr_t addr)
 		if (!start)
 			break;
 
-		if ((addr >= start) && (addr < end)) {
+		if (addr >= start && addr < end) {
 			cbuf = candidate;
 			break;
 		}
@@ -1292,6 +1310,11 @@ static struct cbuf *cbuf_get_by_addr(struct tee_client *client, uintptr_t addr)
 /*
  * Remove a cbuf object from client, and mark it for freeing.
  * Freeing will happen once all current references are released.
+ *
+ * Note: this function could be subject to the same race condition as
+ * client_gp_release_shared_mem() and client_put_cwsm_sva(), but it is trusted
+ * as it can only be called by kernel drivers. So no lock around
+ * cbuf_get_by_addr() and the two tee_cbuf_put().
  */
 int client_cbuf_free(struct tee_client *client, uintptr_t addr)
 {
@@ -1302,7 +1325,7 @@ int client_cbuf_free(struct tee_client *client, uintptr_t addr)
 		return -EINVAL;
 	}
 
-	/* Two references to put: the caller's and the one we just took */
+	/* Release reference taken by cbuf_get_by_addr */
 	cbuf_put(cbuf);
 	mutex_lock(&client->cbufs_lock);
 	cbuf->api_freed = true;
@@ -1312,13 +1335,14 @@ int client_cbuf_free(struct tee_client *client, uintptr_t addr)
 }
 
 bool client_gp_operation_add(struct tee_client *client,
-			     struct client_gp_operation *operation) {
+			     struct client_gp_operation *operation)
+{
 	struct client_gp_operation *op;
 	bool found = false;
 
 	mutex_lock(&client->quick_lock);
 	list_for_each_entry(op, &client->operations, list)
-		if ((op->started == operation->started) && op->cancelled) {
+		if (op->started == operation->started && op->cancelled) {
 			found = true;
 			break;
 		}
@@ -1338,7 +1362,8 @@ bool client_gp_operation_add(struct tee_client *client,
 }
 
 void client_gp_operation_remove(struct tee_client *client,
-				struct client_gp_operation *operation) {
+				struct client_gp_operation *operation)
+{
 	mutex_lock(&client->quick_lock);
 	list_del(&operation->list);
 	mutex_unlock(&client->quick_lock);
@@ -1410,16 +1435,19 @@ void client_init(void)
 static inline int cbuf_debug_structs(struct kasnprintf_buf *buf,
 				     struct cbuf *cbuf)
 {
-	return kasnprintf(buf, "\tcbuf %p [%d]: addr %lx uaddr %lx len %u\n",
-			  cbuf, kref_read(&cbuf->kref), cbuf->addr,
-			  cbuf->uaddr, cbuf->len);
+	return kasnprintf(buf,
+			  "\tcbuf %pK [%d]: addr %pK uaddr %pK len %u\n",
+			  cbuf, kref_read(&cbuf->kref), (void *)cbuf->addr,
+			  (void *)cbuf->uaddr, cbuf->len);
 }
 
 static inline int cwsm_debug_structs(struct kasnprintf_buf *buf,
 				     struct cwsm *cwsm)
 {
-	return kasnprintf(buf, "\tcwsm %p [%d]: buf %llx len %llu flags 0x%x\n",
-			  cwsm, kref_read(&cwsm->kref), cwsm->memref.buffer,
+	return kasnprintf(buf,
+			  "\tcwsm %pK [%d]: buf %pK len %llu flags 0x%x\n",
+			  cwsm, kref_read(&cwsm->kref),
+			  (void *)(uintptr_t)cwsm->memref.buffer,
 			  cwsm->memref.size, cwsm->memref.flags);
 }
 
@@ -1432,12 +1460,12 @@ static int client_debug_structs(struct kasnprintf_buf *buf,
 	int ret;
 
 	if (client->pid)
-		ret = kasnprintf(buf, "client %p [%d]: %s (%d)%s\n",
+		ret = kasnprintf(buf, "client %pK [%d]: %s (%d)%s\n",
 				 client, kref_read(&client->kref),
 				 client->comm, client->pid,
 				 is_closing ? " <closing>" : "");
 	else
-		ret = kasnprintf(buf, "client %p [%d]: [kernel]%s\n",
+		ret = kasnprintf(buf, "client %pK [%d]: [kernel]%s\n",
 				 client, kref_read(&client->kref),
 				 is_closing ? " <closing>" : "");
 

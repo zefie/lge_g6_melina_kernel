@@ -14,7 +14,11 @@
 
 #include "lge_mdss_aod.h"
 #include "lge_mdss_fb.h"
+#if IS_ENABLED(CONFIG_LGE_DISPLAY_FALCON_COMMON)
 #include <linux/input/lge_touch_notify.h>
+#else
+#include <linux/input/lge_touch_notify_nos.h>
+#endif
 #include <linux/delay.h>
 
 extern int mdss_dsi_parse_dcs_cmds(struct device_node *np,
@@ -22,6 +26,12 @@ extern int mdss_dsi_parse_dcs_cmds(struct device_node *np,
 
 extern void mdss_dsi_panel_cmds_send(struct mdss_dsi_ctrl_pdata *ctrl,
 			struct dsi_panel_cmds *pcmds, u32 flags);
+#if defined(CONFIG_LGE_DISPLAY_LUCYE_COMMON)
+extern void dic_lcd_mode_set(struct mdss_dsi_ctrl_pdata *ctrl);
+#endif
+#if IS_ENABLED(CONFIG_LGE_DISPLAY_HT_LCD_TUNE_MODE)
+extern void ht_tune_mode_set(struct mdss_dsi_ctrl_pdata *ctrl);
+#endif
 
 #if defined(CONFIG_LGE_DISPLAY_AOD_WITH_MIPI)
 extern int lcd_watch_deside_status(struct  msm_fb_data_type *mfd, unsigned int cur_mode, unsigned int next_mode);
@@ -157,8 +167,10 @@ int oem_mdss_aod_decide_status(struct msm_fb_data_type *mfd, int blank_mode)
 #if defined(CONFIG_LGE_DISPLAY_DYN_DSI_MODE_SWITCH)
 		// video and command mode switch
 		if(mfd->panel_info->dynamic_switch_pending == true && blank_mode == FB_BLANK_UNBLANK) {
-			if(mfd->panel_info->mode_switch == VIDEO_TO_CMD)
+			if(mfd->panel_info->mode_switch == VIDEO_TO_CMD){
+				labibb_ctrl = false;
 				cmd_status = SWITCH_VIDEO_TO_CMD;
+			}
 			if(mfd->panel_info->mode_switch == CMD_TO_VIDEO){
 				cmd_status = SWITCH_CMD_TO_VIDEO;
 				labibb_ctrl = true;
@@ -171,6 +183,7 @@ int oem_mdss_aod_decide_status(struct msm_fb_data_type *mfd, int blank_mode)
 		/* U0_BLANK -> U2_UNBLANK*/
 		if (blank_mode == FB_BLANK_UNBLANK && aod_node == 1 && aod_keep_u2 == AOD_KEEP_U2) {
 			cmd_status = ON_AND_AOD;
+			labibb_ctrl = false;
 			next_mode = AOD_PANEL_MODE_U2_UNBLANK;
 		}
 		/* U0_BLANK -> U3_UNBLANK */
@@ -226,6 +239,7 @@ int oem_mdss_aod_decide_status(struct msm_fb_data_type *mfd, int blank_mode)
 		if (blank_mode == FB_BLANK_POWERDOWN && (aod_node == 0 || mfd->panel_info->dynamic_switch_pending == true)) {
 #ifdef CONFIG_LGE_DISPLAY_BL_EXTENDED
 			cmd_status = ON_AND_AOD;
+			labibb_ctrl = false;
 #else
 			cmd_status = OFF_CMD;
 #endif
@@ -257,7 +271,11 @@ int oem_mdss_aod_decide_status(struct msm_fb_data_type *mfd, int blank_mode)
 			(blank_mode == FB_BLANK_UNBLANK && aod_node == 0 && aod_keep_u2 == AOD_MOVE_TO_U3)) {
 			cmd_status = AOD_CMD_DISABLE;
 			next_mode = AOD_PANEL_MODE_U3_UNBLANK;
+#ifdef CONFIG_LGE_DISPLAY_BL_EXTENDED
+			labibb_ctrl = true;
+#else
 			labibb_ctrl = false;
+#endif
 		}
 		/* U2_BLANK -> U2_UNBLANK */
 		else if ((blank_mode == FB_BLANK_UNBLANK && aod_node == 0) ||
@@ -278,7 +296,7 @@ int oem_mdss_aod_decide_status(struct msm_fb_data_type *mfd, int blank_mode)
 		if(mfd->panel_info->dynamic_switch_pending == true && blank_mode == FB_BLANK_POWERDOWN) {
 			cmd_status = OFF_CMD;
 			next_mode = AOD_PANEL_MODE_U0_BLANK;
-			//labibb_ctrl = true;
+			labibb_ctrl = false;
 			break;
 		}
 		// normal power mode transition
@@ -329,7 +347,11 @@ int oem_mdss_aod_decide_status(struct msm_fb_data_type *mfd, int blank_mode)
 			cmd_status = AOD_CMD_ENABLE;
 #endif
 			next_mode = AOD_PANEL_MODE_U2_BLANK;
+#ifdef CONFIG_LGE_DISPLAY_BL_EXTENDED
+			labibb_ctrl = true;
+#else
 			labibb_ctrl = false;
+#endif
 		}
 		else {
 			rc = AOD_RETURN_ERROR_NO_SCENARIO;
@@ -421,10 +443,6 @@ int oem_mdss_aod_cmd_send(struct msm_fb_data_type *mfd, int cmd)
 		ctrl->panel_data.panel_info.aod_cur_mode = AOD_PANEL_MODE_U3_UNBLANK;
 		param = AOD_PANEL_MODE_U3_UNBLANK;
 
-#if defined(CONFIG_LGE_DISPLAY_SRE_MODE)
-		lge_set_sre_cmds(ctrl);
-		mdss_dsi_panel_cmds_send(ctrl, &ctrl->reg_55h_cmds, CMD_REQ_COMMIT);
-#endif
 		/* Need to enable 5V power when U2 unblank -> U3*/
 		ret = msm_dss_enable_vreg(
 				ctrl->panel_power_data.vreg_config,
@@ -470,6 +488,18 @@ int oem_mdss_aod_cmd_send(struct msm_fb_data_type *mfd, int cmd)
 			  MDSS_DSI_ALL_CLKS, MDSS_DSI_CLK_ON);
 	mdss_dsi_panel_cmds_send(ctrl, &ctrl->aod_cmds[cmd_index],
 							CMD_REQ_COMMIT);
+	if(cmd == AOD_CMD_DISABLE)
+	{
+#if defined(CONFIG_LGE_DISPLAY_SRE_MODE)
+		lge_set_sre_cmds(ctrl);
+#endif
+#if defined(CONFIG_LGE_DISPLAY_LUCYE_COMMON)
+		dic_lcd_mode_set(ctrl);
+#endif
+#if IS_ENABLED(CONFIG_LGE_DISPLAY_HT_LCD_TUNE_MODE)
+		ht_tune_mode_set(ctrl);
+#endif
+	}
 	mdss_dsi_clk_ctrl(ctrl, ctrl->dsi_clk_handle,
 				  MDSS_DSI_ALL_CLKS, MDSS_DSI_CLK_OFF);
 

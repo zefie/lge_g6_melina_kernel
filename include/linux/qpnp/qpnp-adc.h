@@ -2355,7 +2355,7 @@ static inline struct qpnp_adc_tm_chip *qpnp_get_adc_tm(struct device *dev,
 { return ERR_PTR(-ENXIO); }
 #endif
 
-#ifdef CONFIG_MACH_MSM8996_LUCYE
+#if defined (CONFIG_MACH_MSM8996_LUCYE) || defined (CONFIG_MACH_MSM8996_FALCON)
 extern int32_t set_pm_gpio_value (struct qpnp_vadc_chip *vadc, int16_t reg, u8 *buf, int len);
 #endif
 

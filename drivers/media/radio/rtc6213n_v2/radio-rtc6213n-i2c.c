@@ -28,6 +28,7 @@
 #include <linux/delay.h>
 #include <linux/jiffies.h>
 #include <linux/uaccess.h>
+#include <linux/regulator/consumer.h>
 #include "radio-rtc6213n.h"
 #include <linux/workqueue.h>
 
@@ -257,6 +258,82 @@ static struct v4l2_ctrl_config rtc6213n_ctrls[] = {
 
 /*static*/
 struct tasklet_struct my_tasklet;
+
+static int fm_ant_gpios(struct rtc6213n_device *radio, bool on)
+{
+	int rc = 0;
+
+	if (on) {
+		/* ant switch */
+		if (radio->fm_sw_gpio > 0) {
+			/* for switch ldo */
+			if (!IS_ERR(radio->vdd_reg)) {
+				rc = regulator_enable(radio->vdd_reg);
+				if (rc < 0)
+					pr_err("vdd_reg enable failed.rc=%d\n", rc);
+				else
+					pr_info("vdd_reg enable success.rc=%d\n", rc);
+
+				msleep(100);
+			}
+			rc = gpio_direction_output(radio->fm_sw_gpio, 0);
+			if (rc) {
+				pr_err("%s unable to set the gpio %d direction(%d)\n",
+				__func__, radio->fm_sw_gpio, rc);
+				return rc;
+			}
+			msleep(100);
+			pr_info("%s fm_sw_gpio gpio_get_value : %d\n", __func__, gpio_get_value(radio->fm_sw_gpio));
+		}
+
+	} else {
+		/* ant switch */
+		if (radio->fm_sw_gpio > 0) {
+			/* for switch ldo */
+			if (!IS_ERR(radio->vdd_reg)) {
+				rc = regulator_disable(radio->vdd_reg);
+				if (rc < 0)
+					pr_err("vdd_reg disable failed.rc=%d\n", rc);
+			}
+
+			rc = gpio_direction_output(radio->fm_sw_gpio, 1);
+			if (rc) {
+				pr_err("%s unable to set the gpio %d direction(%d)\n",
+				__func__, radio->fm_sw_gpio, rc);
+				return rc;
+			}
+			pr_info("%s fm_sw_gpio gpio_get_value : %d\n", __func__, gpio_get_value(radio->fm_sw_gpio));
+		}
+
+		/* Wait for some time for the value to take effect. */
+		msleep(100);
+	}
+	return rc;
+}
+
+static int rtc6213n_pinctrl_select(struct rtc6213n_device *radio, bool on)
+{
+	struct pinctrl_state *pins_state;
+	int ret;
+
+	pins_state = on ? radio->gpio_state_active
+			: radio->gpio_state_suspend;
+
+	if (!IS_ERR_OR_NULL(pins_state)) {
+		ret = pinctrl_select_state(radio->fm_pinctrl, pins_state);
+		if (ret) {
+			pr_err("%s: cannot set pin state\n", __func__);
+			return ret;
+		}
+	} else {
+		pr_err("%s: not a valid %s pin state\n", __func__,
+				on ? "pmx_fm_active" : "pmx_fm_suspend");
+	}
+
+	return 0;
+}
+
+
 /*
  * rtc6213n_get_register - read register
  */
@@ -396,8 +473,10 @@ static void rtc6213n_i2c_interrupt_handler(struct rtc6213n_device *radio)
 		pr_err("%s No RDS group ready\n",__func__);
 		goto end;
 	} else {
-		pr_info("%s start rds handler\n",__func__);
-		schedule_work(&radio->rds_worker);
+                if ((radio->registers[SYSCFG] & SYSCFG_CSR0_RDS_EN) != 0) {     /* avoid RDS interrupt lock disable_irq*/
+                        pr_info("%s start rds handler\n",__func__);
+                        schedule_work(&radio->rds_worker);
+                }
 	}
 end:
 	pr_info("%s exit :%d\n",__func__, retval);
@@ -499,16 +578,34 @@ int rtc6213n_fops_open(struct file *file)
 	int i;
 
 	pr_info("%s enter\n", __func__);
+	if (retval){
+		pr_err("%s fail to open v4l2\n", __func__);
+		return retval;
+	}
 
 	INIT_DELAYED_WORK(&radio->work, rtc6213n_handler);
 	INIT_DELAYED_WORK(&radio->work_scan, rtc6213n_scan);
 	INIT_WORK(&radio->rds_worker, rtc6213n_rds_handler);
 
-	retval = rtc6213n_power_up(radio);
-	if(retval < 0){
-		pr_err("%s fail to power_up\n", __func__);
-		return retval;
+#if 1 //LGE
+	fm_ant_gpios(radio, true);
+	/* If pinctrl is supported, select active state */
+	if (radio->fm_pinctrl) {
+		retval = rtc6213n_pinctrl_select(radio, true);
+		if (retval)
+			pr_err("%s: error setting active pin state\n",
+							__func__);
 	}
+#endif
+	if (v4l2_fh_is_singular_file(file)) {
+		retval = rtc6213n_power_up(radio);
+		if(retval < 0){
+			pr_err("%s fail to power_up\n", __func__);
+			goto done;
+			//return retval;
+		}
+	}
+
 	retval = rtc6213n_get_all_registers(radio);
 	if(retval < 0)
 	 pr_err("%s fail to get register %d\n", __func__, retval);
@@ -520,6 +617,10 @@ int rtc6213n_fops_open(struct file *file)
 	msleep(100);
 
 	rtc6213n_enable_irq(radio);
+
+done:
+	if (retval)
+		v4l2_fh_release(file);
 	return retval;
 }
 
@@ -529,16 +630,33 @@ int rtc6213n_fops_open(struct file *file)
 int rtc6213n_fops_release(struct file *file)
 {
 	struct rtc6213n_device *radio = video_drvdata(file);
-	int retval = v4l2_fh_release(file);
+	int retval;
 
 	dev_info(&radio->videodev.dev, "rtc6213n_fops_release : Exit\n");
-	rtc6213n_power_down(radio);
-	if(retval < 0){
-		pr_err("%s fail to power_down\n", __func__);
-		return retval;
+
+	if (v4l2_fh_is_singular_file(file))
+	{
+		if(radio->mode != FM_OFF)
+		{
+			pr_info("func : %s , fail to fm power down. Do power_down again. \n", __func__);
+			rtc6213n_power_down(radio);
+			radio->mode = FM_OFF;
+		}
 	}
 
-	return retval;
+#if 1 //LGE
+	/* If pinctrl is supported, select suspend state */
+	if (radio->fm_pinctrl) {
+		retval = rtc6213n_pinctrl_select(radio, false);
+		if (retval)
+			pr_err("%s: error setting suspend pin state\n",
+							__func__);
+	}
+	fm_ant_gpios(radio, false);
+#endif
+
+	rtc6213n_disable_irq(radio);
+	return v4l2_fh_release(file);
 }
 
 static int rtc6213n_parse_dt(struct device *dev,
@@ -546,6 +664,54 @@ static int rtc6213n_parse_dt(struct device *dev,
 {
 	int rc = 0;
 	struct device_node *np = dev->of_node;
+
+	radio->ext_ldo_gpio = of_get_named_gpio(np, "rtc,ext-ldo", 0);
+	if (radio->ext_ldo_gpio < 0) {
+		pr_err("%s rtc-ext-ldo-gpio not provided in device tree\n",__func__);
+	}
+	else {
+		rc = gpio_request(radio->ext_ldo_gpio, "fm_ldo_gpio_n");
+		if (rc) {
+			pr_err("%s unable to request gpio %d (%d)\n",__func__,
+						radio->ext_ldo_gpio, rc);
+			return rc;
+		}
+	}
+
+	radio->fm_sw_gpio = of_get_named_gpio(np, "rtc,fm-sw-gpio", 0);
+	if (radio->fm_sw_gpio < 0) {
+		pr_err("%s rtc-fm-sw-gpio not provided in device tree\n",__func__);
+	}
+	else {
+		radio->vdd_reg = regulator_get(dev, "vdd_fm_sw");
+		pr_info("%s regulator_get for ant switch\n", __func__);
+		if (IS_ERR(radio->vdd_reg)) {
+			pr_err("In %s, vdd supply is not provided\n", __func__);
+		}
+
+		rc = gpio_request(radio->fm_sw_gpio, "fm_sw_gpio_n");
+		if (rc) {
+			pr_err("%s unable to request gpio %d (%d)\n",__func__,
+						radio->fm_sw_gpio, rc);
+			return rc;
+		}
+	}
+
+	radio->lna_en = -1;
+	radio->lna_en = of_get_named_gpio(np, "rtc,lna-en-gpio", 0);
+	if (radio->lna_en > 0) {
+		rc = gpio_request(radio->lna_en, "lna_en");
+		gpio_direction_output(radio->lna_en, 0);
+		pr_info("LNA enable gpio : %d, ret: %d\n", radio->lna_en, rc);
+	}
+
+        radio->lna_gain = -1;
+        radio->lna_gain = of_get_named_gpio(np, "rtc,lna-gain-ctrl", 0);
+        if (radio->lna_gain > 0) {
+                rc = gpio_request(radio->lna_gain, "lna_gain");
+                gpio_direction_output(radio->lna_gain, 0);
+                pr_info("LNA Gain CTRL gpio : %d, ret: %d\n", radio->lna_gain, rc);
+        }
 
 	radio->int_gpio = of_get_named_gpio(np, "fmint-gpio", 0);
 	if (radio->int_gpio < 0) {
@@ -577,6 +743,47 @@ err_int_gpio:
 
 	return rc;
 }
+
+static int rtc6213n_pinctrl_init(struct rtc6213n_device *radio)
+{
+	int retval = 0;
+
+	radio->fm_pinctrl = devm_pinctrl_get(&radio->client->dev);
+	if (IS_ERR_OR_NULL(radio->fm_pinctrl)) {
+		pr_err("%s: target does not use pinctrl\n", __func__);
+		retval = PTR_ERR(radio->fm_pinctrl);
+		return retval;
+	}
+
+	radio->gpio_state_active =
+			pinctrl_lookup_state(radio->fm_pinctrl,
+						"pmx_fm_active");
+	if (IS_ERR_OR_NULL(radio->gpio_state_active)) {
+		pr_err("%s: cannot get FM active state\n", __func__);
+		retval = PTR_ERR(radio->gpio_state_active);
+		goto err_active_state;
+	}
+
+	radio->gpio_state_suspend =
+				pinctrl_lookup_state(radio->fm_pinctrl,
+							"pmx_fm_suspend");
+	if (IS_ERR_OR_NULL(radio->gpio_state_suspend)) {
+		pr_err("%s: cannot get FM suspend state\n", __func__);
+		retval = PTR_ERR(radio->gpio_state_suspend);
+		goto err_suspend_state;
+	}
+
+	return retval;
+
+err_suspend_state:
+	radio->gpio_state_suspend = 0;
+
+err_active_state:
+	radio->gpio_state_active = 0;
+
+	return retval;
+}
+
 
 /*
  * rtc6213n_i2c_probe - probe for the device
@@ -627,6 +834,27 @@ static int rtc6213n_i2c_probe(struct i2c_client *client,
 		pr_err("%s: Parsing DT failed(%d)", __func__, retval);
 		kfree(radio);
 		return retval;
+	}
+
+	/* Initialize pin control*/
+	retval = rtc6213n_pinctrl_init(radio);
+	if (retval) {
+		pr_err("%s: rtc6213n_pinctrl_init returned %d\n",
+							__func__, retval);
+		/* if pinctrl is not supported, -EINVAL is returned*/
+		if (retval == -EINVAL)
+			retval = 0;
+	} else {
+		pr_info("%s rtc6213n_pinctrl_init success\n",__func__);
+	}
+
+	if (radio->ext_ldo_gpio > 0) {
+		retval = gpio_direction_output(radio->ext_ldo_gpio, 1);
+		if (retval) {
+			pr_err("%s Unable to set direction(LDO)\n",__func__);
+			kfree(radio);
+			return retval;
+		}
 	}
 
 	memcpy(&radio->videodev, &rtc6213n_viddev_template,

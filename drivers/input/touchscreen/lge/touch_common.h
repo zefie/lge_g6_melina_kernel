@@ -1,8 +1,9 @@
-/* touch_core.h
+/*
+ * touch_common.h
  *
- * Copyright (C) 2015 LGE.
+ * Copyright (c) 2015 LGE.
  *
- * Author: hoyeon.jang@lge.com
+ * author : hoyeon.jang@lge.com
  *
  * This software is licensed under the terms of the GNU General Public
  * License version 2, as published by the Free Software Foundation, and

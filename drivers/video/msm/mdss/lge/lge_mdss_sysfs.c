@@ -1,8 +1,14 @@
 #include "../mdss_fb.h"
 #include "lge_mdss_display.h"
+#include "lge_mdss_sysfs.h"
 #include <linux/lge_display_debug.h>
 
+#if defined(CONFIG_LGE_DISPLAY_AMBIENT_SUPPORTED)
+extern int lge_mdss_aod_sysfs_init(struct class *panel, struct fb_info *fbi);
+extern void lge_mdss_aod_sysfs_deinit(struct fb_info *fbi);
+#endif
 extern int lge_mdss_sysfs_imgtune_init(struct class *panel, struct fb_info *fbi);
+extern void lge_mdss_sysfs_imgtune_deinit(struct fb_info *fbi);
 
 static struct class *panel = NULL;
 
@@ -12,8 +18,12 @@ static ssize_t mdss_fb_get_panel_type(struct device *dev,
 	int ret = 0;
 	int panel_type = lge_get_panel();
 
-	if (panel_type == LGE_SIC_LG4946_INCELL_CND_PANEL)
-		ret = snprintf(buf, PAGE_SIZE, "LGD - LG4946\n");
+	if (panel_type == LGD_SIC_LG49410_1440_3120_INCELL_CMD_PANEL)
+		ret = snprintf(buf, PAGE_SIZE, "LGD - SW49410 1440 X 3120 cmd\n");
+	else if (panel_type == LGD_SIC_LG49410_1080_2340_INCELL_CMD_PANEL)
+		ret = snprintf(buf, PAGE_SIZE, "LGD - SW49410 1080 X 2340 cmd\n");
+	else if (panel_type == LGD_SIC_LG49410_720_1560_INCELL_CMD_PANEL)
+		ret = snprintf(buf, PAGE_SIZE, "LGD - SW49410 720 X 1560 cmd\n");
 	else if (panel_type == LGD_SIC_LG49407_INCELL_CMD_PANEL)
 		ret = snprintf(buf, PAGE_SIZE, "LGD - SW49407 cmd\n");
 	else if (panel_type == LGD_SIC_LG49407_INCELL_VIDEO_PANEL)
@@ -27,18 +37,8 @@ static ssize_t mdss_fb_get_panel_type(struct device *dev,
 
 	return ret;
 }
-
-__weak ssize_t mdss_fb_is_valid(struct device *dev,
-		struct device_attribute *attr, char *buf)
-{
-	int ret = 0;
-	ret = scnprintf(buf, PAGE_SIZE, "DDIC validation is not implemented\n");
-	return ret;
-}
-
 static DEVICE_ATTR(panel_type, S_IRUGO,
 		mdss_fb_get_panel_type, NULL);
-static DEVICE_ATTR(valid_check, S_IRUGO, mdss_fb_is_valid, NULL);
 
 #if IS_ENABLED(CONFIG_LGE_DISPLAY_MARQUEE_SUPPORTED)
 static ssize_t mdss_fb_get_mq_mode(struct device *dev,
@@ -308,62 +308,63 @@ static DEVICE_ATTR(sp_link_backlight_off, S_IRUGO | S_IWUSR,
 /* High luminance function                                                   */
 /*---------------------------------------------------------------------------*/
 #if IS_ENABLED(CONFIG_LGE_HIGH_LUMINANCE_MODE)
-static ssize_t hl_mode_show(struct device *dev,
+static ssize_t hl_mode_get(struct device *dev,
 		struct device_attribute *attr,
 		char *buf)
 {
-	struct fb_info *fbi = dev_get_drvdata(dev);
-	struct msm_fb_data_type *mfd = (struct msm_fb_data_type *)fbi->par;
-	struct mdss_panel_info *pinfo;
 	int ret;
+	GET_DATA
 
-	pinfo = mfd->panel_info;
-
-	if (!pinfo) {
+	if (!mfd->panel_info) {
 		pr_err("[hl_mode] no panel connected!\n");
 		return -EINVAL;
 	}
 
-	ret = scnprintf(buf, PAGE_SIZE, "%d\n", pinfo->hl_mode_on);
+#if IS_ENABLED(CONFIG_LGE_DISPLAY_FALCON_COMMON)
+	ret = sprintf(buf, "%d\n", ctrl->lge_extra.hl_mode);
+#else
+	ret = scnprintf(buf, PAGE_SIZE, "%d\n", mfd->panel_info->hl_mode_on);
+#endif
 	return ret;
 }
 
-static ssize_t hl_mode_store(struct device *dev,
+static ssize_t hl_mode_set(struct device *dev,
 		struct device_attribute *attr,
 		const char *buf, size_t len)
 {
-	struct fb_info *fbi = dev_get_drvdata(dev);
-	struct msm_fb_data_type *mfd = (struct msm_fb_data_type *)fbi->par;
-	struct mdss_panel_info *pinfo;
+	ssize_t ret = strnlen(buf, PAGE_SIZE);
+	int mode;
+	GET_DATA
 
-	pinfo = mfd->panel_info;
-
-	if (!pinfo) {
+	if (!mfd->panel_info) {
 		pr_err("[hl_mode] no panel connected!\n");
-		return len;
+		return -EINVAL;
 	}
 
-	pinfo->hl_mode_on = simple_strtoul(buf, NULL, 10);
+	sscanf(buf, "%d", &mode);
+	pr_info("%s: hl_mode = %d \n", __func__, mode);
 
-	if(pinfo->hl_mode_on == 1)
-		pr_info("[hl_mode] hl_mode on\n");
-	else
-		pr_info("[hl_mode] hl_mode off\n");
+#if IS_ENABLED(CONFIG_LGE_DISPLAY_FALCON_COMMON)
+	LGE_DDIC_OP_LOCKED(ctrl, hl_mode_set, &mfd->mdss_sysfs_lock, mode);
+	LGE_DDIC_OP_LOCKED(ctrl, mplus_change_blmap, &mfd->bl_lock);
+#else
+	mfd->panel_info->hl_mode_on = mode;
+#endif
 
-	return len;
+	return ret;
 }
 
-static DEVICE_ATTR(hl_mode, S_IWUSR|S_IRUGO, hl_mode_show, hl_mode_store);
+static DEVICE_ATTR(hl_mode, S_IWUSR|S_IRUGO, hl_mode_get, hl_mode_set);
 #endif // CONFIG_LGE_HIGH_LUMINANCE_MODE
 
-#if IS_ENABLED(CONFIG_LGE_PANEL_RECOVERY)
+#if IS_ENABLED(CONFIG_LGE_DISPLAY_RECOVERY_ESD)
 extern ssize_t get_recovery_mode(struct device *dev,
                 struct device_attribute *attr, char *buf);
 extern ssize_t set_recovery_mode(struct device *dev,
 		struct device_attribute *attr,
 		const char *buf, size_t count);
 static DEVICE_ATTR(recovery_mode, S_IWUSR|S_IRUGO, get_recovery_mode, set_recovery_mode);
-#endif // CONFIG_LGE_PANEL_RECOVERY
+#endif // CONFIG_LGE_DISPLAY_RECOVERY_ESD
 
 /*---------------------------------------------------------------------------*/
 /* Alawys On display                                                         */
@@ -847,7 +848,6 @@ static DEVICE_ATTR(validate_lcd_cam, S_IWUSR|S_IRUGO, NULL,
 /* TODO: implement registering method for attributes in other lge files */
 static struct attribute *lge_mdss_fb_attrs[] = {
 	&dev_attr_panel_type.attr,
-	&dev_attr_valid_check.attr,
 #if IS_ENABLED(CONFIG_LGE_DISPLAY_MARQUEE_SUPPORTED)
 	&dev_attr_mq_mode.attr,
 #endif
@@ -866,7 +866,7 @@ static struct attribute *lge_mdss_fb_attrs[] = {
 #if IS_ENABLED(CONFIG_LGE_HIGH_LUMINANCE_MODE)
 	&dev_attr_hl_mode.attr,
 #endif
-#if IS_ENABLED(CONFIG_LGE_PANEL_RECOVERY)
+#if IS_ENABLED(CONFIG_LGE_DISPLAY_RECOVERY_ESD)
 	&dev_attr_recovery_mode.attr,
 #endif
 #if IS_ENABLED(CONFIG_LGE_DISPLAY_AOD_SUPPORTED)
@@ -911,6 +911,9 @@ int lge_mdss_sysfs_init(struct msm_fb_data_type *mfd)
 		pr_err("lge imgtune sysfs group creation failed, rc=%d\n", rc);
 
 	rc += sysfs_create_group(&mfd->fbi->dev->kobj, &lge_mdss_fb_attr_group);
+#if defined(CONFIG_LGE_DISPLAY_AMBIENT_SUPPORTED)
+	rc += lge_mdss_aod_sysfs_init(panel, mfd->fbi);
+#endif
 	if (rc)
 		pr_err("lge fb sysfs group creation failed, rc=%d\n", rc);
 
@@ -920,5 +923,9 @@ int lge_mdss_sysfs_init(struct msm_fb_data_type *mfd)
 void lge_mdss_sysfs_remove(struct msm_fb_data_type *mfd)
 {
 	sysfs_remove_group(&mfd->fbi->dev->kobj, &lge_mdss_fb_attr_group);
+	lge_mdss_sysfs_imgtune_deinit(mfd->fbi);
+#if defined(CONFIG_LGE_DISPLAY_AMBIENT_SUPPORTED)
+	lge_mdss_aod_sysfs_deinit(mfd->fbi);
+#endif
 }
 

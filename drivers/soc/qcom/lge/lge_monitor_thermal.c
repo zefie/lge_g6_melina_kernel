@@ -158,7 +158,7 @@ static void _poll_monitor(struct lge_monitor_thermal_data *monitor_dd)
 		if (monitor_dd->tz_vts)
 			thermal_zone_get_temp(monitor_dd->tz_vts, &monitor_dd->last_vts_temp);
 		else {
-#ifdef CONFIG_MACH_MSM8996_LUCYE
+#if defined (CONFIG_MACH_MSM8996_LUCYE) || defined (CONFIG_MACH_MSM8996_FALCON)
 			monitor_dd->last_vts_temp =
 				((VTS_WEIGHT_XO_TEMP * monitor_dd->last_xo_temp
 				  + VTS_WEIGHT_BD2_TEMP * monitor_dd->last_bd2_temp)

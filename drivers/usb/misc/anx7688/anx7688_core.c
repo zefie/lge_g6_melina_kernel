@@ -846,7 +846,7 @@ static void anx7688_ctype_work(struct work_struct *w)
 
 		break;
 	case USBC_PD_CHARGER:
-#if defined (CONFIG_MACH_MSM8996_ELSA) || defined (CONFIG_MACH_MSM8996_LUCYE) || defined (CONFIG_MACH_MSM8996_ANNA)
+#if defined (CONFIG_MACH_MSM8996_ELSA) || defined (CONFIG_MACH_MSM8996_LUCYE) || defined (CONFIG_MACH_MSM8996_ANNA) || defined (CONFIG_MACH_MSM8996_FALCON)
 #ifdef CONFIG_LGE_DP_ANX7688
 		/*
 		 * Current Restict Mode
@@ -1501,7 +1501,7 @@ static void anx7688_register_init(struct anx7688_chip *chip)
 	 * USB PD CTS tunning value
 	 * this value depend on hardware chariteristics
 	 */
-#if defined (CONFIG_MACH_MSM8996_ELSA) || defined (CONFIG_MACH_MSM8996_LUCYE) || defined (CONFIG_MACH_MSM8996_ANNA)
+#if defined (CONFIG_MACH_MSM8996_ELSA) || defined (CONFIG_MACH_MSM8996_LUCYE) || defined (CONFIG_MACH_MSM8996_ANNA) || defined (CONFIG_MACH_MSM8996_FALCON)
 	OhioMaskWriteReg(USBC_ADDR, OCM_DEBUG_21, BIT(0)|BIT(1)|BIT(2), 2);
 	OhioMaskWriteReg(USBC_ADDR, OCM_DEBUG_20, BIT(0)|BIT(1)|BIT(2), 3);
 	OhioMaskWriteReg(USBC_ADDR, OCM_DEBUG_19, BIT(2)|BIT(3), 3);

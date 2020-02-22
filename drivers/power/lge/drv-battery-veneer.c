@@ -43,7 +43,7 @@ struct battery_veneer {
 /* module descripters */
 	struct device* veneer_dev;
 	struct power_supply veneer_psy;
-#ifdef CONFIG_MACH_MSM8996_LUCYE
+#if defined (CONFIG_MACH_MSM8996_LUCYE) || defined (CONFIG_MACH_MSM8996_FALCON)
 	struct power_supply* wlc_psy;
 #endif
 	struct wake_lock veneer_wakelock;
@@ -301,7 +301,7 @@ static enum power_supply_property psy_property_list [] = {
 	POWER_SUPPLY_PROP_TIME_TO_FULL_NOW,
 	POWER_SUPPLY_PROP_VOLTAGE_NOW,
 	POWER_SUPPLY_PROP_TEMP,
-#ifdef CONFIG_MACH_MSM8996_LUCYE
+#if defined (CONFIG_MACH_MSM8996_LUCYE) || defined (CONFIG_MACH_MSM8996_FALCON)
 	POWER_SUPPLY_PROP_CHARGING_ENABLED,
 	POWER_SUPPLY_PROP_CONNECTION_TYPE,
 #endif
@@ -362,7 +362,7 @@ static int psy_property_set(struct power_supply *psy_me,
 	return rc;
 }
 
-#ifdef CONFIG_MACH_MSM8996_LUCYE
+#if defined (CONFIG_MACH_MSM8996_LUCYE) || defined (CONFIG_MACH_MSM8996_FALCON)
 static void get_property_from_wlc(struct battery_veneer *veneer_me,
 				enum power_supply_property property,
 				union power_supply_propval *prop)
@@ -450,7 +450,7 @@ static int psy_property_get(struct power_supply *psy,
 		else
 			rc = -EAGAIN;
 		break;
-#ifdef CONFIG_MACH_MSM8996_LUCYE
+#if defined (CONFIG_MACH_MSM8996_LUCYE) || defined (CONFIG_MACH_MSM8996_FALCON)
 	case POWER_SUPPLY_PROP_CHARGING_ENABLED:
 	case POWER_SUPPLY_PROP_CONNECTION_TYPE:
 		get_property_from_wlc(veneer_me,prop,val);
@@ -486,7 +486,11 @@ static void psy_external_changed(struct power_supply *psy_me) {
 		struct battery_veneer, veneer_psy);
 
 	struct power_supply* psy_batt = power_supply_get_by_name("battery");
+#ifdef CONFIG_LGE_USB_TYPE_C
+	struct power_supply* psy_usb = power_supply_get_by_name("usb_pd");
+#else
 	struct power_supply* psy_usb = power_supply_get_by_name("usb");
+#endif
 	struct power_supply* psy_dc = power_supply_get_by_name("dc");
 
 	/* Update form usb */
@@ -536,6 +540,8 @@ static void psy_external_changed(struct power_supply *psy_me) {
 
 		/* Initiate charging time */
 		if (veneer_me->chgtime_charger != current_type) {
+			pr_veneer("charger_type was changed %d->%d\n"
+				,veneer_me->chgtime_charger,current_type);
 			veneer_me->chgtime_charger = current_type;
 			chgtime_dwork_schedule(veneer_me);
 		}

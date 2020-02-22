@@ -16,6 +16,17 @@
 #define __LGE_CABLE_DETECT_H__
 
 #include <linux/list.h>
+#if defined(CONFIG_MACH_MSM8996_LUCYE_KR_F) || defined(CONFIG_MACH_MSM8996_FALCON)
+typedef enum {
+	CABLE_ADC_NO_INIT = 0,
+	CABLE_ADC_MHL_1K,
+	CABLE_ADC_56K,
+	CABLE_ADC_130K,
+	CABLE_ADC_910K,
+	CABLE_ADC_NONE,
+	CABLE_ADC_MAX,
+} cable_adc_type;
+#else
 typedef enum {
 	CABLE_ADC_NO_INIT = 0,
 	CABLE_ADC_MHL_1K,
@@ -34,6 +45,7 @@ typedef enum {
 	CABLE_ADC_NONE,
 	CABLE_ADC_MAX,
 } cable_adc_type;
+#endif
 
 typedef enum {
 	LT_CABLE_56K = 6,

@@ -191,10 +191,6 @@ static int ecryptfs_show_options(struct seq_file *m, struct dentry *root)
 	if (mount_sd_crypt_stat->flags & ECRYPTFS_MEDIA_EXCEPTION)
 		seq_printf(m, ",media_exception");
 #endif
-#ifdef CONFIG_SDP
-	if (mount_crypt_stat->flags & ECRYPTFS_SDP_MOUNT)
-		seq_printf(m, ",sdp");
-#endif
 	return 0;
 }
 

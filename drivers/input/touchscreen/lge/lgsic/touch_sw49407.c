@@ -25,8 +25,8 @@
 /*
  *  Include to touch core Header File
  */
-#include <touch_core.h>
-#include <touch_hwif.h>
+#include <touch_core_nos.h>
+#include <touch_hwif_nos.h>
 
 /*
  *  Include to Local Header File
@@ -34,7 +34,7 @@
 #include "touch_sw49407.h"
 #include "touch_sw49407_abt.h"
 #include "touch_sw49407_prd.h"
-#include "touch_filter.h"
+#include "touch_filter_nos.h"
 
 static const char *debug_type[] = {
 	"Disable Type",

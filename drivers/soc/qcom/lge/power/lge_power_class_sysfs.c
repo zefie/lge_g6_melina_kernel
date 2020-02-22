@@ -322,6 +322,9 @@ static struct device_attribute lge_power_attrs[] = {
 	LGE_POWER_ATTR(batt_therm_raw),
 	LGE_POWER_ATTR(usb_id_phy),
 	LGE_POWER_ATTR(usb_id_raw),
+#ifdef CONFIG_MACH_MSM8996_LUCYE_KR_F
+	LGE_POWER_ATTR(usb_edge_phy),
+#endif
 #ifdef CONFIG_LGE_PM_LGE_POWER_CLASS_TYPE_HVDCP
 	LGE_POWER_ATTR(hvdcp_present),
 	LGE_POWER_ATTR(type_usb_hvdcp),

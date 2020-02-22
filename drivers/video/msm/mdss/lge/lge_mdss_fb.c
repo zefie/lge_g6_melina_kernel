@@ -36,7 +36,7 @@ extern int get_factory_cable(void);
 #if IS_ENABLED(CONFIG_LGE_DISPLAY_BL_EXTENDED)
 extern int mdss_fb_mode_switch(struct msm_fb_data_type *mfd, u32 mode);
 #endif
-#if defined(CONFIG_LGE_PANEL_RECOVERY)
+#if defined(CONFIG_LGE_DISPLAY_RECOVERY_ESD)
 struct msm_fb_data_type *mfd_recovery = NULL;
 #endif
 
@@ -49,6 +49,7 @@ extern void register_dp_notify_node(void);
 extern int lge_set_validate_lcd_reg(void);
 extern int lge_set_validate_lcd_cam(int mode);
 #endif
+extern struct msm_fb_data_type *get_msm_fb_data(void);
 
 void lge_mdss_fb_init(struct msm_fb_data_type *mfd)
 {
@@ -73,7 +74,7 @@ void lge_mdss_fb_init(struct msm_fb_data_type *mfd)
 #if defined(CONFIG_LGE_DISPLAY_AOD_WITH_MIPI)
 	mutex_init(&mfd->watch_lock);
 #endif
-#if defined(CONFIG_LGE_PANEL_RECOVERY)
+#if defined(CONFIG_LGE_DISPLAY_RECOVERY_ESD)
 	mfd_recovery = mfd;
 #endif
 #ifdef CONFIG_LGE_DP_UNSUPPORT_NOTIFY
@@ -215,6 +216,29 @@ int lge_charger_present(void){
 }
 #endif
 
+bool check_dimming_condition(void)
+{
+	bool rc = false;
+
+	if (lge_get_bootreason_with_lcd_dimming() && !is_blank_called()) {
+		rc = true;
+		pr_info("%s: lcd dimming mode. set br_lvl as 1\n", __func__);
+	} else if (is_factory_cable() && !is_blank_called()
+#ifdef CONFIG_LGE_PM_LGE_POWER_CLASS_BATTERY_ID_CHECKER
+#if !defined(CONFIG_LGE_PM_EMBEDDED_BATTERY)
+		&& !lge_battery_present()
+#endif
+#elif defined (CONFIG_LGE_PM_BATTERY_ID_CHECKER)
+		&& !lge_battery_check()
+#endif
+		) {
+		rc = true;
+		pr_info("%s: Detect factory cable. set br_lvl as 1\n", __func__);
+	}
+
+	return rc;
+}
+
 /*---------------------------------------------------------------------------*/
 /* Brightness - Backlight mapping (main)                                     */
 /*---------------------------------------------------------------------------*/
@@ -224,7 +248,7 @@ int lge_br_to_bl (struct msm_fb_data_type *mfd, int br_lvl)
 	int bl_lvl = 100;
 	enum lge_bl_map_type blmaptype;
 	struct mdss_panel_info *pinfo;
-
+	struct mdss_dsi_ctrl_pdata *ctrl_pdata = NULL;
 
 	if(mfd->index != 0) {
 		pr_err("[AOD]fb[%d] is not for aod\n", mfd->index);
@@ -236,6 +260,17 @@ int lge_br_to_bl (struct msm_fb_data_type *mfd, int br_lvl)
 		pr_err("no panel connected!\n");
 		return -EINVAL;
 	}
+
+	if (mfd->pdev && dev_get_platdata(&mfd->pdev->dev)) {
+		ctrl_pdata = container_of(dev_get_platdata(&mfd->pdev->dev),
+				struct mdss_dsi_ctrl_pdata, panel_data);
+	}
+
+	if (!ctrl_pdata) {
+		pr_err("not ready\n");
+		return bl_lvl ;
+	}
+
 	/* modify brightness level */
 #if defined(CONFIG_LGE_PP_AD_SUPPORTED)
 	mfd->ad_info.user_br_lvl = br_lvl;
@@ -249,45 +284,32 @@ int lge_br_to_bl (struct msm_fb_data_type *mfd, int br_lvl)
 		mfd->ad_info.old_ad_br_lvl = br_lvl;
 	}
 #endif
-	if (lge_get_bootreason_with_lcd_dimming() && !is_blank_called()) {
+
+	if (check_dimming_condition())
 		br_lvl = 1;
-		pr_info("%s: lcd dimming mode. set value = %d\n",
-							__func__, br_lvl);
-#ifdef CONFIG_LGE_PM_LGE_POWER_CLASS_BATTERY_ID_CHECKER
-	} else if (is_factory_cable()
-#if !defined(CONFIG_LGE_PM_EMBEDDED_BATTERY)
-					&& !lge_battery_present()
-#endif
-#elif defined (CONFIG_LGE_PM_BATTERY_ID_CHECKER)
-	} else if (is_factory_cable() && !lge_battery_check()
-#else
-	} else if (is_factory_cable()
-#endif
-			&& !is_blank_called()) {
-		br_lvl = 1;
-		pr_info("%s: Detect factory cable. set value = %d\n",
-							__func__, br_lvl);
-	}
-	/* modify brightness level */
 
 	/* map brightness level to device backlight level */
+	if (ctrl_pdata->lge_extra.blmap_list_size)
+		bl_lvl = lge_panel_br_to_bl(ctrl_pdata, br_lvl);
+	else {
 #if defined(CONFIG_LGE_HIGH_LUMINANCE_MODE)
-	blmaptype = pinfo->hl_mode_on ? LGE_BLHL : LGE_BL;
+		blmaptype = pinfo->hl_mode_on ? LGE_BLHL : LGE_BL;
 #else
-	blmaptype = LGE_BL;
+		blmaptype = LGE_BL;
 #endif
 
-	if (pinfo->blmap[blmaptype])
-		bl_lvl = pinfo->blmap[blmaptype][br_lvl];
+		if (pinfo->blmap[blmaptype])
+			bl_lvl = pinfo->blmap[blmaptype][br_lvl];
 #if defined(CONFIG_LGE_DISPLAY_AOD_WITH_MIPI)
-	if (mfd->panel_info->aod_cur_mode == AOD_PANEL_MODE_U2_BLANK ||
-		mfd->panel_info->aod_cur_mode == AOD_PANEL_MODE_U2_UNBLANK)
-		pr_info("[AOD] br_lvl(%d) -> bl_lvl(%d)\n", br_lvl, bl_lvl);
-	else
-		pr_info("%s: br_lvl(%d) -> bl_lvl(%d)\n", lge_get_blmapname(blmaptype), br_lvl, bl_lvl);
+		if (mfd->panel_info->aod_cur_mode == AOD_PANEL_MODE_U2_BLANK ||
+			mfd->panel_info->aod_cur_mode == AOD_PANEL_MODE_U2_UNBLANK)
+			pr_info("[AOD] br_lvl(%d) -> bl_lvl(%d)\n", br_lvl, bl_lvl);
+		else
+			pr_info("%s: br_lvl(%d) -> bl_lvl(%d)\n", lge_get_blmapname(blmaptype), br_lvl, bl_lvl);
 #else
-	pr_info("%s: br_lvl(%d) -> bl_lvl(%d)\n", lge_get_blmapname(blmaptype), br_lvl, bl_lvl);
+		pr_info("%s: br_lvl(%d) -> bl_lvl(%d)\n", lge_get_blmapname(blmaptype), br_lvl, bl_lvl);
 #endif
+	}
 	return bl_lvl;
 }
 
@@ -418,7 +440,7 @@ ssize_t mdss_fb_set_bl_off_and_block(struct device *dev,
 /*---------------------------------------------------------------------------*/
 /* Recovery Mode - To recovery when screen crack occured					 */
 /*---------------------------------------------------------------------------*/
-#if defined(CONFIG_LGE_PANEL_RECOVERY)
+#if defined(CONFIG_LGE_DISPLAY_RECOVERY_ESD)
 int recovery_val;
 ssize_t get_recovery_mode(struct device *dev,
                 struct device_attribute *attr, char *buf)
@@ -458,7 +480,7 @@ ssize_t set_recovery_mode(struct device *dev,
 
 	if(recovery_val > 0) {
 		pr_info("%s: RECOVERY when screen crack occured.\n",__func__);
-		lge_panel_recovery_mode();
+		lge_mdss_report_panel_dead();
 	} else {
 		pr_info("%s: NO RECOVERY\n",__func__);
 	}
@@ -466,7 +488,7 @@ ssize_t set_recovery_mode(struct device *dev,
 	return count;
 }
 
-bool lge_panel_recovery_mode(void)
+bool lge_mdss_report_panel_dead(void)
 {
 	struct mdss_panel_data *pdata;
 	struct mdss_dsi_ctrl_pdata *ctrl;
@@ -489,19 +511,18 @@ bool lge_panel_recovery_mode(void)
 	mdss_fb_report_panel_dead(mfd_recovery);
 	return true;
 }
-EXPORT_SYMBOL(lge_panel_recovery_mode);
+EXPORT_SYMBOL(lge_mdss_report_panel_dead);
 #endif
-
 
 /*---------------------------------------------------------------------------*/
 /* AOD backlight                                                             */
 /*---------------------------------------------------------------------------*/
-#if defined(CONFIG_LGE_DISPLAY_AOD_SUPPORTED)
-#ifdef CONFIG_LGE_DISPLAY_BL_EXTENDED
+#if defined(CONFIG_LGE_DISPLAY_BL_EXTENDED) || defined(CONFIG_LGE_DISPLAY_AMBIENT_SUPPORTED)
 extern void mdss_fb_bl_update_notify(struct msm_fb_data_type *mfd,
 		uint32_t notification_type);
+#endif
 
-
+#ifdef CONFIG_LGE_DISPLAY_BL_EXTENDED
 static int bklt_ctrl_backup;
 /* must call this function within mfd->bl_lock */
 void lge_set_to_blex(struct msm_fb_data_type *mfd)
@@ -600,8 +621,77 @@ void mdss_fb_set_backlight_ex(struct msm_fb_data_type *mfd, u32 bkl_lvl)
 				NOTIFY_TYPE_BL_UPDATE);
 	}
 }
+
+void mdss_fb_update_backlight_ex(struct msm_fb_data_type *mfd)
+{
+	struct mdss_panel_data *pdata;
+	u32 temp;
+	if (mfd->unset_bl_level_ex == U32_MAX)
+		return;
+	mutex_lock(&mfd->bl_lock);
+	if (!mfd->allow_bl_update_ex) {
+		pdata = dev_get_platdata(&mfd->pdev->dev);
+		if ((pdata) && (pdata->set_backlight)) {
+			mfd->bl_level_ex = mfd->unset_bl_level_ex;
+			temp = mfd->bl_level_ex;
+			lge_set_to_blex(mfd);
+			pr_info("[Display] sub backlight sent to panel :%d in %s\n", temp, __func__);
+			pdata->set_backlight(pdata, temp);
+			lge_restore_from_blex(mfd);
+			mfd->bl_level_scaled_ex = mfd->unset_bl_level_ex;
+			mfd->allow_bl_update_ex = true;
+		}
+	}
+	mutex_unlock(&mfd->bl_lock);
+}
+
+int lge_br_to_bl_ex(struct msm_fb_data_type *mfd, int br_lvl)
+{
+	/* TODO: change default value more reasonablly */
+	int bl_lvl = 100;
+	enum lge_bl_map_type blmaptype;
+	struct mdss_panel_info *pinfo;
+
+	if(mfd->index != 0) {
+		pr_err("[AOD]fb[%d] is not for aod\n", mfd->index);
+		return bl_lvl;
+	}
+	pinfo = mfd->panel_info;
+
+	/* modify brightness level */
+#if defined(CONFIG_LGE_PP_AD_SUPPORTED)
+	/* TODO: delete below line if there is no concern */
+	/* mfd->ad_info.user_br_lvl = br_lvl; */
+	if (mfd->ad_info.is_ad_on) {
+		if (br_lvl != 0 && mfd->ad_info.ad_weight > 0) {
+			br_lvl -= (br_lvl * mfd->ad_info.ad_weight) / 100;
+			if (br_lvl < 10)
+				br_lvl = 10;
+		}
+	}
 #endif
 
+	if (check_dimming_condition())
+		br_lvl = 1;
+
+	/* map brightness level to device backlight level */
+#if defined(CONFIG_LGE_HIGH_LUMINANCE_MODE)
+	blmaptype = pinfo->hl_mode_on ?
+			(pinfo->bl2_dimm ? LGE_BL2DIMHL : LGE_BL2HL) :
+			(pinfo->bl2_dimm ? LGE_BL2DIM : LGE_BL2);
+#else
+	blmaptype = (pinfo->bl2_dimm ? LGE_BL2DIM : LGE_BL2);
+#endif
+	if (pinfo->blmap[blmaptype])
+		bl_lvl = pinfo->blmap[blmaptype][br_lvl];
+
+	pr_info("%s: br_lvl(%d) -> bl_lvl(%d)\n", lge_get_blmapname(blmaptype),
+						br_lvl, bl_lvl);
+	return bl_lvl;
+}
+#endif //CONFIG_LGE_DISPLAY_BL_EXTENDED
+
+#if defined(CONFIG_LGE_DISPLAY_AOD_SUPPORTED)
 /* TODO: call in mutex lock bl_aod_bl?  make new mutex */
 void mdss_fb_set_bl_brightness_aod_sub(struct msm_fb_data_type *mfd,
 				      enum led_brightness value)
@@ -641,7 +731,7 @@ void mdss_fb_set_bl_brightness_aod_sub(struct msm_fb_data_type *mfd,
 	}
 }
 
-static void mdss_fb_set_bl_brightness_aod(struct led_classdev *led_cdev,
+static void mdss_fb_set_bl_brightness_ambient(struct led_classdev *led_cdev,
 				      enum led_brightness value)
 {
 	struct msm_fb_data_type *mfd = dev_get_drvdata(led_cdev->dev->parent);
@@ -656,64 +746,6 @@ static void mdss_fb_set_bl_brightness_aod(struct led_classdev *led_cdev,
 	mdss_fb_set_bl_brightness_aod_sub(mfd, value);
 	mutex_unlock(&mfd->bl_lock);
 }
-
-static struct led_classdev backlight_led_aod = {
-	/* TODO : rename suffix ex to aod in below string */
-	.name           = "lcd-backlight-ex",
-	.brightness     = MDSS_MAX_BL_BRIGHTNESS / 2,
-	.usr_brightness_req = MDSS_MAX_BL_BRIGHTNESS,
-	.brightness_set = mdss_fb_set_bl_brightness_aod,
-	.max_brightness = MDSS_MAX_BL_BRIGHTNESS,
-};
-
-static int lge_lcd_backlight_registered;
-void lge_backlight_register(struct msm_fb_data_type *mfd)
-{
-	if (lge_lcd_backlight_registered)
-		return;
-	backlight_led_aod.brightness = mfd->panel_info->default_brightness;
-	backlight_led_aod.usr_brightness_req = mfd->panel_info->default_brightness;
-	backlight_led_aod.max_brightness = mfd->panel_info->brightness_max;
-	if (led_classdev_register(&mfd->pdev->dev, &backlight_led_aod))
-		pr_err("led_classdev_ex_register failed\n");
-	else
-		lge_lcd_backlight_registered = 1;
-}
-
-
-
-void lge_backlight_unregister(void)
-{
-	if (lge_lcd_backlight_registered) {
-		lge_lcd_backlight_registered = 0;
-		led_classdev_unregister(&backlight_led_aod);
-	}
-}
-
-#ifdef CONFIG_LGE_DISPLAY_BL_EXTENDED
-void mdss_fb_update_backlight_ex(struct msm_fb_data_type *mfd)
-{
-	struct mdss_panel_data *pdata;
-	u32 temp;
-	if (mfd->unset_bl_level_ex == U32_MAX)
-		return;
-	mutex_lock(&mfd->bl_lock);
-	if (!mfd->allow_bl_update_ex) {
-		pdata = dev_get_platdata(&mfd->pdev->dev);
-		if ((pdata) && (pdata->set_backlight)) {
-			mfd->bl_level_ex = mfd->unset_bl_level_ex;
-			temp = mfd->bl_level_ex;
-			lge_set_to_blex(mfd);
-			pr_info("[Display] sub backlight sent to panel :%d in %s\n", temp, __func__);
-			pdata->set_backlight(pdata, temp);
-			lge_restore_from_blex(mfd);
-			mfd->bl_level_scaled_ex = mfd->unset_bl_level_ex;
-			mfd->allow_bl_update_ex = true;
-		}
-	}
-	mutex_unlock(&mfd->bl_lock);
-}
-#endif
 
 /* TODO: check whether backlight off should not be called in U2 blank */
 void lge_aod_bl_ctrl_blank_blank(struct msm_fb_data_type *mfd)
@@ -762,72 +794,172 @@ void lge_aod_bl_ctrl_blank_blank(struct msm_fb_data_type *mfd)
 	}
 #endif
 }
-
-#if IS_ENABLED(CONFIG_LGE_DISPLAY_BL_EXTENDED)
-int lge_br_to_bl_ex (struct msm_fb_data_type *mfd, int br_lvl)
+#elif defined(CONFIG_LGE_DISPLAY_AMBIENT_SUPPORTED)
+int lge_br_to_bl_ex(struct msm_fb_data_type *mfd, int br_lvl)
 {
-	/* TODO: change default value more reasonablly */
 	int bl_lvl = 100;
-	enum lge_bl_map_type blmaptype;
 	struct mdss_panel_info *pinfo;
+	struct mdss_dsi_ctrl_pdata *ctrl_pdata = NULL;
 
-	if(mfd->index != 0) {
-		pr_err("[AOD]fb[%d] is not for aod\n", mfd->index);
-		return bl_lvl;
+	if (mfd->index != 0) {
+		pr_err("[Ambient] fb%d is not for ambient display\n", mfd->index);
+		return bl_lvl ;
 	}
 	pinfo = mfd->panel_info;
 
-	/* modify brightness level */
-#if defined(CONFIG_LGE_PP_AD_SUPPORTED)
-	/* TODO: delete below line if there is no concern */
-	/* mfd->ad_info.user_br_lvl = br_lvl; */
-	if (mfd->ad_info.is_ad_on) {
-		if (br_lvl != 0 && mfd->ad_info.ad_weight > 0) {
-			br_lvl -= (br_lvl * mfd->ad_info.ad_weight) / 100;
-			if (br_lvl < 10)
-				br_lvl = 10;
-		}
+	if (!pinfo) {
+		pr_err("no panel connected!\n");
+		return -EINVAL;
 	}
-#endif
-	if (lge_get_bootreason_with_lcd_dimming() && !is_blank_called()) {
-		br_lvl = 1;
-		pr_info("%s: lcd dimming mode. set value = %d\n",
-							__func__, br_lvl);
-#ifdef CONFIG_LGE_PM_LGE_POWER_CLASS_BATTERY_ID_CHECKER
-	} else if (is_factory_cable()
-#if !defined(CONFIG_LGE_PM_EMBEDDED_BATTERY)
-					&& !lge_battery_present()
-#endif
-#elif defined (CONFIG_LGE_PM_BATTERY_ID_CHECKER)
-	} else if (is_factory_cable() && !lge_battery_check()
-#else
-	} else if (is_factory_cable()
-#endif
-			&& !is_blank_called()) {
-		br_lvl = 1;
-		pr_info("%s: Detect factory cable. set value = %d\n",
-							__func__, br_lvl);
+
+	if (mfd->pdev && dev_get_platdata(&mfd->pdev->dev)) {
+		ctrl_pdata = container_of(dev_get_platdata(&mfd->pdev->dev),
+				struct mdss_dsi_ctrl_pdata, panel_data);
 	}
+
+	if (!ctrl_pdata) {
+		pr_err("not ready\n");
+		return bl_lvl ;
+	}
+
+	if (check_dimming_condition())
+		br_lvl = 1;
 
 	/* map brightness level to device backlight level */
-#if defined(CONFIG_LGE_HIGH_LUMINANCE_MODE)
-	blmaptype = pinfo->hl_mode_on ?
-			(pinfo->bl2_dimm ? LGE_BL2DIMHL : LGE_BL2HL) :
-			(pinfo->bl2_dimm ? LGE_BL2DIM : LGE_BL2);
-#else
-	blmaptype = (pinfo->bl2_dimm ? LGE_BL2DIM : LGE_BL2);
-#endif
-	if (pinfo->blmap[blmaptype])
-		bl_lvl = pinfo->blmap[blmaptype][br_lvl];
+	if (ctrl_pdata->lge_extra.blmap_list_size)
+		bl_lvl = lge_panel_br_to_bl(ctrl_pdata, br_lvl);
 
-	pr_info("%s: br_lvl(%d) -> bl_lvl(%d)\n", lge_get_blmapname(blmaptype),
-						br_lvl, bl_lvl);
-	return bl_lvl;
 	return bl_lvl;
 }
-#endif
+
+/* must call this function from within mfd->bl_lock */
+void mdss_fb_set_backlight_ex(struct msm_fb_data_type *mfd, u32 bkl_lvl)
+{
+	struct mdss_panel_data *pdata;
+	u32 temp = bkl_lvl;
+	bool ad_bl_notify_needed = false;
+	bool bl_notify_needed = false;
+
+#if defined(CONFIG_LGE_SP_MIRRORING_CTRL_BL)
+	if(lge_is_bl_update_blocked(bkl_lvl))
+		return;
 #endif
 
+	if (((!mdss_fb_is_power_on_lp(mfd) && mfd->dcm_state != DCM_ENTER)
+		|| !mfd->allow_bl_update_ex) ||
+		mfd->panel_info->cont_splash_enabled) {
+		mfd->unset_bl_level_ex = bkl_lvl;
+		return;
+	} else if (mdss_fb_is_power_on_lp(mfd) && mfd->panel_info->panel_dead) {
+		mfd->unset_bl_level_ex = mfd->bl_level;
+	} else {
+		mfd->unset_bl_level_ex = U32_MAX;
+	}
+
+	pdata = dev_get_platdata(&mfd->pdev->dev);
+
+	if ((pdata) && (pdata->set_backlight)) {
+		if (mfd->bl_level != bkl_lvl) {
+			bl_notify_needed = true;
+			pr_info("[Display] backlight_ex sent to panel :%d\n", temp);
+			pdata->set_backlight(pdata, temp);
+			mfd->bl_level = bkl_lvl;
+			mfd->bl_level_scaled = (temp * mfd->bl_scale) / 1024;
+		}
+		if (ad_bl_notify_needed)
+			mdss_fb_bl_update_notify(mfd,
+				NOTIFY_TYPE_BL_AD_ATTEN_UPDATE);
+		if (bl_notify_needed)
+			mdss_fb_bl_update_notify(mfd,
+				NOTIFY_TYPE_BL_UPDATE);
+	}
+}
+
+static void mdss_fb_set_bl_brightness_ambient(struct led_classdev *led_cdev,
+				      enum led_brightness value)
+{
+	struct msm_fb_data_type *mfd = dev_get_drvdata(led_cdev->dev->parent);
+	int bl_lvl;
+
+	if (value > mfd->panel_info->brightness_max)
+		value = mfd->panel_info->brightness_max;
+
+	MDSS_BRIGHT_TO_BL_EX(bl_lvl, value, mfd->panel_info->bl_max,
+				mfd->panel_info->brightness_max);
+	if (!bl_lvl && value) {
+		bl_lvl = 1;
+	}
+
+	if (!IS_CALIB_MODE_BL(mfd) &&
+			(!mfd->ext_bl_ctrl || !value || !mfd->bl_level)) {
+		mutex_lock(&mfd->bl_lock);
+		mfd->unset_bl_level_ex = U32_MAX;
+		mfd->allow_bl_update_ex = true;
+		mdss_fb_set_backlight_ex(mfd, bl_lvl);
+		mfd->allow_bl_update_ex = false;
+		mutex_unlock(&mfd->bl_lock);
+	}
+}
+
+void mdss_fb_update_backlight_ex(struct msm_fb_data_type *mfd)
+{
+	struct mdss_panel_data *pdata;
+	u32 temp;
+
+	if (mfd->unset_bl_level_ex == U32_MAX)
+		return;
+
+	mutex_lock(&mfd->bl_lock);
+	if (!mfd->allow_bl_update_ex) {
+		pdata = dev_get_platdata(&mfd->pdev->dev);
+		if ((pdata) && (pdata->set_backlight)) {
+			mfd->bl_level = mfd->unset_bl_level_ex;
+			temp = mfd->bl_level;
+			if (mdss_fb_is_power_on_lp(mfd)) {
+				pr_info("[Display] backlight_ex sent to panel :%d\n", temp);
+				pdata->set_backlight(pdata, temp);
+				mfd->allow_bl_update_ex = true;
+			} else {
+				pr_info("ignore unset_bl_level_ex value\n");
+			}
+		}
+	}
+	mutex_unlock(&mfd->bl_lock);
+}
+#endif
+
+#if defined(CONFIG_LGE_DISPLAY_AOD_SUPPORTED) || defined(CONFIG_LGE_DISPLAY_AMBIENT_SUPPORTED)
+static bool lge_ambient_brightness_registered = false;
+
+static struct led_classdev ambient_brightness_cdev = {
+	.name           = "lcd-backlight-ex",
+	.brightness     = MDSS_MAX_BL_BRIGHTNESS / 2,
+	.usr_brightness_req = MDSS_MAX_BL_BRIGHTNESS,
+	.brightness_set = mdss_fb_set_bl_brightness_ambient,
+	.max_brightness = MDSS_MAX_BL_BRIGHTNESS,
+};
+
+void lge_ambient_brightness_register(struct msm_fb_data_type *mfd)
+{
+	if (lge_ambient_brightness_registered)
+		return;
+
+	ambient_brightness_cdev.brightness = 0;
+	ambient_brightness_cdev.max_brightness = mfd->panel_info->brightness_max;
+	if (led_classdev_register(&mfd->pdev->dev, &ambient_brightness_cdev))
+		pr_err("[Ambient] brightness cdev register failed\n");
+	else
+		lge_ambient_brightness_registered = true;
+}
+
+void lge_ambient_brightness_unregister(void)
+{
+	if (lge_ambient_brightness_registered) {
+		lge_ambient_brightness_registered = false;
+		led_classdev_unregister(&ambient_brightness_cdev);
+	}
+}
+#endif
 /*---------------------------------------------------------------------------*/
 /* Assertive display                                                         */
 /*---------------------------------------------------------------------------*/
@@ -945,10 +1077,11 @@ void lge_mdss_fb_ad_set_brightness(struct msm_fb_data_type *mfd, u32 amb_light, 
 		bl_lvl = mfd->panel_info->blmap[LGE_BL][mfd->ad_info.user_br_lvl];
 		//mdss_fb_ad_set_backlight(mfd, user_bl,user_bl);
 #if defined(CONFIG_LGE_HIGH_LUMINANCE_MODE)
-		if (bl_lvl && (mfd->panel_info->hl_mode_on == 0 )) {
+		if (bl_lvl && (mfd->panel_info->hl_mode_on == 0 ))
 #else
-		if (bl_lvl) {
+		if (bl_lvl)
 #endif
+		{
 			mutex_lock(&mfd->bl_lock);
 			mdss_fb_set_backlight(mfd, bl_lvl);
 			pr_err("[Display] AD Off bl_lvl=%d\n",bl_lvl);

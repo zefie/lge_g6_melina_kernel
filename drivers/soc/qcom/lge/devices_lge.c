@@ -67,7 +67,7 @@ int display_panel_type;
 
 #ifdef CONFIG_LGE_PM_LGE_POWER_CLASS_BOARD_REVISION
 #else
-#if defined(CONFIG_MACH_MSM8996_LUCYE)
+#if defined(CONFIG_MACH_MSM8996_LUCYE) || defined (CONFIG_MACH_MSM8996_FALCON)
 char *rev_str[] = {"evb1", "evb2", "evb3", "rev_0", "rev_01", "rev_02", "rev_03", "rev_04",
 	"rev_a", "rev_b", "rev_c", "rev_d", "rev_10", "rev_11", "rev_12", "rev_13", "rev_14", "rev_15", "rev_16",
 	"reserved"};
@@ -99,7 +99,7 @@ static int __init board_revno_setup(char *rev_info)
 
 	return 1;
 }
-__setup("lge.rev=", board_revno_setup);
+__setup("androidboot.vendor.lge.hw.revision=", board_revno_setup);
 #endif
 
 #ifdef CONFIG_LGE_PM_LGE_POWER_CLASS_BOARD_REVISION
@@ -433,7 +433,7 @@ int __init lge_laf_mode_init(char *s)
 
 	return 1;
 }
-__setup("androidboot.laf=", lge_laf_mode_init);
+__setup("androidboot.vendor.lge.laf=", lge_laf_mode_init);
 
 enum lge_laf_mode_type lge_get_laf_mode(void)
 {
@@ -466,11 +466,27 @@ static int __init lge_check_bootreason(char *reason)
 
 	return 1;
 }
-__setup("lge.bootreasoncode=", lge_check_bootreason);
+__setup("androidboot.product.lge.bootreasoncode=", lge_check_bootreason);
 
 int lge_get_bootreason(void)
 {
 	return lge_boot_reason;
+}
+
+bool lge_check_recoveryboot(void)
+{
+	/*sync with android/bootable/bootloader/lk/platform/msm_shared/reboot.h
+		  RECOVERY_MODE           = 0x77665502,  */
+	if(lge_boot_reason == 0x77665502)
+	{
+		pr_info("LGE BOOT MODE is RECOVERY!!\n");
+		return true;
+	}
+	else
+	{
+		 pr_info("LGE BOOT MODE is not RECOVERY!!\n");
+		return false;
+	}
 }
 
 int on_hidden_reset;
@@ -482,7 +498,7 @@ static int __init lge_check_hidden_reset(char *reset_mode)
 
 	return 1;
 }
-__setup("lge.hreset=", lge_check_hidden_reset);
+__setup("androidboot.product.lge.hiddenreset=", lge_check_hidden_reset);
 
 static int lge_mfts_mode = 0;
 
@@ -506,20 +522,20 @@ int lge_get_mfts_mode(void)
 	return lge_mfts_mode;
 }
 
-#ifdef CONFIG_LGE_LCD_OFF_DIMMING
 int lge_get_bootreason_with_lcd_dimming(void)
 {
 	int ret = 0;
 
+#ifdef CONFIG_LGE_LCD_OFF_DIMMING
 	if (lge_get_bootreason() == 0x77665560)
 		ret = 1;
 	else if (lge_get_bootreason() == 0x77665561)
 		ret = 2;
 	else if (lge_get_bootreason() == 0x77665562)
 		ret = 3;
+#endif
 	return ret;
 }
-#endif
 
 /*
    for download complete using LAF image

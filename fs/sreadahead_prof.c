@@ -246,6 +246,10 @@ static int is_system_partition(unsigned char *fn) {
 	return strncmp((const char*)fn, "/system/", 8) == 0 ? 1 : 0;
 }
 
+static int is_vendor_partition(unsigned char *fn) {
+	return strncmp((const char*)fn, "/vendor/", 8) == 0 ? 1 : 0;
+}
+
 #ifdef CONFIG_VM_EVENT_COUNTERS
 static int check_vm_pgsteal_events(void)
 {
@@ -295,7 +299,8 @@ static int sreadahead_prof_RUN(struct file *filp, size_t len, loff_t pos)
 		return -ENOENT;
 	strlcat(data.name, filp->f_path.dentry->d_name.name, buflen);
 
-	if (is_system_partition(data.name) == 0)
+	if (is_system_partition(data.name) == 0 &&
+			is_vendor_partition(data.name) == 0)
 		return 0;
 
 	mutex_lock(&prof_buf.ulock);

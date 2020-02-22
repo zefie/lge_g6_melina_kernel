@@ -21,6 +21,7 @@
 #include <net/ipv6.h>
 #include <net/ip6_fib.h>
 #include <net/flow.h>
+#include <net/patchcodeid.h>
 
 #include <linux/interrupt.h>
 
@@ -161,6 +162,7 @@ struct xfrm_state {
 		int		header_len;
 		int		trailer_len;
 		u32		extra_flags;
+		u32		output_mark;
 	} props;
 
 	struct xfrm_lifetime_cfg lft;
@@ -288,8 +290,12 @@ struct xfrm_policy_afinfo {
 	void			(*garbage_collect)(struct net *net);
 	struct dst_entry	*(*dst_lookup)(struct net *net, int tos,
 					       const xfrm_address_t *saddr,
-					       const xfrm_address_t *daddr);
-	int			(*get_saddr)(struct net *net, xfrm_address_t *saddr, xfrm_address_t *daddr);
+					       const xfrm_address_t *daddr,
+					       u32 mark);
+	int			(*get_saddr)(struct net *net,
+					     xfrm_address_t *saddr,
+					     xfrm_address_t *daddr,
+					     u32 mark);
 	void			(*decode_session)(struct sk_buff *skb,
 						  struct flowi *fl,
 						  int reverse);
@@ -1064,6 +1070,7 @@ static inline int __xfrm_policy_check2(struct sock *sk, int dir,
 	if (sk && sk->sk_policy[XFRM_POLICY_IN])
 		return __xfrm_policy_check(sk, ndir, skb, family);
 /* 201-03-23 ty.moon@lge.com LGP_DATA_KERNEL_CRASHFIX_XFRM_POLICY_CHECK2 [START] */
+patch_code_id("LPCP-294@n@c@vmlinux@xfrm.h@1");
 /* TD #60721(case 01588795), the kernel panic issue seeing on the specific AP.
 	return	(!net->xfrm.policy_count[dir] && !skb->sp) ||
 		(skb_dst(skb)->flags & DST_NOPOLICY) ||

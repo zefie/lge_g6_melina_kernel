@@ -275,7 +275,7 @@ static int qpnp_vadc_is_valid(struct qpnp_vadc_chip *vadc)
 	return -EINVAL;
 }
 
-#ifdef CONFIG_MACH_MSM8996_LUCYE
+#if defined (CONFIG_MACH_MSM8996_LUCYE) || defined (CONFIG_MACH_MSM8996_FALCON)
 int32_t set_pm_gpio_value (struct qpnp_vadc_chip *vadc, int16_t reg,
 			u8 *buf, int len)
 {
@@ -2248,7 +2248,7 @@ int32_t qpnp_vadc_read(struct qpnp_vadc_chip *vadc,
 
 		return rc;
 	}
-#elif defined(CONFIG_MACH_MSM8996_ELSA) || defined(CONFIG_MACH_MSM8996_ANNA)
+#elif defined(CONFIG_MACH_MSM8996_ELSA) || defined(CONFIG_MACH_MSM8996_ANNA) || defined (CONFIG_MACH_MSM8996_FALCON)
 	else if (channel == LR_MUX10_USB_ID_LV) {
 		unsigned int *cable_info = NULL;
 		unsigned int cable_smem_size = 0;

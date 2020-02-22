@@ -277,6 +277,8 @@ build_package() {
     MEDIATEK_LINK="${LINK_DIR}"/mediatek
     EXTRA_SEARCH_NEW_MEDIATEK="${KERNEL_LINK}"/drivers/misc/mediatek/mach
     EXTRA_SEARCH_NEW_MEDIATEK_INCLUDE="${KERNEL_LINK}"/drivers/misc/mediatek/include
+    EXTRA_SEARCH_NEW_MEDIATEK_BASE="${KERNEL_LINK}"/drivers/misc/mediatek/base
+    EXTRA_SEARCH_AMLOGIC_DEBUG="${KERNEL_LINK}"/drivers/amlogic/debug
     [ -d "$source_dir"/../mediatek ] && have_mediatek=1
 
     # Create kernel and output links to LINK_DIR. Only create link to output
@@ -303,6 +305,8 @@ build_package() {
 
     echo "Generating list of files to include..."
     INCLUDEFILE=$(mktemp)
+    echo "${script_version}" >> "${LINK_DIR}"/.version
+    echo "${LINK_DIR}"/.version >> "${INCLUDEFILE}"
 
     if [ $? -ne 0 ] ; then
         echo "mktemp failed. Unable to continue."
@@ -315,10 +319,10 @@ build_package() {
         exit 1
     fi
 
-    SEARCHPATHS="$(for d in $archdirs; do echo "${KERNEL_LINK}/arch/$d"; done) ${KERNEL_LINK}/include ${KERNEL_LINK}/scripts ${KERNEL_LINK}/mediatek/Makefile ${KERNEL_LINK}/mediatek/platform ${MEDIATEK_LINK}/config ${MEDIATEK_LINK}/platform ${MEDIATEK_LINK}/build/libs ${MEDIATEK_LINK}/build/Makefile ${MEDIATEK_LINK}/build/kernel ${MEDIATEK_LINK}/kernel/include/linux ${MEDIATEK_LINK}/kernel/Makefile ${KERNEL_LINK}/KMC ${KERNEL_LINK}/init/secureboot ${KERNEL_LINK}/mvl-avb-version ${EXTRA_SEARCH_NEW_MEDIATEK} ${EXTRA_SEARCH_NEW_MEDIATEK_INCLUDE} ${KERNEL_LINK}/tools/gcc"
+    SEARCHPATHS="$(for d in $archdirs; do echo "${KERNEL_LINK}/arch/$d"; done) ${KERNEL_LINK}/include ${KERNEL_LINK}/scripts ${KERNEL_LINK}/mediatek/Makefile ${KERNEL_LINK}/mediatek/platform ${MEDIATEK_LINK}/config ${MEDIATEK_LINK}/platform ${MEDIATEK_LINK}/build/libs ${MEDIATEK_LINK}/build/Makefile ${MEDIATEK_LINK}/build/kernel ${MEDIATEK_LINK}/kernel/include/linux ${MEDIATEK_LINK}/kernel/Makefile ${KERNEL_LINK}/KMC ${KERNEL_LINK}/init/secureboot ${KERNEL_LINK}/mvl-avb-version ${EXTRA_SEARCH_NEW_MEDIATEK} ${EXTRA_SEARCH_NEW_MEDIATEK_INCLUDE} ${EXTRA_SEARCH_NEW_MEDIATEK_BASE} ${EXTRA_SEARCH_AMLOGIC_DEBUG} ${KERNEL_LINK}/tools/gcc ${KERNEL_LINK}/tools/Makefile ${KERNEL_LINK}/tools/objtool ${KERNEL_LINK}/tools/scripts"
 
     if [ -L "${OUTPUT_LINK}" ] ; then
-        SEARCHPATHS="${SEARCHPATHS} $(for d in $archdirs; do echo "${OUTPUT_LINK}/arch/$d"; done) ${OUTPUT_LINK}/include ${OUTPUT_LINK}/scripts ${OUTPUT_LINK}/KMC ${OUTPUT_LINK}/init/secureboot ${OUTPUT_LINK}/mvl-avb-version ${OUTPUT_LINK}/tools/gcc"
+        SEARCHPATHS="${SEARCHPATHS} $(for d in $archdirs; do echo "${OUTPUT_LINK}/arch/$d"; done) ${OUTPUT_LINK}/include ${OUTPUT_LINK}/scripts ${OUTPUT_LINK}/KMC ${OUTPUT_LINK}/init/secureboot ${OUTPUT_LINK}/mvl-avb-version ${OUTPUT_LINK}/tools/gcc ${OUTPUT_LINK}/tools/Makefile ${OUTPUT_LINK}/tools/objtool ${OUTPUT_LINK}/tools/scripts"
     fi
 
     # Not all of the directories always exist, so check for them first to avoid an error message
@@ -329,7 +333,7 @@ build_package() {
             find -L "${P}" ! -type l >> "${INCLUDEFILE}"
         else
             find -L "${P}" \
-            \( ! -type l -a ! -name \*.c -a ! -name \*.o -a ! -name \*.S -a ! -path \*/arch/\*/boot/\* -a ! -path \*/.svn/\* -a ! -path \*/.git/\* ! -path \*mediatek/platform/Android.mk ! -path \*mediatek/platform/README ! -path \*mediatek/platform/common\* ! -path \*mediatek/platform/rules.mk ! -path \*mediatek/platform/\*/Trace\* ! -path \*mediatek/platform/\*/external\* ! -path \*mediatek/platform/\*/hardware\* ! -path \*mediatek/platform/\*/lk\* ! -path \*mediatek/platform/\*/preloader\* ! -path \*mediatek/platform/\*/uboot\* ! -path \*mediatek/platform/\*/kernel/core/Makefile ! -path \*mediatek/platform/\*/kernel/core/Makefile.boot  ! -path \*mediatek/platform/\*/kernel/core/modules.builtin ! -path \*mediatek/platform/\*/kernel/drivers\* ! -path \*mediatek/platform/\*/kernel/Kconfig\* ! -path \*mediatek/config/a830\* ! -path \*mediatek/config/banyan_addon\* ! -path \*mediatek/config/out\* ! -path \*mediatek/config/prada\* ! -path \*mediatek/config/s820\* ! -path \*mediatek/config/seine\* \) \
+            \( ! -type l -a ! -name \*.c -a ! -name \*.o -a ! -name \*.S -a ! -name \*.ko -a ! -path \*/arch/\*/boot/\* -a ! -path \*/.svn/\* -a ! -path \*/.git/\* ! -path \*mediatek/platform/Android.mk ! -path \*mediatek/platform/README ! -path \*mediatek/platform/common\* ! -path \*mediatek/platform/rules.mk ! -path \*mediatek/platform/\*/Trace\* ! -path \*mediatek/platform/\*/external\* ! -path \*mediatek/platform/\*/hardware\* ! -path \*mediatek/platform/\*/lk\* ! -path \*mediatek/platform/\*/preloader\* ! -path \*mediatek/platform/\*/uboot\* ! -path \*mediatek/platform/\*/kernel/core/Makefile ! -path \*mediatek/platform/\*/kernel/core/Makefile.boot  ! -path \*mediatek/platform/\*/kernel/core/modules.builtin ! -path \*mediatek/platform/\*/kernel/drivers\* ! -path \*mediatek/platform/\*/kernel/Kconfig\* ! -path \*mediatek/config/a830\* ! -path \*mediatek/config/banyan_addon\* ! -path \*mediatek/config/out\* ! -path \*mediatek/config/prada\* ! -path \*mediatek/config/s820\* ! -path \*mediatek/config/seine\* \) \
             >> ${INCLUDEFILE}
         fi
     done
@@ -399,26 +403,50 @@ do_retry() {
 # Upload kernel headers package using curl.
 #
 upload_package_curl() {
-    echo "Uploading the following package:"
-    ls -lh "${1}"
+    local retr=1
+    local delay=$conn_fail_retry_delay
+    local execution_status
+    while :
+    do
+        execution_status=0
+        echo "Uploading the following package:"
+        ls -lh "${1}"
 
-    reply=$(do_retry $curl -F "file=@${1}" https://${server}/upload.php)
+        reply=$(do_retry $curl -F "file=@${1}" https://${server}/upload.php)
 
-    if [ $? -ne 0 ] ; then
-        echo "curl failed. Unable to continue. Check connectivity and username/password."
-        exit 1
-    fi
+        if [ $? -ne 0 ] ; then
+            echo "curl failed. Unable to continue. Check connectivity and username/password." >&2
+            execution_status=1
+        fi
 
-    status=$(echo "$reply" | head -n 1)
+        if [ $execution_status -eq 0 ] ; then
+            status=$(echo "$reply" | head -n 1)
 
-    if [ "$status" != "OK" ] ; then
-        echo "Upload failed. Unable to continue."
-        exit 1
-    fi
+            if [ "$status" != "OK" ] ; then
+                echo "$reply" >&2
+                echo "Upload failed. Unable to continue." >&2
+                execution_status=1
+            fi
+        fi
 
-    remote_package=$(echo "$reply" | head -n 2 | tail -n 1)
+        if [ $execution_status -ne 0 ] ; then
+            if [ $retr -gt $conn_fail_retry ] || [ -z "$retry_on_conn_fail" ] ; then
+                exit 1
+            else
+                echo "Will try one more time $retr of $conn_fail_retry in "$delay" seconds..." >&2
+                sleep $delay
+                retr=$(($retr + 1))
+                delay=$(($delay * 2))
+                continue
+            fi
 
-    echo "Upload succeeded."
+        fi
+
+        remote_package=$(echo "$reply" | head -n 2 | tail -n 1)
+
+        echo "Upload succeeded."
+        break
+    done
 }
 
 #
@@ -436,28 +464,51 @@ upload_package_wget() {
         echo "urlencoding failed. Unable to continue."
         exit 1
     fi
+    local retr=1
+    local delay=$conn_fail_retry_delay
+    local execution_status
+    while :
+    do
+        execution_status=0
+        echo "Uploading package..."
 
-    echo "Uploading package..."
+        reply=$(do_retry $wget --post-file="$encoded" -O - https://${server}/upload.php)
 
-    reply=$(do_retry $wget --post-file="$encoded" -O - https://${server}/upload.php)
+        if [ $? -ne 0 ] ; then
+            echo "wget failed. Unable to continue. Check connectivity and username/password." >&2
+            execution_status=1
+        fi
 
-    if [ $? -ne 0 ] ; then
-        echo "wget failed. Unable to continue. Check connectivity and username/password."
-        rm "$encoded"; exit 1
-    fi
+        if [ $execution_status -eq 0 ] ; then
+            status=$(echo "$reply" | head -n 1)
 
-    status=$(echo "$reply" | head -n 1)
+            if [ "$status" != "OK" ] ; then
+                echo "$reply"
+                echo "Upload failed. Unable to continue." >&2
+                execution_status=1
+            fi
+        fi
 
-    if [ "$status" != "OK" ] ; then
-        echo "$reply"
-        echo "Upload failed. Unable to continue."
-        exit 1
-    fi
+        if [ $execution_status -ne 0 ] ; then
+            if [ $retr -gt $conn_fail_retry ] || [ -z "$retry_on_conn_fail" ] ; then
+                rm "$encoded"
+                exit 1
+            else
+                echo "Will try one more time $retr of $conn_fail_retry in "$delay" seconds..." >&2
+                sleep $delay
+                retr=$(($retr + 1))
+                delay=$(($delay * 2))
+                continue
+            fi
 
-    remote_package=$(echo "$reply" | head -n 2 | tail -n 1)
-    rm "$encoded"
+        fi
 
-    echo "Upload succeeded."
+        remote_package=$(echo "$reply" | head -n 2 | tail -n 1)
+        rm "$encoded"
+
+        echo "Upload succeeded."
+        break
+    done
 }
 
 #
@@ -550,7 +601,7 @@ gen_header_checksums() {
     fi
 
     make -C "$kernel" ARCH=$ARCH CROSS_COMPILE=$CROSS_COMPILE $CUST_KENV M="${cache_dir}/pkgtmp/dependency_mod" depmod.i > $dbgdev
-
+    
     if [ $? -ne 0 ] ; then
         echo "Compilation failed. Unable to compute header dependency tree."
         return 1
@@ -754,7 +805,7 @@ do_remote_build() {
         echo "Check connectivity and username/password."
         exit 1
     fi
-
+    
     status=$(echo "$reply" | head -n 1)
 
     # If status is OK, build ID should be included as well
@@ -764,13 +815,13 @@ do_remote_build() {
         echo "$status"
         exit 1
     fi
-
+    
     # ID of this build is given in the reply
     build_id=$(echo "$reply" | head -n 2 | tail -n 1)
-
+    
     echo "Build started, id ${build_id}"
     echo "Polling for completion every 10 seconds..."
-
+    
     statusurl="https://${server}/builds/${build_id}/.status"
 
     for i in `seq $max_polls`
@@ -780,7 +831,7 @@ do_remote_build() {
         else
             reply=$($curl_quiet "$statusurl")
         fi
-
+        
         if [ $? -ne 0 ] ; then
             if [ $i -eq $max_polls ] ; then
                 echo "Maximum attempts exceeded. Build process"
@@ -793,37 +844,37 @@ do_remote_build() {
             sleep $poll_delay
             continue
         fi
-
+        
         break
     done
-
+    
     echo "Build finished."
 
     # Downloadable filename given in the reply
     status=$(echo "$reply" | head -n 1)
-
+    
     if [ "$status" != "OK" ] ; then
         echo "Build failed. Cannot download package."
         echo "Tuxera has been notified of this failure."
         exit 1
     fi
-
+    
     filename=$(echo "$reply" | head -2 | tail -1)
     fileurl="https://${server}/builds/${build_id}/${filename}"
-
+    
     echo "Downloading ${filename} ..."
-
+    
     if [ "$http_client" = "wget" ] ; then
         reply=$(do_retry $wget -O "$filename" "$fileurl")
     else
         reply=$(do_retry $curl -o "$filename" "$fileurl")
     fi
-
+    
     if [ $? -ne 0 ] ; then
         echo "Failed. You can still try to download using the link in the e-mail that was sent."
         exit 1
     fi
-
+    
     echo "Download finished."
 
     # Create cache entry.
@@ -967,7 +1018,7 @@ check_http_client() {
         wget_quiet=${wget_quiet}" -q"
         wget=${wget}" -nv"
     fi
-
+    
     if [ -n "$ignore_certificates" ] ; then
         curl_quiet=${curl_quiet}" -k"
         wget_quiet=${wget_quiet}" --no-check-certificate"
@@ -1124,7 +1175,7 @@ set_source_dir() {
 # Script start
 #
 
-script_version="17.7.4"
+script_version="18.7.19"
 cache_dir=".tuxera_update_cache"
 dbgdev="/dev/null"
 cache_lookup_time="none"

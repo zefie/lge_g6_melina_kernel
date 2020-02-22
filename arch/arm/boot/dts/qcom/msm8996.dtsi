@@ -1,4 +1,4 @@
-/* Copyright (c) 2014-2017, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2014-2018, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -21,7 +21,7 @@
 	interrupt-parent = <&intc>;
 
 	chosen {
-		bootargs = "sched_enable_hmp=1 sched_enable_power_aware=1 app_setting.use_32bit_app_setting=1";
+		bootargs = "sched_enable_hmp=1 sched_enable_power_aware=1 app_setting.use_32bit_app_setting=1 kpti=1";
 	};
 
 	aliases {
@@ -162,26 +162,26 @@
 		android {
 			compatible = "android,firmware";
 			fstab {
+				/* These node are overrideed in msm8996-common-fstab_AB.dtsi, msm8996-common-fstab_non_AB.dtsi
+				 * Please check the file.
+				 */
 				compatible = "android,fstab";
-				/* do not use at O OS upgrade
 				vendor {
 					compatible = "android,vendor";
-					dev = "/dev/block/platform/soc/7464900.sdhci/by-name/vendor";
+					dev = "/dev/block/platform/soc/624000.ufshc/by-name/vendor";
 					type = "ext4";
 					mnt_flags = "ro,barrier=1,discard";
-					fsmgr_flags = "wait";
+					fsmgr_flags = "wait,slotselect,verify";
 					status = "disabled";
 				 };
-				*/
 				 system {
 					compatible = "android,system";
 					dev = "/dev/block/platform/soc/624000.ufshc/by-name/system";
 					type = "ext4";
 					mnt_flags = "ro,noatime,barrier=1,discard";
 					fsmgr_flags = "wait,verify";
-					status = "ok";
-				};
-
+					status = "disabled";
+				 };
 			};
 		};
 	};
@@ -1913,9 +1913,9 @@
 			reg = <0x10 8>;
 		};
 
-		dload_type@18 {
+		dload_type@1c {
 			compatible = "qcom,msm-imem-dload-type";
-			reg = <0x18 4>;
+			reg = <0x1c 4>;
 		};
 
 		restart_reason@65c {

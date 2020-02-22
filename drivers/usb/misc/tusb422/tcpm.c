@@ -84,10 +84,27 @@
 #define CC_SWING_THRESHOLD		((T_CC_DEBOUNCE_MS / T_PD_DEBOUNCE_MS) * 2)
 
 #define T_SBU_CHECK_MS			10000
+#if defined (CONFIG_MACH_MSM8996_LUCYE_KR_F)
+#define SBU_DRY_THRESHOLD_MIN 3000
+#define SBU_DRY_THRESHOLD_MAX 900000
+#elif defined (CONFIG_MACH_MSM8996_FALCON) // sync with CV5A
+#define SBU_SNK_THRESHOLD_MIN 10000	/* uV */
+#define SBU_SNK_THRESHOLD_MAX \
+	(lge_get_board_rev_no() >= HW_REV_B ? 890000 : 940000)	/* uV */ // (1.6M)
+#define SBU_DRY_THRESHOLD_MIN		10000	/* uV */
+#define SBU_DRY_THRESHOLD_MAX \
+	(lge_get_board_rev_no() >= HW_REV_B ? 700000 : 820000)	/* uV */ // (466k)
+#define SBU_WET_THRESHOLD \
+	(lge_get_board_rev_no() >= HW_REV_B ? 500000 : 666667)	/* uV */ // (200k)
+#else
 #define SBU_DRY_THRESHOLD_MIN \
 	(lge_get_board_rev_no() >= HW_REV_1_3 ? 3000 : 5000)		/* uV */
 #define SBU_DRY_THRESHOLD_MAX \
 	(lge_get_board_rev_no() >= HW_REV_1_3 ? 900000 : 1600000)	/* uV */
+#endif
+#ifdef CONFIG_LGE_USB_MOISTURE_DETECT_EDGE
+#define EDGE_WET_THRESHOLD_MAX 100000 /* 0.1V */
+#endif
 #endif
 
 #define TCPC_POLLING_DELAY()  tcpm_msleep(1)  /* Delay to wait for next CC and voltage polling period */
@@ -121,6 +138,9 @@ const char * const tcstate2string[TCPC_NUM_STATES] =
 	"ERROR_RECOVERY",
 #ifdef CONFIG_LGE_USB_MOISTURE_DETECT
 	"CC_FAULT_CC_OV",
+#ifdef CONFIG_MACH_MSM8996_FALCON
+	"CC_FORCED_SNK",
+#endif
 	"CC_FAULT_SWING",
 	"CC_FAULT_SBU_OV",
 	"CC_FAULT_SBU_ADC",
@@ -583,6 +603,9 @@ static unsigned int cc_swing_get_timeout_ms(unsigned int port);
 static void timeout_cc_swing(unsigned int port);
 static void timeout_cc_ov(unsigned int port);
 static void timeout_sbu_dry_check(unsigned int port);
+#ifdef CONFIG_MACH_MSM8996_FALCON
+static void timeout_forced_snk_check(unsigned int port);
+#endif
 
 static void tcpm_disable(unsigned int port)
 {
@@ -655,7 +678,10 @@ static const char *cc_fault_timeout_to_string(void (*function)(unsigned int))
 		return "CC_OV";
 	else if (function == timeout_sbu_dry_check)
 		return "SBU_DRY_CHECK";
-
+#ifdef CONFIG_MACH_MSM8996_FALCON
+	else if (function == timeout_forced_snk_check)
+		return "FORCED_SNK_CHECK";
+#endif
 	return "Unknown";
 }
 
@@ -741,10 +767,64 @@ static void cc_fault_timer_cancel(unsigned int port)
 	mutex_unlock(&dev->cc_fault_timer_lock);
 }
 
+#ifdef CONFIG_MACH_MSM8996_FALCON
+static void cc_forced_snk_check(unsigned int port)
+{
+	tcpc_device_t *dev = tcpm_get_device(port);
+	unsigned int cc1, cc2;
+	int sbu_adc;
+
+	sbu_adc = usb_pd_pal_get_sbu_adc(port);
+
+	if (sbu_adc < SBU_WET_THRESHOLD)
+	{
+		PRINT("%s: moisture is detected.\n", __func__);
+		tcpm_cc_fault_set(port, TCPC_STATE_CC_FAULT_SWING);
+		return;
+	}
+
+	if (sbu_adc > SBU_DRY_THRESHOLD_MAX && IS_STATE_CC_FAULT(dev->last_state))
+	{
+		PRINT("%s: exit.\n", __func__);
+		goto out;
+	}
+
+	if (sbu_adc > SBU_SNK_THRESHOLD_MAX)
+	{
+		tcpc_read8(port, TCPC_REG_CC_STATUS, &dev->cc_status);
+		PRINT("%s CC status = 0x%x\n", __func__, dev->cc_status);
+
+		cc1 = TCPC_CC1_STATE(dev->cc_status);
+		cc2 = TCPC_CC2_STATE(dev->cc_status);
+
+		if (cc1 == CC_SNK_STATE_OPEN && cc2 == CC_SNK_STATE_OPEN)
+		{
+			PRINT("%s : CC_SWING: CC is detached!\n", __func__);
+			goto out;
+		}
+	}
+	mutex_lock(&dev->cc_fault_timer_lock);
+	__cc_fault_timer_start(port, T_SBU_CHECK_MS, timeout_forced_snk_check);
+	mutex_unlock(&dev->cc_fault_timer_lock);
+	return;
+
+out:
+	dev->cc_swing_cnt = 0;
+	tcpm_set_state(dev, TCPC_STATE_UNATTACHED_SNK);
+#ifdef CONFIG_DUAL_ROLE_USB_INTF
+	dual_role_instance_changed(tusb422_dual_role_phy);
+#endif
+	tcpm_connection_state_machine(port);
+	TCPC_POLLING_DELAY();
+	return;
+}
+#endif
+
 static void cc_fault_dry_check(unsigned int port)
 {
 	tcpc_device_t *dev = tcpm_get_device(port);
 	int sbu_adc;
+	int count;
 
 	PRINT("%s: Waiting until the USB port is dry.\n", tcstate2string[dev->state]);
 
@@ -752,20 +832,50 @@ static void cc_fault_dry_check(unsigned int port)
 
 	if (dev->moisture_detect_use_sbu)
 	{
+#ifdef CONFIG_MACH_MSM8996_FALCON
+		// Mask cc status alert.
+		tcpc_modify16(port, TCPC_REG_ALERT_MASK, TCPC_ALERT_CC_STATUS, 0);
+		tcpc_write8(port, TCPC_REG_ROLE_CTRL, tcpc_reg_role_ctrl_set(false, dev->rp_val, CC_OPEN, CC_OPEN));
+		usleep_range(500, 1000);
+#endif
 		sbu_adc = usb_pd_pal_get_sbu_adc(port);
-		if (sbu_adc > SBU_DRY_THRESHOLD_MIN && sbu_adc < SBU_DRY_THRESHOLD_MAX)
+
+		count = 0;
+		while (sbu_adc >= SBU_DRY_THRESHOLD_MAX && count++ < 5) {
+			usleep_range(1000000, 1005000);	/* 1s */
+			sbu_adc = usb_pd_pal_get_sbu_adc(port);
+		}
+
+		if (sbu_adc < SBU_DRY_THRESHOLD_MAX)
 		{
+#ifndef CONFIG_MACH_MSM8996_FALCON
 			// Mask cc status alert.
 			tcpc_modify16(port, TCPC_REG_ALERT_MASK, TCPC_ALERT_CC_STATUS, 0);
 
 			tcpc_write8(port, TCPC_REG_ROLE_CTRL, tcpc_reg_role_ctrl_set(false, dev->rp_val, CC_OPEN, CC_OPEN));
-
+#endif
 			dev->state = TCPC_STATE_CC_FAULT_SBU_DRY_CHECK;
+#ifdef CONFIG_MACH_MSM8996_FALCON
 			__cc_fault_timer_start(port, T_SBU_CHECK_MS, timeout_sbu_dry_check);
+#else
+			__cc_fault_timer_start(port, cc_swing_get_timeout_ms(port), timeout_cc_swing);
+#endif
+			mutex_unlock(&dev->cc_fault_timer_lock);
+			return;
+		}
+#ifdef CONFIG_MACH_MSM8996_FALCON
+		else
+		{
+			if(dev->state != TCPC_STATE_CC_FORCED_SNK)
+			{
+				tcpm_set_state(dev, TCPC_STATE_CC_FORCED_SNK);
+			}
+			__cc_fault_timer_start(port, T_SBU_CHECK_MS, timeout_forced_snk_check);
 
 			mutex_unlock(&dev->cc_fault_timer_lock);
 			return;
 		}
+#endif
 	}
 
 	dev->state = TCPC_STATE_CC_FAULT_SWING;
@@ -804,24 +914,21 @@ static unsigned int cc_swing_get_timeout_ms(unsigned int port)
 		{12, 10 * 60 * 1000},		// 10m
 		{UINT_MAX, 30 * 60 * 1000},	// 30m
 	};
-#if 0
 	unsigned int timeout_tbl2[][2] = {
 		/* recheck_cnt upper, timeout_ms */
 		{0, 1 * 1000},			// 1s
+		{0, 6 * 1000},			// 6s
 		{UINT_MAX, 60 * 1000},		// 60s
 	};
-#endif
 	int timeout_tbl_len;
 	int i;
 
-#if 0
 	if (dev->moisture_detect_use_sbu)
 	{
 		timeout_tbl = &timeout_tbl2;
 		timeout_tbl_len = sizeof(timeout_tbl2) / sizeof(*timeout_tbl2);
 	}
 	else
-#endif
 	{
 		timeout_tbl = &timeout_tbl1;
 		timeout_tbl_len = sizeof(timeout_tbl1) / sizeof(*timeout_tbl1);
@@ -842,6 +949,9 @@ static bool tcpm_is_cc_swing(unsigned int port)
 	uint8_t cc_status;
 	unsigned int cc1, cc2;
 	int sbu_adc;
+#ifdef CONFIG_LGE_USB_MOISTURE_DETECT_EDGE
+	int edge_adc;
+#endif
 
 #ifdef CONFIG_LGE_USB_COMPLIANCE_TEST
 	tcpc_read8(port, TCPC_REG_CC_STATUS, &dev->cc_status);
@@ -864,7 +974,6 @@ static bool tcpm_is_cc_swing(unsigned int port)
 	dev->last_cc_status = dev->cc_status;
 	tcpc_read8(port, TCPC_REG_CC_STATUS, &dev->cc_status);
 	DEBUG("%s CC status = 0x%x\n", __func__, dev->cc_status);
-
 if (!(dev->moisture_detect_use_sbu)) {
 	if (dev->state != TCPC_STATE_CC_FAULT_SWING &&
 	    dev->cc_status == dev->last_cc_status)
@@ -872,6 +981,18 @@ if (!(dev->moisture_detect_use_sbu)) {
 		goto out;
 	}
 }
+#ifdef CONFIG_MACH_MSM8996_FALCON
+	if (dev->state == TCPC_STATE_CC_FORCED_SNK) {
+		return true;
+	}
+#endif
+	// dont't check last cc status,because check sbu adc level.
+	/*if (dev->state != TCPC_STATE_CC_FAULT_SWING &&
+	    dev->cc_status == dev->last_cc_status)
+	{
+		goto out;
+	}*/
+
 	if (dev->state == TCPC_STATE_ATTACHED_SNK)
 	{
 		cc1 = TCPC_CC1_STATE(dev->cc_status);
@@ -926,14 +1047,18 @@ if (!(dev->moisture_detect_use_sbu)) {
 #ifdef CONFIG_LGE_USB_MOISTURE_DETECT_EDGE
 				edge_adc = usb_pd_pal_get_edge_adc(port);
 #endif
-				tcpc_write8(port, TCPC_REG_ROLE_CTRL, tcpc_reg_role_ctrl_set(false, dev->rp_val, CC_OPEN, CC_OPEN));
+				tcpc_write8(port, TCPC_REG_ROLE_CTRL, tcpc_reg_role_ctrl_set(false, dev->rp_val, CC_RD, CC_RD));
 				usleep_range(500, 1000);
 				sbu_adc = usb_pd_pal_get_sbu_adc(port);
 #ifdef CONFIG_LGE_USB_MOISTURE_DETECT_EDGE
 				if (sbu_adc < SBU_DRY_THRESHOLD_MIN || sbu_adc > SBU_DRY_THRESHOLD_MAX ||
 						(edge_adc > 0 && edge_adc < EDGE_WET_THRESHOLD_MAX)) {
 #else
+#ifdef CONFIG_MACH_MSM8996_FALCON
+				if ((sbu_adc < SBU_SNK_THRESHOLD_MIN || sbu_adc > SBU_SNK_THRESHOLD_MAX)) {
+#else
 				if (sbu_adc < SBU_DRY_THRESHOLD_MIN || sbu_adc > SBU_DRY_THRESHOLD_MAX) {
+#endif
 #endif
 					dev->cc_swing_cnt = 0;// reset cc_swing_cnt
 					tcpm_set_state(dev, TCPC_STATE_UNATTACHED_SNK);
@@ -946,10 +1071,36 @@ if (!(dev->moisture_detect_use_sbu)) {
 					PRINT("%s adc was not met, don't enter moisture detection\n",__func__);
 					goto out;
 				}
+#ifdef CONFIG_MACH_MSM8996_FALCON
+				else {
+					if (sbu_adc > SBU_WET_THRESHOLD)
+					{
+						tcpm_set_state(dev, TCPC_STATE_CC_FORCED_SNK);
+						tcpm_connection_state_machine(port);
+						TCPC_POLLING_DELAY();
+						return true;
+					}
+
+					// Mask cc status alert.
+					tcpc_modify16(port, TCPC_REG_ALERT_MASK, TCPC_ALERT_CC_STATUS, 0);
+
+					PRINT("%s: CC swing is detected.\n", __func__);
+					if (dev->state != TCPC_STATE_CC_FAULT_SWING)
+					{
+						tcpm_set_state(dev, TCPC_STATE_CC_FAULT_SWING);
+					}
+					else
+					{
+						cc_fault_timer_start(port, cc_swing_get_timeout_ms(port), timeout_cc_swing);
+					}
+					return true;
+				}
+			}
+		}
+#else
 			}
 			// Mask cc status alert.
 			tcpc_modify16(port, TCPC_REG_ALERT_MASK, TCPC_ALERT_CC_STATUS, 0);
-
 			tcpc_write8(port, TCPC_REG_ROLE_CTRL, tcpc_reg_role_ctrl_set(false, dev->rp_val, CC_OPEN, CC_OPEN));
 
 			PRINT("%s: CC swing is detected.\n", __func__);
@@ -963,6 +1114,7 @@ if (!(dev->moisture_detect_use_sbu)) {
 			}
 			return true;
 		}
+#endif
 	}
 	else if (time_after(jiffies, dev->cc_swing_timeout + msecs_to_jiffies(T_CC_SWING_TIMEOUT_MS)))
 	{
@@ -998,7 +1150,7 @@ static void timeout_cc_swing(unsigned int port)
 
 		if (cc1 == CC_SNK_STATE_OPEN && cc2 == CC_SNK_STATE_OPEN)
 		{
-			PRINT("CC_SWING: CC is detached!\n");
+			PRINT("%s: CC_SWING: CC is detached!\n", __func__ );
 
 			dev->cc_swing_cnt = 0;
 
@@ -1065,6 +1217,19 @@ static void timeout_sbu_dry_check(unsigned int port)
 	cc_fault_dry_check(port);
 }
 
+#ifdef CONFIG_MACH_MSM8996_FALCON
+static void timeout_forced_snk_check(unsigned int port)
+{
+	tcpc_device_t *dev = tcpm_get_device(port);
+
+	if (usbpd_is_vbus_present(dev->port))
+		return;
+
+	PRINT("%s\n", __func__);
+
+	cc_forced_snk_check(port);
+}
+#endif
 void tcpm_cc_fault_timer(unsigned int port, bool enable)
 {
 	tcpc_device_t *dev = tcpm_get_device(port);
@@ -1178,6 +1343,11 @@ static void timeout_cc_debounce(unsigned int port)
 	tcpm_is_cc_swing(dev->port);
 	if (IS_STATE_CC_FAULT(dev->state))
 		return;
+#ifdef CONFIG_MACH_MSM8996_FALCON
+	if (dev->state == TCPC_STATE_CC_FORCED_SNK) {
+		return;
+	}
+#endif
 #else
 	// Read CC status.
 	tcpc_read8(port, TCPC_REG_CC_STATUS, &dev->cc_status);
@@ -1283,7 +1453,7 @@ static void timeout_cc_debounce(unsigned int port)
 				if ((!dev->moisture_detect_disable) &&
 				    ((dev->cc_status != dev->last_cc_status) || (cc1 != cc2)))
 				{
-					tcpm_set_state(dev, TCPC_STATE_UNATTACHED_SNK);
+					tcpm_set_state(dev, TCPC_STATE_ATTACHED_SNK);
 				}
 				else
 #endif
@@ -1420,6 +1590,11 @@ static void timeout_pd_debounce(unsigned int port)
 	tcpm_is_cc_swing(dev->port);
 	if (IS_STATE_CC_FAULT(dev->state))
 		return;
+#ifdef CONFIG_MACH_MSM8996_FALCON
+	if (dev->state == TCPC_STATE_CC_FORCED_SNK) {
+		return;
+	}
+#endif
 #else
 	// Read CC status.
 	tcpc_read8(port, TCPC_REG_CC_STATUS, &dev->cc_status);
@@ -2120,6 +2295,14 @@ void tcpm_connection_state_machine(unsigned int port)
 								tcpc_reg_role_ctrl_set(false, dev->rp_val, cc_pull, cc_pull));
 				}
 
+#if defined (CONFIG_LGE_USB_MOISTURE_DETECT) && defined (CONFIG_MACH_MSM8996_FALCON)
+				if(dev->last_state == TCPC_STATE_CC_FORCED_SNK)
+				{
+					tcpc_write8(port, TCPC_REG_ROLE_CTRL,
+					tcpc_reg_role_ctrl_set(false, dev->rp_val, CC_RD, CC_RD));
+				}
+				else
+#endif
 				tcpc_write8(port, TCPC_REG_ROLE_CTRL,
 							tcpc_reg_role_ctrl_set(true, dev->rp_val, cc_pull, cc_pull));
 			}
@@ -2139,6 +2322,11 @@ void tcpm_connection_state_machine(unsigned int port)
 
 			// Look for connection.
 			tcpc_write8(port, TCPC_REG_COMMAND, TCPC_CMD_SRC_LOOK4CONNECTION);
+#if defined (CONFIG_LGE_USB_MOISTURE_DETECT) && defined (CONFIG_MACH_MSM8996_FALCON)
+			if(dev->last_state == TCPC_STATE_CC_FORCED_SNK)
+				cc_fault_timer_start(port, T_SBU_CHECK_MS, timeout_forced_snk_check);
+			else
+#endif
 
 			if (dev->flags & TC_FLAGS_TEMP_ROLE)
 			{
@@ -2395,6 +2583,12 @@ void tcpm_connection_state_machine(unsigned int port)
 			}
 			break;
 
+#ifdef CONFIG_MACH_MSM8996_FALCON
+		case TCPC_STATE_CC_FORCED_SNK:
+			cc_forced_snk_check(port);
+			break;
+
+#endif
 		case TCPC_STATE_CC_FAULT_SWING:
 #ifdef CONFIG_DUAL_ROLE_USB_INTF
 			dual_role_instance_changed(tusb422_dual_role_phy);
@@ -2461,7 +2655,7 @@ static void alert_cc_status_handler(tcpc_device_t *dev)
 #endif
 
 #ifdef CONFIG_LGE_USB_TYPE_C
-	PRINT("%s CC status = 0x%02x\n", __func__, dev->cc_status);
+	PRINT("%s CC status = 0x%02x, state : %s\n", __func__, dev->cc_status, tcstate2string[dev->state]);
 #else
 	CRIT("%s CC status = 0x%02x\n", __func__, dev->cc_status);
 #endif
@@ -2574,6 +2768,9 @@ static void alert_cc_status_handler(tcpc_device_t *dev)
 			{
 				case TCPC_STATE_UNATTACHED_SRC:
 				case TCPC_STATE_UNATTACHED_SNK:
+#if defined (CONFIG_LGE_USB_MOISTURE_DETECT) && defined (CONFIG_MACH_MSM8996_FALCON)
+				case TCPC_STATE_CC_FORCED_SNK:
+#endif
 					if (dev->cc_status & CC_STATUS_CONNECT_RESULT)
 					{
 						/* TCPC is presenting Rd */

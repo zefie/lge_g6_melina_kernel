@@ -33,7 +33,7 @@ void tusb422_set_dp_notify_node(int val)
 	state = dp_notify_sdev.state;
 
 	if (val != state) {
-		switch_set_state(&dp_notify_sdev, val);
+		dp_notify_set_state(&dp_notify_sdev, val);
 
 		pr_err("%s: DisplayPort notify state is changed to %d\n", __func__,
 				dp_notify_sdev.state);

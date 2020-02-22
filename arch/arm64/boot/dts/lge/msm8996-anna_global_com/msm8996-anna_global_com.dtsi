@@ -20,31 +20,6 @@
 #include "msm8996-anna_global_com-fingerprint.dtsi"
 #include "msm8996-anna_global_com-usb.dtsi"
 
-//[B]fix build error at Pre_ES4 migration
-/delete-node/ &spi_12;
-/delete-node/ &sde_kms;
-/delete-node/ &sde_dsi0;
-/delete-node/ &sde_dsi1;
-/delete-node/ &sde_dsi_phy0;
-/delete-node/ &sde_dsi_phy1;
-/delete-node/ &sde_hdmi;
-&soc {
-/delete-node/ pps;
-};
-
-
-&firmware {
-		android {
-			fstab {
-				/delete-node/ 	vendor;
-				system{
-					dev = "/dev/block/platform/soc/624000.ufshc/by-name/system";
-					};
-				};
-			};
-};
-//[E]fix build error
-
 / {
 	reserved-memory {
 		ramoops_mem: ramoops_region@c0000000 {

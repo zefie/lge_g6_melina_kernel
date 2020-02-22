@@ -23,7 +23,7 @@
 /* For fake battery temp' debug */
 #ifdef DEBUG_LCS_DUMMY_TEMP
 static int dummy_temp = 250;
-static int time_order = 1;
+static int time_order = 0;
 #endif
 #endif
 
@@ -107,6 +107,7 @@ static enum lge_states_changes states_change;
 static int change_charger;
 static int pseudo_chg_ui;
 static int max_chg_voltage;
+static int safe_bat_thr = DC_IUSB_VOLTUV;
 
 #ifdef CONFIG_LGE_THERMALE_CHG_CONTROL
 static int last_thermal_current;
@@ -280,6 +281,10 @@ void lge_monitor_batt_temp(struct charging_info req, struct charging_rsp *res)
 	} else
 			res->disable_chg = false;
 
+	if (charging_state != CHG_BATT_DECCUR_STATE)
+		safe_bat_thr = DC_IUSB_VOLTUV;
+
+
 #ifdef CONFIG_LGE_THERMALE_CHG_CONTROL
 	if (charging_state == CHG_BATT_NORMAL_STATE) {
 		if (req.chg_current_te <= req.chg_current_ma)
@@ -291,6 +296,19 @@ void lge_monitor_batt_temp(struct charging_info req, struct charging_rsp *res)
 			res->chg_current = req.chg_current_te;
 		else
 			res->chg_current = req.chg_current_ma / DECCUR_CHG_CURRENT_DIVIDER;
+
+		if(battemp_state <= CHG_BATTEMP_10_12) { // if low temperature
+			if(req.batt_volt >= safe_bat_thr) {
+				safe_bat_thr = DC_IUSB_VOLTUV - DC_IBAT_VOLTUV_HIS;
+				res->chg_current = DECCUR_SAFETY_CHG_CURRENT;
+				pr_err("DLCS Charging Scenario V2.1 over 4V set 0.2C(500mA) \n");
+			} else {
+				safe_bat_thr = DC_IUSB_VOLTUV;
+				res->chg_current = req.chg_current_ma / DECCUR_CHG_CURRENT_DIVIDER;
+				pr_err("DLCS Charging Scenario V2.1 under 4V\n");
+			}
+		}
+
 	} else {
 		res->chg_current = DC_CURRENT_DEF;
 	}
@@ -303,6 +321,19 @@ void lge_monitor_batt_temp(struct charging_info req, struct charging_rsp *res)
 	res->chg_current =
 		charging_state ==
 		CHG_BATT_DECCUR_STATE ? DC_IUSB_CURRENT : DC_CURRENT_DEF;
+	if (charging_state == CHG_BATT_DECCUR_STATE) {
+		if(battemp_state <= CHG_BATTEMP_10_12) { // if low temperature
+			if(req.batt_volt >= safe_bat_thr) {
+				safe_bat_thr = DC_IUSB_VOLTUV - DC_IBAT_VOLTUV_HIS;
+				res->chg_current = req.chg_current_ma / DECCUR_SAFETY_CHG_CURRENT_DIVIDER;
+				pr_err("Charging Scenario V2.1 over 4V set 0.2C \n");
+			} else {
+				safe_bat_thr = DC_IUSB_VOLTUV;
+				res->chg_current = req.chg_current_ma / DECCUR_CHG_CURRENT_DIVIDER;
+				pr_err("Charging Scenario V2.1 under 4V\n");
+			}
+		}
+	}
 #endif
 
 	res->btm_state = BTM_HEALTH_GOOD;
@@ -331,6 +362,7 @@ void lge_monitor_batt_temp(struct charging_info req, struct charging_rsp *res)
 	pr_err("DLCS : res -> btm_state    = %d\n", res->btm_state);
 	pr_err("DLCS : res -> is_charger   = %d\n", req.is_charger);
 	pr_err("DLCS : res -> pseudo_chg_ui= %d\n", res->pseudo_chg_ui);
+	pr_err("DLCS : safe_bat_thr        = %d\n", safe_bat_thr);
 #ifdef CONFIG_LGE_THERMALE_CHG_CONTROL
 	pr_err("DLCS : req -> chg_current_thermal  = %d\n", req.chg_current_te);
 	pr_err("DLCS : req -> chg_current_max  = %d\n", req.chg_current_ma);

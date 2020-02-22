@@ -1,0 +1,50 @@
+
+qcom,LGE_BLT32_LGC_3500mAh {
+	/* #3337839_LGE_BLT32lgc_3300mAh_averaged_MasterSlave_Feb1st2018*/
+	qcom,max-voltage-uv = <4400000>;
+	qcom,nom-batt-capacity-mah = <3300>;
+	qcom,batt-id-kohm = <5 20>;
+	qcom,battery-beta = <4150>;
+	qcom,battery-type = "LGE_BLT32_LGC_3500mAh";
+	qcom,chg-rslow-comp-c1 = <2639025>;
+	qcom,chg-rslow-comp-c2 = <3018209>;
+	qcom,chg-rs-to-rslow = <1023675>;
+	qcom,chg-rslow-comp-thr = <0x99>;
+	qcom,fg-cc-cv-threshold-mv = <4390>;
+	qcom,checksum = <0x9A4B>;
+	qcom,gui-version = "PMI8996GUI - 1.1.0.4";
+	qcom,fg-profile-data = [
+		 A6 83 CF 74
+		 E7 79 16 6D
+		 2D 83 0D 79
+		 E2 86 03 88
+		 D9 81 27 A0
+		 04 C4 55 D1
+		 61 10 D8 83
+		 C7 77 08 80
+		 A7 74 2C 83
+		 93 7A BF 8C
+		 40 89 18 82
+		 2F A0 EE C4
+		 06 D8 63 0D
+		 CA 0D D9 5A
+		 14 70 71 FD
+		 1C 44 32 24
+		 8E 40 00 00
+		 9E 4D CE 31
+		 B3 48 00 00
+		 00 00 00 00
+		 00 00 00 00
+		 25 70 34 6B
+		 F7 6E 9E 83
+		 2E 75 9B 62
+		 99 65 14 81
+		 B3 74 23 61
+		 1B 6A 69 C0
+		 15 9C 62 36
+		 64 A0 71 0C
+		 28 00 FF 36
+		 F0 11 30 03
+		 00 00 00 0C
+	];
+};

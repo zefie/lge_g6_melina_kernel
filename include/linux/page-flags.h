@@ -112,6 +112,9 @@ enum pageflags {
 #ifdef CONFIG_ZCACHE
 	PG_was_active,
 #endif
+#ifdef CONFIG_NON_SWAP
+	PG_non_swap,
+#endif
 	__NR_PAGEFLAGS,
 
 	/* Filesystems */
@@ -262,6 +265,10 @@ PAGEFLAG(Readahead, reclaim) TESTCLEARFLAG(Readahead, reclaim)
 #define PageHighMem(__p) is_highmem(page_zone(__p))
 #else
 PAGEFLAG_FALSE(HighMem)
+#endif
+
+#ifdef CONFIG_NON_SWAP
+PAGEFLAG(NonSwap, non_swap)	TESTSCFLAG(NonSwap, non_swap)
 #endif
 
 #ifdef CONFIG_SWAP

@@ -13,3 +13,14 @@ config ZRAM
 	  disks and maybe many more.
 
 	  See zram.txt for more information.
+
+config ZRAM_NON_SWAP
+	bool "Enable zram non_swap support"
+	depends on ZRAM
+	select NON_SWAP
+	default n
+	help
+	  This option add a interface "non_swap" to zram. User can set
+	  a unsigned int value to zram.
+	  If a page that compressed size is bigger than limit. mark it ad
+	  non-swap. Then this page will add to unevictable lru list.

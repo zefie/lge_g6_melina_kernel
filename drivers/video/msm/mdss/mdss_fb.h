@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2008-2018, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -236,6 +236,9 @@ struct msm_mdp_interface {
 				int dest_ctrl);
 	int (*input_event_handler)(struct msm_fb_data_type *mfd);
 	int (*pp_release_fnc)(struct msm_fb_data_type *mfd);
+	void (*signal_retire_fence)(struct msm_fb_data_type *mfd,
+					int retire_cnt);
+	bool (*is_twm_en)(void);
 	void *private1;
 };
 
@@ -246,7 +249,7 @@ struct msm_mdp_interface {
 #define MDSS_BRIGHT_TO_BL(out, v, bl_max, max_bright) do {\
 				out = lge_br_to_bl(mfd, v);\
 				} while (0)
-#ifdef CONFIG_LGE_DISPLAY_BL_EXTENDED
+#if defined(CONFIG_LGE_DISPLAY_BL_EXTENDED) || defined(CONFIG_LGE_DISPLAY_AMBIENT_SUPPORTED)
 /* TODO: fix it: using local variable mfd in macro function */
 #define MDSS_BRIGHT_TO_BL_EX(out, v, bl_max, max_bright) do {\
 				out = lge_br_to_bl_ex(mfd, v);\
@@ -336,7 +339,7 @@ struct msm_fb_data_type {
 	bool allow_bl_update;
 	u32 bl_level_scaled;
 	u32 br_level_val;
-#if IS_ENABLED(CONFIG_LGE_DISPLAY_BL_EXTENDED)
+#if defined(CONFIG_LGE_DISPLAY_BL_EXTENDED) || defined(CONFIG_LGE_DISPLAY_AMBIENT_SUPPORTED)
 	u32 br_lvl_ex;
 	u32 bl_level_ex;
 	u32 unset_bl_level_ex;
@@ -354,7 +357,7 @@ struct msm_fb_data_type {
 #endif
 #if defined(CONFIG_LGE_DISPLAY_COMMON)
 	bool recovery;
-#if defined(CONFIG_LGE_PANEL_RECOVERY)
+#if defined(CONFIG_LGE_DISPLAY_RECOVERY_ESD)
 	u32 recovery_bl_level;
 #if IS_ENABLED(CONFIG_LGE_DISPLAY_BL_EXTENDED)
 	u32 recovery_bl_level_ex;

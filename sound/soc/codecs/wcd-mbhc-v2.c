@@ -161,7 +161,7 @@ enum {
 #endif
 };
 
-#if defined (CONFIG_LGE_TOUCH_CORE)
+#if defined (CONFIG_LGE_TOUCH_CORE) || defined (CONFIG_LGE_TOUCH_CORE_NOS)
 void touch_notify_earjack(int value);
 #endif
 
@@ -301,15 +301,14 @@ end:
 static void lge_set_sdev_name(struct wcd_mbhc *mbhc, int status)
 {
 #if defined(CONFIG_SND_SOC_ES9218P)
-	int ess_threshold = -30;    // for diva w/o DAC
-#endif
+	int advanced_threshold = -30;    // for diva w/o DAC
+	int normal_threshold = 0;       // normal type w/o DAC
 
+	if(enable_es9218p){
+	    advanced_threshold = 180;   // advanced type w/ DAC
+	    normal_threshold = 3;       // normal type w/ DAC
+    }
 	pr_debug("%s: enter\n", __func__);
-
-#if defined(CONFIG_SND_SOC_ES9218P)
-	if(enable_es9218p)
-		ess_threshold = 200;
-
 	if (mbhc->lge_moist_det_en) {
 		/* for lge Moisture detect, org impedance */
 		mbhc->zl_org = mbhc->zl;
@@ -337,17 +336,24 @@ static void lge_set_sdev_name(struct wcd_mbhc *mbhc, int status)
 
     if ((mbhc->mbhc_cfg->detect_extn_cable) && (status == SND_JACK_LINEOUT))
 		mbhc->sdev.name = LGE_SWITCH_NAME_AUX_HIDDEN;
-	else if ((mbhc->zl > LGE_ADVANCED_HEADSET_THRESHOLD-ess_threshold) &&
-		       (mbhc->zr > LGE_ADVANCED_HEADSET_THRESHOLD-ess_threshold))
+	else if (((mbhc->zl > LGE_ADVANCED_HEADSET_THRESHOLD-advanced_threshold) &&
+		       (mbhc->zr > LGE_ADVANCED_HEADSET_THRESHOLD-advanced_threshold)) ||
+		((mbhc->zl > LGE_ADVANCED_HEADSET_THRESHOLD-advanced_threshold) && (mbhc->zr == 0)))
 		mbhc->sdev.name = LGE_SWITCH_NAME_AUX;
-	else if (mbhc->zr < LGE_NORMAL_HEADSET_THRESHOLD)
+	else if (mbhc->zr < LGE_NORMAL_HEADSET_THRESHOLD-normal_threshold)
 		mbhc->sdev.name = LGE_SWITCH_NAME_NORMAL;
-	else if ( (mbhc->zr >= LGE_NORMAL_HEADSET_THRESHOLD && mbhc->zr < LGE_ADVANCED_HEADSET_THRESHOLD-ess_threshold) ||
-                (mbhc->zl >= LGE_NORMAL_HEADSET_THRESHOLD && mbhc->zl < LGE_ADVANCED_HEADSET_THRESHOLD-ess_threshold) )
+	else if ( (mbhc->zr >= LGE_NORMAL_HEADSET_THRESHOLD-normal_threshold && mbhc->zr < LGE_ADVANCED_HEADSET_THRESHOLD-advanced_threshold) ||
+                (mbhc->zl >= LGE_NORMAL_HEADSET_THRESHOLD-normal_threshold && mbhc->zl < LGE_ADVANCED_HEADSET_THRESHOLD-advanced_threshold) )
 		mbhc->sdev.name = LGE_SWITCH_NAME_ADVANCED;
 	else
 		mbhc->sdev.name = LGE_SWITCH_NAME_AUX;
 #else   /* LGE original from ELSA*/
+
+	if (mbhc->zl == 0 && mbhc->zr == 0) {
+		mbhc->zl = mbhc->zr = 0x0FFFFFFE;
+		pr_info("[LGE MBHC] both zl and zr are 0, it could be a Aux Cable(L:%d,R:%d)\n", mbhc->zl, mbhc->zr);
+	}
+
     if ((mbhc->mbhc_cfg->detect_extn_cable) && (status == SND_JACK_LINEOUT))
 		mbhc->sdev.name = LGE_SWITCH_NAME_AUX_HIDDEN;
 	else if (mbhc->zr >= LGE_NORMAL_HEADSET_THRESHOLD &&
@@ -401,7 +407,7 @@ static int lge_set_switch_device(struct wcd_mbhc *mbhc, int status)
 						status);
 
 
-#if defined (CONFIG_LGE_TOUCH_CORE)
+#if defined (CONFIG_LGE_TOUCH_CORE) || defined (CONFIG_LGE_TOUCH_CORE_NOS)
 			touch_notify_earjack(1);
 #endif
 			break;
@@ -1017,8 +1023,10 @@ static void wcd_mbhc_report_plug(struct wcd_mbhc *mbhc, int insertion,
 			mbhc->mbhc_cb->mbhc_micb_ctrl_thr_mic(mbhc->codec,
 							MIC_BIAS_2, false);
 #endif
-#if defined (CONFIG_MACH_LGE) && (CONFIG_LGE_TOUCH_CORE)
+#if defined (CONFIG_MACH_LGE)
+#if defined (CONFIG_LGE_TOUCH_CORE) || defined (CONFIG_LGE_TOUCH_CORE_NOS)
 		touch_notify_earjack(0);
+#endif
 #endif
 	} else {
 		/*
@@ -3116,6 +3124,13 @@ int wcd_mbhc_start(struct wcd_mbhc *mbhc,
 #ifdef CONFIG_LGE_ENABLE_HDSET_FACTORY
 	if(lge_get_boot_mode() != LGE_BOOT_MODE_NORMAL && lge_get_boot_mode() != LGE_BOOT_MODE_QEM_130K){
 		mbhc->mbhc_cfg->detect_extn_cable = 0;
+	}
+#endif
+#if defined(CONFIG_SND_SOC_ES9218P)
+	if(enable_es9218p && mbhc->lge_moist_det_en) {
+		mbhc->mbhc_cfg->moist_cfg.m_vref_ctl = V_OFF;
+		mbhc->mbhc_cfg->moist_cfg.m_iref_ctl = I_OFF;
+		pr_info("%s : set moist_cfg installed es9218p chip : m_vref_ctl %d, m_iref_ctl %d",__func__, mbhc->mbhc_cfg->moist_cfg.m_vref_ctl, mbhc->mbhc_cfg->moist_cfg.m_iref_ctl);
 	}
 #endif
 	/* Set btn key code */

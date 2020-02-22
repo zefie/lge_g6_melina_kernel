@@ -21,10 +21,15 @@
 
 #include <touch_hwif.h>
 
-extern int touch_spi_read(struct spi_device *, struct touch_bus_msg *msg);
-extern int touch_spi_write(struct spi_device *, struct touch_bus_msg *msg);
-extern int touch_spi_xfer(struct spi_device *, struct touch_xfer_msg *xfer);
+extern int touch_spi_read(struct spi_device *spi, struct touch_bus_msg *msg);
+extern int touch_spi_write(struct spi_device *spi, struct touch_bus_msg *msg);
+extern int touch_spi_xfer(struct spi_device *spi, struct touch_xfer_msg *xfer);
 extern int touch_spi_device_init(struct touch_hwif *hwif, void *driver);
 extern void touch_spi_device_exit(struct touch_hwif *hwif);
+
+#if defined(CONFIG_SECURE_TOUCH) && (0)
+extern void touch_spi_set(struct touch_core_data *ts);
+extern int touch_spi_get(struct touch_core_data *ts);
+#endif
 
 #endif

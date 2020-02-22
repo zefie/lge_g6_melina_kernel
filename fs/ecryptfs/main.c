@@ -39,10 +39,6 @@
 #include <linux/magic.h>
 #include "ecryptfs_kernel.h"
 
-#ifdef CONFIG_SDP
-#include "mm.h"
-#endif
-
 /**
  * Module parameter that defines the ecryptfs_verbosity level.
  */
@@ -166,11 +162,6 @@ void ecryptfs_put_lower_file(struct inode *inode)
 	if (atomic_dec_and_mutex_lock(&inode_info->lower_file_count,
 				      &inode_info->lower_file_mutex)) {
 		filemap_write_and_wait(inode->i_mapping);
-#ifdef CONFIG_SDP
-		if (inode_info->crypt_stat.flags & ECRYPTFS_SDP_SENSITIVE) {
-			ecryptfs_mm_do_sdp_cleanup(inode);
-		}
-#endif
 		fput(inode_info->lower_file);
 		inode_info->lower_file = NULL;
 		mutex_unlock(&inode_info->lower_file_mutex);
@@ -188,9 +179,6 @@ enum { ecryptfs_opt_sig, ecryptfs_opt_ecryptfs_sig,
 #ifdef FEATURE_SDCARD_ENCRYPTION
        ecryptfs_opt_decryption_only,
        ecryptfs_opt_media_exception,
-#endif
-#ifdef CONFIG_SDP
-       ecryptfs_opt_sdp,
 #endif
        ecryptfs_opt_err };
 
@@ -212,9 +200,6 @@ static const match_table_t tokens = {
 #ifdef FEATURE_SDCARD_ENCRYPTION
 	{ecryptfs_opt_decryption_only, "decryption_only"},
 	{ecryptfs_opt_media_exception, "media_exception=%s"},
-#endif
-#ifdef CONFIG_SDP
-	{ecryptfs_opt_sdp, "sdp"},
 #endif
 	{ecryptfs_opt_err, NULL}
 };
@@ -438,12 +423,6 @@ static int ecryptfs_parse_options(struct ecryptfs_sb_info *sbi, char *options,
 			mount_sd_crypt_stat->flags |= ECRYPTFS_MEDIA_EXCEPTION;
 			set_media_ext(args[0].from);
 			break;
-#endif
-#ifdef CONFIG_SDP
-		case ecryptfs_opt_sdp:
-			mount_crypt_stat->flags |= ECRYPTFS_SDP_MOUNT;
-			break;
-
 #endif
 		case ecryptfs_opt_check_dev_ruid:
 			*check_ruid = 1;
@@ -772,19 +751,6 @@ static struct ecryptfs_cache_info {
 		.name = "ecryptfs_key_tfm_cache",
 		.size = sizeof(struct ecryptfs_key_tfm),
 	},
-#ifdef CONFIG_SDP
-	{
-		.cache = &ecryptfs_sdp_user_cache,
-		.name = "ecryptfs_sdp_user_cache",
-		.size = sizeof(struct sdp_user),
-	},
-	{
-		.cache = &ecryptfs_sdp_storage_cache,
-		.name = "ecryptfs_sdp_storage_cache",
-		.size = sizeof(struct sdp_storage),
-	},
-
-#endif
 };
 
 static void ecryptfs_free_kmem_caches(void)

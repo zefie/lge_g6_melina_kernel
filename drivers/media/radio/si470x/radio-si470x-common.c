@@ -1700,6 +1700,7 @@ static int si470x_vidioc_g_tuner(struct file *file, void *priv,
 {
 	struct si470x_device *radio = video_drvdata(file);
 	int retval = 0;
+	u32 freq_khz;
 
 	pr_info("%s enter\n",__func__);
 
@@ -1756,10 +1757,17 @@ static int si470x_vidioc_g_tuner(struct file *file, void *priv,
 	if (tuner->signal > 0x4B)
 		tuner->signal = 0x4B;
 
-	pr_info("%s tuner->signal:%x\n", __func__, tuner->signal);
 	/* automatic frequency control: -1: freq to low, 1 freq to high */
 	/* AFCRL does only indicate that freq. differs, not if too low/high */
 	tuner->afc = (radio->registers[STATUSRSSI] & STATUSRSSI_AFCRL) ? 1 : 0;
+
+	retval = si470x_get_freq(radio, &freq_khz);
+	if(retval < 0){
+		pr_err("%s fail to get freq\n",__func__);
+		return retval;
+	}
+
+	pr_info("FMSILABS, freq:%d, rssi:%d\n",freq_khz/16, tuner->signal);
 
 	pr_info("%s exit\n",__func__);
 

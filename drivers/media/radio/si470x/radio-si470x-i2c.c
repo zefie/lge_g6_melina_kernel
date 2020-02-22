@@ -100,7 +100,7 @@ MODULE_PARM_DESC(max_rds_errors, "RDS maximum block errors: *1*");
  */
 int si470x_get_register(struct si470x_device *radio, int regnr)
 {
-	u16 buf[READ_REG_NUM];
+	__be16 buf[READ_REG_NUM];
 	struct i2c_msg msgs[1] = {
 		{
 			.addr = radio->client->addr,
@@ -125,7 +125,7 @@ int si470x_get_register(struct si470x_device *radio, int regnr)
 int si470x_set_register(struct si470x_device *radio, int regnr)
 {
 	int i;
-	u16 buf[WRITE_REG_NUM];
+	__be16 buf[WRITE_REG_NUM];
 	struct i2c_msg msgs[1] = {
 		{
 			.addr = radio->client->addr,
@@ -155,7 +155,7 @@ int si470x_set_register(struct si470x_device *radio, int regnr)
 int si470x_get_all_registers(struct si470x_device *radio)
 {
 	int i;
-	u16 buf[READ_REG_NUM];
+	__be16 buf[READ_REG_NUM];
 	struct i2c_msg msgs[1] = {
 		{
 			.addr = radio->client->addr,
@@ -387,6 +387,27 @@ static int si470x_configure_gpios(struct si470x_device *radio, bool on)
 	int fm_int_gpio = radio->int_gpio;
 
 	if (on) {
+		/* ant switch */
+		if (radio->fm_sw_gpio > 0) {
+			/* for switch ldo */
+			if (!IS_ERR(radio->vdd_reg)) {
+				rc = regulator_enable(radio->vdd_reg);
+				if (rc < 0)
+					pr_err("vdd_reg enable failed.rc=%d\n", rc);
+				else
+					pr_info("vdd_reg enable success.rc=%d\n", rc);
+
+				msleep(100);
+			}
+			rc = gpio_direction_output(radio->fm_sw_gpio, 1);
+			if (rc) {
+				pr_err("%s unable to set the gpio %d direction(%d)\n",
+				__func__, radio->fm_sw_gpio, rc);
+				return rc;
+			}
+			msleep(100);
+			pr_info("%s fm_sw_gpio gpio_get_value : %d\n", __func__, gpio_get_value(radio->fm_sw_gpio));
+		}
 		/*
 		 * GPO/Interrupt gpio configuration.
 		 * Keep the GPO to low till device comes out of reset.
@@ -436,6 +457,24 @@ static int si470x_configure_gpios(struct si470x_device *radio, bool on)
 		rc = gpio_direction_input(fm_reset_gpio);
 		if (rc)
 			pr_err("Unable to set direction\n");
+
+		/* ant switch */
+		if (radio->fm_sw_gpio > 0) {
+			/* for switch ldo */
+			if (!IS_ERR(radio->vdd_reg)) {
+				rc = regulator_disable(radio->vdd_reg);
+				if (rc < 0)
+					pr_err("vdd_reg disable failed.rc=%d\n", rc);
+			}
+			rc = gpio_direction_output(radio->fm_sw_gpio, 0);
+			if (rc) {
+				pr_err("%s unable to set the gpio %d direction(%d)\n",
+				__func__, radio->fm_sw_gpio, rc);
+				return rc;
+			}
+			pr_info("%s fm_sw_gpio gpio_get_value : %d\n", __func__, gpio_get_value(radio->fm_sw_gpio));
+		}
+
 		/* Wait for some time for the value to take effect. */
 		msleep(100);
 	}
@@ -537,6 +576,38 @@ static int silabs_parse_dt(struct device *dev,
 {
 	int rc = 0;
 	struct device_node *np = dev->of_node;
+
+	radio->ext_ldo_gpio = of_get_named_gpio(np, "silabs,ext-ldo", 0);
+	if (radio->ext_ldo_gpio < 0) {
+		pr_err("%s silabs-ext-ldo-gpio not provided in device tree\n",__func__);
+	}
+	else {
+		rc = gpio_request(radio->ext_ldo_gpio, "fm_ldo_gpio_n");
+		if (rc) {
+			pr_err("%s unable to request gpio %d (%d)\n",__func__,
+						radio->ext_ldo_gpio, rc);
+			return rc;
+		}
+	}
+
+	radio->fm_sw_gpio = of_get_named_gpio(np, "silabs,fm-sw-gpio", 0);
+	if (radio->fm_sw_gpio < 0) {
+		pr_err("%s silabs-fm-sw-gpio not provided in device tree\n",__func__);
+	}
+	else {
+		radio->vdd_reg = regulator_get(dev, "vdd_fm_sw");
+		pr_info("%s regulator_get for ant switch\n", __func__);
+		if (IS_ERR(radio->vdd_reg)) {
+			pr_err("In %s, vdd supply is not provided\n", __func__);
+		}
+
+		rc = gpio_request(radio->fm_sw_gpio, "fm_sw_gpio_n");
+		if (rc) {
+			pr_err("%s unable to request gpio %d (%d)\n",__func__,
+						radio->fm_sw_gpio, rc);
+			return rc;
+		}
+	}
 
 	radio->reset_gpio = of_get_named_gpio(np, "silabs,reset-gpio", 0);
 	if (radio->reset_gpio < 0) {
@@ -786,57 +857,66 @@ static int si470x_i2c_probe(struct i2c_client *client,
 	mutex_init(&radio->lock);
 	init_completion(&radio->completion);
 
-	if (!IS_ERR(vreg)) {
-		radio->areg = devm_kzalloc(&client->dev,
-				sizeof(struct si470x_vreg_data),
-				GFP_KERNEL);
-		if (!radio->areg) {
-			pr_err("%s: allocating memory for areg failed\n",
-					__func__);
-			regulator_put(vreg);
-			kfree(radio);
-			return -ENOMEM;
+	if (radio->ext_ldo_gpio < 0) {
+		if (!IS_ERR(vreg)) {
+			radio->areg = devm_kzalloc(&client->dev,
+					sizeof(struct si470x_vreg_data),
+					GFP_KERNEL);
+			if (!radio->areg) {
+				pr_err("%s: allocating memory for areg failed\n",
+						__func__);
+				regulator_put(vreg);
+				kfree(radio);
+				return -ENOMEM;
+			}
+
+			radio->areg->reg = vreg;
+			radio->areg->name = "va";
+			radio->areg->is_enabled = 0;
+			retval = silabs_dt_parse_vreg_info(&client->dev,
+					radio->areg, "silabs,va-supply-voltage");
+			if (retval < 0) {
+				pr_err("%s: parsing va-supply failed\n", __func__);
+				goto mem_alloc_fail;
+			}
 		}
 
-		radio->areg->reg = vreg;
-		radio->areg->name = "va";
-		radio->areg->is_enabled = 0;
-		retval = silabs_dt_parse_vreg_info(&client->dev,
-				radio->areg, "silabs,va-supply-voltage");
-		if (retval < 0) {
-			pr_err("%s: parsing va-supply failed\n", __func__);
-			goto mem_alloc_fail;
+		vreg = regulator_get(&client->dev, "vdd");
+		pr_info("%s regulator_get",__func__);
+
+		if (IS_ERR(vreg)) {
+			pr_err("In %s, vdd supply is not provided\n", __func__);
+		} else {
+			radio->dreg = devm_kzalloc(&client->dev,
+					sizeof(struct si470x_vreg_data),
+					GFP_KERNEL);
+			if (!radio->dreg) {
+				pr_err("%s: allocating memory for dreg failed\n",
+						__func__);
+				retval = -ENOMEM;
+				regulator_put(vreg);
+				goto mem_alloc_fail;
+			}
+
+			radio->dreg->reg = vreg;
+			radio->dreg->name = "vdd";
+			radio->dreg->is_enabled = 0;
+			retval = silabs_dt_parse_vreg_info(&client->dev,
+					radio->dreg, "silabs,vdd-supply-voltage");
+			if (retval < 0) {
+				pr_err("%s: parsing vdd-supply failed\n", __func__);
+				goto err_dreg;
+			}
 		}
-	}
-
-	vreg = regulator_get(&client->dev, "vdd");
-	pr_info("%s regulator_get",__func__);
-
-	if (IS_ERR(vreg)) {
-		pr_err("In %s, vdd supply is not provided\n", __func__);
 	} else {
-		radio->dreg = devm_kzalloc(&client->dev,
-				sizeof(struct si470x_vreg_data),
-				GFP_KERNEL);
-		if (!radio->dreg) {
-			pr_err("%s: allocating memory for dreg failed\n",
-					__func__);
-			retval = -ENOMEM;
-			regulator_put(vreg);
-			goto mem_alloc_fail;
-		}
-
-		radio->dreg->reg = vreg;
-		radio->dreg->name = "vdd";
-		radio->dreg->is_enabled = 0;
-		retval = silabs_dt_parse_vreg_info(&client->dev,
-				radio->dreg, "silabs,vdd-supply-voltage");
-		if (retval < 0) {
-			pr_err("%s: parsing vdd-supply failed\n", __func__);
-			goto err_dreg;
+		regulator_put(vreg);
+		retval = gpio_direction_output(radio->ext_ldo_gpio, 1);
+		if (retval) {
+			pr_err("%s Unable to set direction(LDO)\n",__func__);
+			kfree(radio);
+			return retval;
 		}
 	}
-
 	/* Initialize pin control*/
 	retval = si470x_pinctrl_init(radio);
 	if (retval) {

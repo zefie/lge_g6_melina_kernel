@@ -358,6 +358,7 @@ config MACH_MSM8996_LUCYE_LGU_KR
 	help
 	  Support for the Qualcomm MSM8996 LUCYE_LGU_KR device.
 
+
 config MACH_MSM8996_LUCYE_SKT_KR
 	bool "MSM8996 LUCYE_SKT_KR"
 	depends on MACH_MSM8996_LUCYE_KR
@@ -371,6 +372,34 @@ config MACH_MSM8996_LUCYE_KT_KR
 	select MACH_LGE
 	help
 	  Support for the Qualcomm MSM8996 LUCYE_KT_KR device.
+
+config MACH_MSM8996_LUCYE_KR_F
+	bool "MSM8996 LUCYE"
+	depends on ARCH_MSM8996
+	select MACH_LGE
+	help
+	  Support for the Qualcomm MSM8996 LUCYE device.
+
+config MACH_MSM8996_LUCYE_LGU_KR_F
+	bool "MSM8996 LUCYE_LGU_KR_F"
+	depends on MACH_MSM8996_LUCYE_KR_F
+	select MACH_LGE
+	help
+	  Support for the Qualcomm MSM8996 LUCYE_LGU_KR_F device.
+
+config MACH_MSM8996_LUCYE_SKT_KR_F
+	bool "MSM8996 LUCYE_SKT_KR_F"
+	depends on MACH_MSM8996_LUCYE_KR_F
+	select MACH_LGE
+	help
+	  Support for the Qualcomm MSM8996 LUCYE_SKT_KR_F device.
+
+config MACH_MSM8996_LUCYE_KT_KR_F
+	bool "MSM8996 LUCYE_KT_KR_F"
+	depends on MACH_MSM8996_LUCYE_KR_F
+	select MACH_LGE
+	help
+	  Support for the Qualcomm MSM8996 LUCYE_KT_KR_F device.
 
 config MACH_MSM8996_LUCYE_GLOBAL_COM
 	bool "MSM8996 LUCYE_GLOBAL COM"
@@ -455,6 +484,41 @@ config MACH_MSM8996_LUCYE_TRF_US_VZW
 		select MACH_LGE
 		help
 	  	  Support for the Qualcomm MSM8996 LUCYE_TRF_US_VZW device.
+
+config MACH_MSM8996_FALCON
+        bool "MSM8996 FALCON"
+        depends on ARCH_MSM8996
+        select MACH_LGE
+        select LGE_DDR_SECTION_SIZE_CHANGE
+        select LGE_MSM8996_ISB_WA
+        select LGE_MSM8996_NOP_WA
+        select LGE_MSM8996_FLUSH_WA
+        select LGE_POWER_ONOFF_LOCKUP_DEBUG
+        select LGE_DM_VERITY_RECOVERY
+        help
+          Support for the Qualcomm MSM8996 FALCON device.
+
+config MACH_MSM8996_FALCON_LAO_COM
+        bool "MSM8996 FALCON_LAO_COM"
+        depends on ARCH_MSM8996
+        select MACH_LGE
+        help
+          Support for the Qualcomm MSM8996 FALCON_LAO_COM device.
+
+config MACH_MSM8996_FALCON_GLOBAL_COM
+        bool "MSM8996 FALCON_GLOBAL_COM"
+        depends on ARCH_MSM8996
+        select MACH_LGE
+        help
+          Support for the Qualcomm MSM8996 FALCON_GLOBAL_COM device.
+
+config MACH_MSM8996_FALCON_KR
+        bool "MSM8996 FALCON_KR"
+        depends on ARCH_MSM8996
+        select MACH_LGE
+        help
+          Support for the Qualcomm MSM8996 FALCON_KR device.
+
 endmenu
 
 menu "LGE Specific Patches"
@@ -469,7 +533,7 @@ config LGE_HANDLE_PANIC
 config LGE_MSM8996_ISB_WA
 	bool "Support ISB workaround for prevent MSM8996 timing issue"
 	default n
-	depends on MACH_MSM8996_LUCYE
+	depends on MACH_MSM8996_LUCYE || MACH_MSM8996_FALCON
 	help
 		MSM8996 has timing issue sometimes.
 		This feature prevents timing issue as inserting isb().
@@ -477,7 +541,7 @@ config LGE_MSM8996_ISB_WA
 config LGE_MSM8996_NOP_WA
 	bool "Support NOP workaround for prevent MSM8996 timing issue"
 	default n
-	depends on MACH_MSM8996_LUCYE
+	depends on MACH_MSM8996_LUCYE || MACH_MSM8996_FALCON
 	help
 		MSM8996 has timing issue sometimes.
 		This feature prevents timing issue as inserting nop().
@@ -485,7 +549,7 @@ config LGE_MSM8996_NOP_WA
 config LGE_MSM8996_FLUSH_WA
 	bool "Support flush workaround for prevent MSM8996 timing issue"
 	default n
-	depends on MACH_MSM8996_LUCYE
+	depends on MACH_MSM8996_LUCYE || MACH_MSM8996_FALCON
 	help
 		MSM8996 has timing issue sometimes.
 		This feature prevents timing issue as inserting flush.

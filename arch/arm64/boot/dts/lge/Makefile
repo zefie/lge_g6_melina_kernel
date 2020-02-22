@@ -1,3 +1,16 @@
+ifeq ($(CONFIG_MACH_MSM8996_FALCON_LAO_COM),y)
+DTS_TARGET := msm8996-falcon_lao_com
+endif
+
+ifeq ($(CONFIG_MACH_MSM8996_FALCON_GLOBAL_COM),y)
+DTS_TARGET := msm8996-falcon_global_com
+endif
+
+
+ifeq ($(CONFIG_MACH_MSM8996_FALCON_KR),y)
+DTS_TARGET := msm8996-falcon_kr
+endif
+
 ifeq ($(CONFIG_MACH_MSM8996_H1_KR),y)
 DTS_TARGET := msm8996-h1_kr
 endif
@@ -120,6 +133,10 @@ endif
 
 ifeq ($(CONFIG_MACH_MSM8996_LUCYE_KR),y)
 DTS_TARGET := msm8996-lucye_kr
+endif
+
+ifeq ($(CONFIG_MACH_MSM8996_LUCYE_KR_F),y)
+DTS_TARGET := msm8996-lucye_kr_f
 endif
 
 ifeq ($(CONFIG_MACH_MSM8996_LUCYE_GLOBAL_COM),y)

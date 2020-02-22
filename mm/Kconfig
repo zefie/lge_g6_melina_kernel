@@ -795,3 +795,12 @@ config HIGHORDER_PAGES
 	  (Thus, reserve 10% of memory if set to 0)
 	  Please check ION memory usage in your system.
 	  And, set this size about minimum (ION + extra) some memory.
+
+config LATE_UNMAP
+	bool
+	depends on SWAP
+
+config NON_SWAP
+	bool
+	depends on SWAP
+	select LATE_UNMAP

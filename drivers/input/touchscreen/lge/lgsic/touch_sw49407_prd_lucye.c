@@ -28,14 +28,14 @@
 /*
  *  Include to touch core Header File
  */
-#include <touch_hwif.h>
-#include <touch_core.h>
+#include <touch_hwif_nos.h>
+#include <touch_core_nos.h>
 
 /*
  *  Include to Local Header File
  */
-#include "touch_sw49407.h"
-#include "touch_sw49407_prd.h"
+#include "touch_sw49407_lucye.h"
+#include "touch_sw49407_prd_lucye.h"
 
 static char line[50000];
 static char W_Buf[BUF_SIZE];
@@ -266,8 +266,8 @@ static int prd_os_xline_result_read(struct device *dev,
 	int cur = 0;
 	int ret = 0;
 	u8 w_val = 0x0;
-	int row_size;
-	int col_size;
+	int row_size = 0;
+	int col_size = 0;
     struct sw49407_data *d = to_sw49407_data(dev);
 
 	sw49407_write_value(dev, spr_data_offset,

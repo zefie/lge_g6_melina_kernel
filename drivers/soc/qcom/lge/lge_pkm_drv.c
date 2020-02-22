@@ -24,7 +24,8 @@
 #include "../../../misc/qseecom_kernel.h"
 
 #define PKM_NAME                     "lge_pkm"
-#define CLIENT_CMD11_SET_KERNEL_INFO   11
+#define PKM_REQUEST_CMD                1
+#define CLIENT_CMD_SET_KERNEL_INFO     11
 #define SUCCESS                        0
 #define FAILED                         (-1)
 #define LGPKI_TZAPP_NAME               "lgpki64"
@@ -142,7 +143,7 @@ int32_t lgpki_send_req_command(uintptr_t ka, uintptr_t ks, uintptr_t scta)
 
     ret = get_rsp_buffers(l_handle, (void **)&req, &req_len, (void **)&rsp, &rsp_len);
     if (!ret) {
-        req->cmd_id = CLIENT_CMD11_SET_KERNEL_INFO;
+        req->cmd_id = CLIENT_CMD_SET_KERNEL_INFO;
         req->kernel_addr = ka;
         req->kernel_size = ks;
         req->sct_addr = scta;
@@ -185,7 +186,7 @@ static ssize_t lge_store_pkm_command (struct device *dev,
     sscanf(buf, "%d", &cmd);
     pr_info("[LGE_PKM] %s: cmd(%d) \n", __func__, cmd);
     switch(cmd) {
-        case CLIENT_CMD11_SET_KERNEL_INFO:
+        case PKM_REQUEST_CMD:
             {
                 if (pkm_flag == 0) {
                     kernel_x_start_rounded = round_down(__pa(_stext),PAGE_SIZE);

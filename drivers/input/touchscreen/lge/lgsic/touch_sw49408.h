@@ -620,5 +620,5 @@ static inline int sw49408_write_value(struct device *dev,
 	return sw49408_reg_write(dev, addr, &value, sizeof(value));
 }
 
-extern bool lge_panel_recovery_mode(void);
+extern bool lge_mdss_report_panel_dead(void);
 #endif /* LGE_TOUCH_SW49408_H */

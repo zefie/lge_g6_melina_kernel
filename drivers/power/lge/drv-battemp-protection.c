@@ -297,8 +297,8 @@ static int battemp_protection_get_status(struct battemp_protection* protection_m
 static void battemp_protection_polling(struct work_struct *work) {
 
 	enum protection_status status_new;
-	int now_battemp_degc;
-	int now_voltage_mv;
+	int now_battemp_degc = 0;
+	int now_voltage_mv = 0;
 
 	struct delayed_work *delayed_work = to_delayed_work(work);
 	struct battemp_protection* protection_me = container_of(delayed_work,

@@ -4,6 +4,13 @@ config LGE_USB_MOISTURE_DETECT
 	help
 	  usb moisture detect
 
+config LGE_USB_MOISTURE_DETECT_EDGE
+	bool "enable usb moisture detect on edge"
+	depends on LGE_USB_MOISTURE_DETECT
+	default n
+	help
+	  usb moisture detect on edge
+
 config LGE_USB_HOST_SUPPORT_LIST_HID
 	bool "enable usb host compatible hid devices list"
 	default n

@@ -43,6 +43,9 @@ void usb_pd_pal_debug_accessory_mode(unsigned int port, bool is_on);
 #ifdef CONFIG_LGE_USB_MOISTURE_DETECT
 int usb_pd_pal_get_sbu_adc(unsigned int port);
 int usb_pd_pal_set_moisture_detect_use_sbu(void);
+#ifdef CONFIG_LGE_USB_MOISTURE_DETECT_EDGE
+int usb_pd_pal_get_edge_adc(unsigned int port);
+#endif
 #endif
 
 #endif

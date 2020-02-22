@@ -29,6 +29,8 @@
 #include <net/cipso_ipv4.h>
 #include <net/ip_fib.h>
 
+#include <net/patchcodeid.h>
+
 /*
  * Write options to IP header, record destination address to
  * source route option, address of outgoing interface
@@ -191,6 +193,7 @@ int __ip_options_echo(struct ip_options *dopt, struct sk_buff *skb,
 		optlen  = sptr[sopt->cipso+1];
         dopt->cipso = dopt->optlen+sizeof(struct iphdr);
         /* 2015-11-24 chisung.in@lge.com, LGP_DATA_KERNEL_CRASHFIX_ICMP_OPTION [START] */
+        patch_code_id("LPCP-2013@n@c@vmlinux@ip_options.c@1");
         //QCT_LOG
         trace_printk("dst : %p, src : %p, optlen : %d, sopt->cipso : %d (%p), dopt->cipso : %d (%p)\n", dptr, sptr+sopt->cipso, optlen, sopt->cipso, sopt, dopt->cipso, dopt); 
         pr_err("[%s] dst : %p, src : %p, optlen : %d, sopt->cipso : %d (%p), dopt->cipso : %d (%p)\n", __func__, dptr, sptr+sopt->cipso, optlen, sopt->cipso, sopt, dopt->cipso, dopt); 

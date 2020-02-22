@@ -365,6 +365,9 @@ struct si470x_device {
 	bool is_len_gpio_valid;
 	struct si470x_vreg_data *dreg;
 	struct si470x_vreg_data *areg;
+	struct regulator *vdd_reg;
+	int fm_sw_gpio;
+	int ext_ldo_gpio;
 	int reset_gpio;
 	int int_gpio;
 	int status_gpio;

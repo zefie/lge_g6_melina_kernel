@@ -86,6 +86,9 @@ enum dual_role_property {
 	DUAL_ROLE_PROP_PDO2,
 	DUAL_ROLE_PROP_PDO3,
 	DUAL_ROLE_PROP_PDO4,
+	DUAL_ROLE_PROP_PDO5,
+	DUAL_ROLE_PROP_PDO6,
+	DUAL_ROLE_PROP_PDO7,
 	DUAL_ROLE_PROP_RDO,
 #endif
 };
@@ -96,6 +99,7 @@ enum {
 	DUAL_ROLE_PROP_PDO_TYPE_FIXED,
 	DUAL_ROLE_PROP_PDO_TYPE_BATTERY,
 	DUAL_ROLE_PROP_PDO_TYPE_VARIABLE,
+	DUAL_ROLE_PROP_PDO_TYPE_AUGMENTED,
 };
 
 #define DUAL_ROLE_PROP_PDO_SET_TYPE(type)	(((type) & 0x3) << 30)
@@ -111,6 +115,10 @@ enum {
 #define DUAL_ROLE_PROP_PDO_SET_VARIABLE_MIN_VOLT(mV) ((((mV) / 50U) & 0x3FF) << 10)
 #define DUAL_ROLE_PROP_PDO_SET_VARIABLE_MAX_CURR(mW) (((mW) / 10U) & 0x3FF)
 
+#define DUAL_ROLE_PROP_PDO_SET_AUGMENTED_MAX_VOLT(mV) ((((mV) / 100U) & 0xFF) << 17)
+#define DUAL_ROLE_PROP_PDO_SET_AUGMENTED_MIN_VOLT(mV) ((((mV) / 100U) & 0xFF) << 8)
+#define DUAL_ROLE_PROP_PDO_SET_AUGMENTED_MAX_CURR(mW) (((mW) / 50U) & 0x7F)
+
 #define DUAL_ROLE_PROP_PDO_GET_TYPE(pdo)	(((pdo) >> 30) & 0x3)
 
 #define DUAL_ROLE_PROP_PDO_GET_FIXED_VOLT(pdo)	((((pdo) >> 10) & 0x3FF) * 50U)
@@ -124,18 +132,38 @@ enum {
 #define DUAL_ROLE_PROP_PDO_GET_VARIABLE_MIN_VOLT(pdo) ((((pdo) >> 10) & 0x3FF) * 50U)
 #define DUAL_ROLE_PROP_PDO_GET_VARIABLE_MAX_CURR(pdo) (((pdo) & 0x3FF) * 10U)
 
+#define DUAL_ROLE_PROP_PDO_GET_AUGMENTED_MAX_VOLT(pdo)  ((((pdo) >> 17) & 0xFF) * 100U)
+#define DUAL_ROLE_PROP_PDO_GET_AUGMENTED_MIN_VOLT(pdo)  ((((pdo) >> 8) & 0xFF) * 100U)
+#define DUAL_ROLE_PROP_PDO_GET_AUGMENTED_MAX_CURR(pdo) (((pdo) & 0x7F) * 50U)
+
 /* RDO */
 #define DUAL_ROLE_PROP_RDO_SET_OBJ_POS(pos)	(((pos) & 0x7) << 28)
-#define DUAL_ROLE_PROP_RDO_SET_OP_CURR(mA)	((((mA) / 10U) & 0x3FF) << 10)
-#define DUAL_ROLE_PROP_RDO_SET_MIN_CURR(mA)	((((mA) / 10U) & 0x3FF)
-#define DUAL_ROLE_PROP_RDO_SET_OP_POWER(mW)	((((mW) / 250U) & 0x3FF) << 10)
-#define DUAL_ROLE_PROP_RDO_SET_MIN_POWER(mW)	((((mW) / 250U) & 0x3FF)
+
+#define DUAL_ROLE_PROP_RDO_SET_FIXED_OP_CURR(mA)	((((mA) / 10U) & 0x3FF) << 10)
+#define DUAL_ROLE_PROP_RDO_SET_FIXED_MINMAX_CURR(mA)	((((mA) / 10U) & 0x3FF)
+
+#define DUAL_ROLE_PROP_RDO_SET_BATTERY_OP_POWER(mW)	((((mW) / 250U) & 0x3FF) << 10)
+#define DUAL_ROLE_PROP_RDO_SET_BATTERY_MIN_POWER(mW)	((((mW) / 250U) & 0x3FF)
+
+#define DUAL_ROLE_PROP_RDO_SET_VARIABLE_OP_CURR(mA)	((((mA) / 10U) & 0x3FF) << 10)
+#define DUAL_ROLE_PROP_RDO_SET_VARIABLE_MINMAX_CURR(mA)	((((mA) / 10U) & 0x3FF)
+
+#define DUAL_ROLE_PROP_RDO_SET_AUGMENTED_VOLT(mA)	((((mA) / 20U) & 0x7FF) << 9)
+#define DUAL_ROLE_PROP_RDO_SET_AUGMENTED_CURR(mA)	((((mA) / 50U) & 0x7F)
 
 #define DUAL_ROLE_PROP_RDO_GET_OBJ_POS(rdo)	(((rdo) >> 28) & 0x7)
-#define DUAL_ROLE_PROP_RDO_GET_OP_CURR(rdo)	((((rdo) >> 10) & 0x3FF) * 10U)
-#define DUAL_ROLE_PROP_RDO_GET_MIN_CURR(rdo)	(((rdo) & 0x3FF) * 10U)
-#define DUAL_ROLE_PROP_RDO_GET_OP_POWER(rdo)	((((rdo) >> 10) & 0x3FF) * 250U)
-#define DUAL_ROLE_PROP_RDO_GET_MIN_POWER(rdo)	(((rdo) & 0x3FF) * 250U)
+
+#define DUAL_ROLE_PROP_RDO_GET_FIXED_OP_CURR(rdo)	((((rdo) >> 10) & 0x3FF) * 10U)
+#define DUAL_ROLE_PROP_RDO_GET_FIXED_MINMAX_CURR(rdo)	(((rdo) & 0x3FF) * 10U)
+
+#define DUAL_ROLE_PROP_RDO_GET_BATTERY_OP_POWER(rdo)	((((rdo) >> 10) & 0x3FF) * 250U)
+#define DUAL_ROLE_PROP_RDO_GET_BATTERY_MIN_POWER(rdo)	(((rdo) & 0x3FF) * 250U)
+
+#define DUAL_ROLE_PROP_RDO_GET_VARIABLE_OP_CURR(rdo)	((((rdo) >> 10) & 0x3FF) * 10U)
+#define DUAL_ROLE_PROP_RDO_GET_VARIABLE_MINMAX_CURR(rdo)	(((rdo) & 0x3FF) * 10U)
+
+#define DUAL_ROLE_PROP_RDO_GET_AUGMENTED_VOLT(rdo)	((((rdo) >> 9) & 0x7FF) * 20U)
+#define DUAL_ROLE_PROP_RDO_GET_AUGMENTED_CURR(rdo)	(((rdo) & 0x7F) * 50U)
 #endif
 
 struct dual_role_phy_instance;

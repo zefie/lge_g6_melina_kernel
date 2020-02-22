@@ -25,8 +25,8 @@
 /*
  *  Include to touch core Header File
  */
-#include <touch_core.h>
-#include <touch_hwif.h>
+#include <touch_core_nos.h>
+#include <touch_hwif_nos.h>
 
 /*
  *  Include to Local Header File
@@ -2602,7 +2602,7 @@ int sw49408_check_status(struct device *dev)
 			length += snprintf(checking_log + length,
 				checking_log_size - length,
 				"[31]ESD(Stripe) error detected");
-			lge_panel_recovery_mode();
+			lge_mdss_report_panel_dead();
 			ret = -ERANGE;
 		}
 
@@ -2834,7 +2834,7 @@ void sw49408_irq_runtime_engine_debug(struct device *dev)
 {
 	struct sw49408_data *d = to_sw49408_data(dev);
 
-	u8 ocd_debug[OCD_SIZE];
+	u8 ocd_debug[sizeof(d->info.debug)];
 	int a = 0;
 	int b = 0;
 	int start_point = 0;

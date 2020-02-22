@@ -803,6 +803,9 @@ const char * const vmstat_text[] = {
 #ifdef CONFIG_MIGRATE_HIGHORDER
 	"nr_free_highorder",
 #endif
+#ifdef CONFIG_NON_SWAP
+	"nr_non_swap",
+#endif
 
 	/* enum writeback_stat_item counters */
 	"nr_dirty_threshold",

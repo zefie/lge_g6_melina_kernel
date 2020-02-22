@@ -16,164 +16,46 @@
 #include "../../mdss_dsi.h"
 #include "../lge_mdss_display.h"
 #include "../../mdss_dba_utils.h"
-#include <linux/input/lge_touch_notify.h>
+#include <linux/input/lge_touch_notify_nos.h>
 #include <soc/qcom/lge/board_lge.h>
-#if IS_ENABLED(CONFIG_LGE_DISPLAY_READER_MODE)
-#include "../lge_reader_mode.h"
-extern struct dsi_panel_cmds reader_mode_step0_cmds;
-extern struct dsi_panel_cmds reader_mode_step1_cmds;
-extern struct dsi_panel_cmds reader_mode_step2_cmds;
-extern struct dsi_panel_cmds reader_mode_step3_cmds;
-extern struct dsi_panel_cmds reader_mode_step4_cmds;
-extern struct dsi_panel_cmds reader_mode_step5_cmds;
-extern struct dsi_panel_cmds reader_mode_step6_cmds;
-extern struct dsi_panel_cmds reader_mode_step7_cmds;
-extern struct dsi_panel_cmds reader_mode_step8_cmds;
-extern struct dsi_panel_cmds reader_mode_step9_cmds;
-extern struct dsi_panel_cmds reader_mode_step10_cmds;
-#endif
 
 #if defined(CONFIG_LGE_DISPLAY_AOD_WITH_MIPI)
 extern void lcd_watch_restore_reg_after_panel_reset(void);
 extern void lcd_watch_font_crc_check_after_panel_reset(void);
 #endif
 
+extern void dic_lcd_mode_set(struct mdss_dsi_ctrl_pdata *ctrl);
+#if IS_ENABLED(CONFIG_LGE_DISPLAY_HT_LCD_TUNE_MODE)
+extern void ht_tune_mode_set(struct mdss_dsi_ctrl_pdata *ctrl);
+#endif
 extern void mdss_dsi_panel_cmds_send(struct mdss_dsi_ctrl_pdata *ctrl,
 		struct dsi_panel_cmds *pcmds, u32 flags);
 
-/* when panel state is off, improve to ignore sre cmds */
 void lge_set_sre_cmds(struct mdss_dsi_ctrl_pdata *ctrl)
 {
 	char mask = 0x00;
-	if(ctrl->sre_status == SRE_MID) {
-		ctrl->reg_55h_cmds.cmds[0].payload[1] |= SRE_MASK_MID;
+	struct dsi_panel_cmds *ie_pcmds;            //55h
+
+	 ie_pcmds = lge_get_extra_cmds_by_name(ctrl, "ie-ctrl");
+	 if (!ie_pcmds)
+	 {
+		 pr_err("no cmds: ie-ctrl\n");
+		 return;
+	 }
+
+	if(ctrl->lge_extra.sre_mode == SRE_MID) {
+		ie_pcmds->cmds[0].payload[1] |= SRE_MASK_MID;
 		pr_info("%s: SRE MID\n",__func__);
-	} else if(ctrl->sre_status == SRE_HIGH) {
-		ctrl->reg_55h_cmds.cmds[0].payload[1] |= SRE_MASK_HIGH;
+	} else if(ctrl->lge_extra.sre_mode == SRE_HIGH) {
+		ie_pcmds->cmds[0].payload[1] |= SRE_MASK_HIGH;
 		pr_info("%s: SRE HIGH\n",__func__);
 	} else {
 		mask = SRE_MASK;
-		ctrl->reg_55h_cmds.cmds[0].payload[1] &= (~mask);
+		ie_pcmds->cmds[0].payload[1] &= (~mask);
 	}
+	mdss_dsi_panel_cmds_send(ctrl, ie_pcmds, CMD_REQ_COMMIT);
 }
 EXPORT_SYMBOL(lge_set_sre_cmds);
-
-static void lge_set_image_quality_cmds(struct mdss_dsi_ctrl_pdata *ctrl)
-{
-	char mask = 0x00;
-#if defined(CONFIG_LGE_DISPLAY_READER_MODE)
-	switch(lge_get_reader_mode()) {
-		case READER_MODE_STEP_1:
-			pr_info("%s: Reader STEP 1\n",__func__);
-			ctrl->reg_f0h_cmds.cmds[0].payload[1] |= READER_GC_MASK;
-			mdss_dsi_panel_cmds_send(ctrl, &reader_mode_step1_cmds, CMD_REQ_COMMIT);
-			break;
-		case READER_MODE_STEP_2:
-			pr_info("%s: Reader STEP 2\n",__func__);
-			ctrl->reg_f0h_cmds.cmds[0].payload[1] |= READER_GC_MASK;
-			mdss_dsi_panel_cmds_send(ctrl, &reader_mode_step2_cmds, CMD_REQ_COMMIT);
-			break;
-		case READER_MODE_STEP_3:
-			pr_info("%s: Reader STEP 3\n",__func__);
-			ctrl->reg_f0h_cmds.cmds[0].payload[1] |= READER_GC_MASK;
-			mdss_dsi_panel_cmds_send(ctrl, &reader_mode_step3_cmds, CMD_REQ_COMMIT);
-			break;
-		case READER_MODE_STEP_4:
-			pr_info("%s: Reader STEP 4\n",__func__);
-			ctrl->reg_f0h_cmds.cmds[0].payload[1] |= READER_GC_MASK;
-			mdss_dsi_panel_cmds_send(ctrl, &reader_mode_step4_cmds, CMD_REQ_COMMIT);
-			break;
-		case READER_MODE_STEP_5:
-			pr_info("%s: Reader STEP 5\n",__func__);
-			ctrl->reg_f0h_cmds.cmds[0].payload[1] |= READER_GC_MASK;
-			mdss_dsi_panel_cmds_send(ctrl, &reader_mode_step5_cmds, CMD_REQ_COMMIT);
-			break;
-		case READER_MODE_STEP_6:
-			pr_info("%s: Reader STEP 6\n",__func__);
-			ctrl->reg_f0h_cmds.cmds[0].payload[1] |= READER_GC_MASK;
-			mdss_dsi_panel_cmds_send(ctrl, &reader_mode_step6_cmds, CMD_REQ_COMMIT);
-			break;
-		case READER_MODE_STEP_7:
-			pr_info("%s: Reader STEP 7\n",__func__);
-			ctrl->reg_f0h_cmds.cmds[0].payload[1] |= READER_GC_MASK;
-			mdss_dsi_panel_cmds_send(ctrl, &reader_mode_step7_cmds, CMD_REQ_COMMIT);
-			break;
-		case READER_MODE_STEP_8:
-			pr_info("%s: Reader STEP 8\n",__func__);
-			ctrl->reg_f0h_cmds.cmds[0].payload[1] |= READER_GC_MASK;
-			mdss_dsi_panel_cmds_send(ctrl, &reader_mode_step8_cmds, CMD_REQ_COMMIT);
-			break;
-		case READER_MODE_STEP_9:
-			pr_info("%s: Reader STEP 9\n",__func__);
-			ctrl->reg_f0h_cmds.cmds[0].payload[1] |= READER_GC_MASK;
-			mdss_dsi_panel_cmds_send(ctrl, &reader_mode_step9_cmds, CMD_REQ_COMMIT);
-			break;
-		case READER_MODE_STEP_10:
-			pr_info("%s: Reader STEP 10\n",__func__);
-			ctrl->reg_f0h_cmds.cmds[0].payload[1] |= READER_GC_MASK;
-			mdss_dsi_panel_cmds_send(ctrl, &reader_mode_step10_cmds, CMD_REQ_COMMIT);
-			break;
-		default:
-			pr_info("%s: Reader STEP OFF\n",__func__);
-			break;
-	}
-#endif
-#if defined(CONFIG_LGE_ENHANCE_GALLERY_SHARPNESS)
-	if (ctrl->reg_f2h_cmds.cmds[0].payload[3] == SHARPNESS_VALUE) {
-		pr_info("%s: Sharpness = 0x%02x \n",__func__, SHARPNESS_VALUE);
-		ctrl->reg_f2h_cmds.cmds[0].payload[3] = SHARPNESS_VALUE;
-		mdss_dsi_panel_cmds_send(ctrl, &ctrl->reg_f2h_cmds, CMD_REQ_COMMIT);
-		goto send;
-	}
-#endif
-#if defined(CONFIG_LGE_LCD_DYNAMIC_CABC_MIE_CTRL)
-	if (ctrl->ie_on == 0) {
-		pr_info("%s: IE OFF => SAT:OFF, SH:OFF \n",__func__);
-		mask = (SH_MASK | SAT_MASK);
-		ctrl->reg_f0h_cmds.cmds[0].payload[1] &= (~mask);
-		goto send;
-	}
-#endif
-#if defined(CONFIG_LGE_DISPLAY_DOLBY_MODE)
-	if(ctrl->dolby_status > 0) {
-		pr_info("%s: Dolby Mode ON\n", __func__);
-		/* Dolby Setting : CABC OFF, SRE OFF */
-		mask = (CABC_MASK | SRE_MASK);
-		ctrl->reg_55h_cmds.cmds[0].payload[1] &= (~mask);
-		mask = (SH_MASK | SAT_MASK);
-		ctrl->reg_f0h_cmds.cmds[0].payload[1] &= (~mask);
-		ctrl->reg_fbh_cmds.cmds[0].payload[4] = CABC_OFF_VALUE;
-		mdss_dsi_panel_cmds_send(ctrl, &ctrl->reg_f2h_cmds, CMD_REQ_COMMIT);
-		mdss_dsi_panel_cmds_send(ctrl, &ctrl->reg_f3h_cmds, CMD_REQ_COMMIT);
-		mdss_dsi_panel_cmds_send(ctrl, &ctrl->reg_fbh_cmds, CMD_REQ_COMMIT);
-		pr_info("%s: Dolby=%d 55h = 0x%02x, f0h = 0x%02x\n",__func__,ctrl->dolby_status,
-			ctrl->reg_55h_cmds.cmds[0].payload[1],ctrl->reg_f0h_cmds.cmds[0].payload[1]);
-		goto send;
-	}
-#endif
-#if defined(CONFIG_LGE_DISPLAY_HDR_MODE)
-	if(ctrl->hdr_status > 0) {
-		pr_info("%s: HDR Mode ON\n", __func__);
-		/* Dolby Setting : CABC OFF, SRE OFF, SAT OFF, SH OFF */
-		mask = (CABC_MASK | SRE_MASK);
-		ctrl->reg_55h_cmds.cmds[0].payload[1] &= (~mask);
-		mask = (SH_MASK | SAT_MASK);
-		ctrl->reg_f0h_cmds.cmds[0].payload[1] &= (~mask);
-		ctrl->reg_fbh_cmds.cmds[0].payload[4] = CABC_OFF_VALUE;
-		mdss_dsi_panel_cmds_send(ctrl, &ctrl->reg_fbh_cmds, CMD_REQ_COMMIT);
-		pr_info("%s: HDR=%d 55h = 0x%02x, f0h = 0x%02x\n",__func__,ctrl->dolby_status,
-				ctrl->reg_55h_cmds.cmds[0].payload[1],ctrl->reg_f0h_cmds.cmds[0].payload[1]);
-		goto send;
-	}
-#endif
-send:
-	mdss_dsi_panel_cmds_send(ctrl, &ctrl->reg_55h_cmds, CMD_REQ_COMMIT);
-	mdss_dsi_panel_cmds_send(ctrl, &ctrl->reg_f0h_cmds, CMD_REQ_COMMIT);
-	pr_info("%s : 55h:0x%02x, f0h:0x%02x, f2h(SH):0x%02x, fbh(CABC):0x%02x \n",__func__,
-		ctrl->reg_55h_cmds.cmds[0].payload[1],	ctrl->reg_f0h_cmds.cmds[0].payload[1],
-		ctrl->reg_f2h_cmds.cmds[0].payload[3], ctrl->reg_fbh_cmds.cmds[0].payload[4]);
-
-}
 
 #if IS_ENABLED(CONFIG_LGE_DISPLAY_OVERRIDE_MDSS_DSI_PANEL_RESET)
 static int mdss_dsi_request_gpios(struct mdss_dsi_ctrl_pdata *ctrl_pdata)
@@ -356,10 +238,7 @@ int mdss_dsi_panel_reset(struct mdss_panel_data *pdata, int enable)
 		}
 #endif
 		if (gpio_is_valid(ctrl_pdata->mode_gpio)) {
-			bool out;
-#if IS_ENABLED(CONFIG_LGE_DISPLAY_COMMON)
-			out = MODE_GPIO_HIGH;
-#endif
+			bool out = false;
 
 			if (pinfo->mode_gpio_state == MODE_GPIO_HIGH)
 				out = true;
@@ -436,10 +315,12 @@ int mdss_dsi_panel_on(struct mdss_panel_data *pdata)
 			mdss_dsi_panel_cmds_send(ctrl, &ctrl->aod_cmds[AOD_PANEL_CMD_U3_TO_U2], CMD_REQ_COMMIT);
 			goto notify;
 		case AOD_CMD_DISABLE:
-			lge_set_sre_cmds(ctrl);
-			mdss_dsi_panel_cmds_send(ctrl, &ctrl->reg_55h_cmds, CMD_REQ_COMMIT);
-			lge_change_reader_mode(ctrl, lge_get_reader_mode());
 			mdss_dsi_panel_cmds_send(ctrl, &ctrl->aod_cmds[AOD_PANEL_CMD_U2_TO_U3], CMD_REQ_COMMIT);
+			lge_set_sre_cmds(ctrl);
+			dic_lcd_mode_set(ctrl);
+#if IS_ENABLED(CONFIG_LGE_DISPLAY_HT_LCD_TUNE_MODE)
+			ht_tune_mode_set(ctrl);
+#endif
 			goto notify;
 		case ON_AND_AOD:
 			lcd_watch_font_crc_check_after_panel_reset();
@@ -447,7 +328,10 @@ int mdss_dsi_panel_on(struct mdss_panel_data *pdata)
 			if (ctrl->display_on_and_aod_comds.cmd_cnt)
 				mdss_dsi_panel_cmds_send(ctrl, &ctrl->display_on_and_aod_comds, CMD_REQ_COMMIT);
 			lge_set_sre_cmds(ctrl);
-			lge_set_image_quality_cmds(ctrl);
+#if IS_ENABLED(CONFIG_LGE_DISPLAY_HT_LCD_TUNE_MODE)
+			ht_tune_mode_set(ctrl);
+#endif
+			dic_lcd_mode_set(ctrl);
 
 			if (pinfo->compression_mode == COMPRESSION_DSC)
 				mdss_dsi_panel_dsc_pps_send(ctrl, pinfo);
@@ -467,7 +351,10 @@ int mdss_dsi_panel_on(struct mdss_panel_data *pdata)
 	if (ctrl->on_cmds.cmd_cnt)
 		mdss_dsi_panel_cmds_send(ctrl, &ctrl->on_cmds, CMD_REQ_COMMIT);
 	lge_set_sre_cmds(ctrl);
-	lge_set_image_quality_cmds(ctrl);
+#if IS_ENABLED(CONFIG_LGE_DISPLAY_HT_LCD_TUNE_MODE)
+	ht_tune_mode_set(ctrl);
+#endif
+	dic_lcd_mode_set(ctrl);
 
 	if (pinfo->compression_mode == COMPRESSION_DSC)
 		mdss_dsi_panel_dsc_pps_send(ctrl, pinfo);
@@ -554,3 +441,13 @@ end:
 	return 0;
 }
 #endif
+extern struct lge_ddic_ops *get_ddic_ops_sw49408(void);
+int lge_ddic_ops_init(struct mdss_dsi_ctrl_pdata *ctrl_pdata)
+{
+	int rc = 0;
+
+	ctrl_pdata->lge_extra.ddic_ops = get_ddic_ops_sw49408();
+	pr_info("set ddic_ops sw49408\n");
+
+	return rc;
+}

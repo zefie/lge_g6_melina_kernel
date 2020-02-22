@@ -26,7 +26,7 @@
 #include <linux/of_device.h>
 #include <linux/of_gpio.h>
 #include <linux/workqueue.h>
-#ifdef CONFIG_MACH_MSM8996_LUCYE
+#if defined (CONFIG_MACH_MSM8996_LUCYE) || defined (CONFIG_MACH_MSM8996_FALCON)
 #include <linux/delay.h>
 #include <linux/spmi.h>
 #include <linux/mutex.h>
@@ -55,8 +55,11 @@ struct lge_adc {
 	uint32_t 		bd2_therm_channel;
 	uint32_t 		batt_therm_channel;
 	uint32_t 		usb_id_channel;
+#ifdef CONFIG_MACH_MSM8996_LUCYE_KR_F
+	uint32_t 		usb_edge_channel;
+#endif
 	int 			status;
-#ifdef CONFIG_MACH_MSM8996_LUCYE
+#if defined (CONFIG_MACH_MSM8996_LUCYE) || defined (CONFIG_MACH_MSM8996_FALCON)
 	struct mutex lock_for_usb_id;
 	signed sbu_en;
 #endif
@@ -70,6 +73,9 @@ static enum lge_power_property lge_power_adc_properties[] = {
 	LGE_POWER_PROP_BATT_THERM_RAW,
 	LGE_POWER_PROP_USB_ID_PHY,
 	LGE_POWER_PROP_USB_ID_RAW,
+#ifdef CONFIG_MACH_MSM8996_LUCYE_KR_F
+	LGE_POWER_PROP_USB_EDGE_PHY,
+#endif
 	LGE_POWER_PROP_PA0_THERM_PHY,
 	LGE_POWER_PROP_PA0_THERM_RAW,
 	LGE_POWER_PROP_PA1_THERM_PHY,
@@ -93,7 +99,7 @@ static int lge_power_adc_get_property(struct lge_power *lpc,
 			= container_of(lpc, struct lge_adc, lge_adc_lpc);
 	union power_supply_propval prop = {0, };
 
-#ifdef CONFIG_MACH_MSM8996_LUCYE
+#if defined (CONFIG_MACH_MSM8996_LUCYE) || defined (CONFIG_MACH_MSM8996_FALCON)
 	struct power_supply *usb_pd_psy;
 	u8 data;
 	int waterproof = 0, typec_accessory = 0;
@@ -228,7 +234,7 @@ static int lge_power_adc_get_property(struct lge_power *lpc,
 			if (lge_adc_chip->usb_id_channel != 0xFF) {
 				pr_debug("USB ID channel : %d!!\n",
 					lge_adc_chip->usb_id_channel);
-#ifdef CONFIG_MACH_MSM8996_LUCYE
+#if defined (CONFIG_MACH_MSM8996_LUCYE) || defined (CONFIG_MACH_MSM8996_FALCON)
 				mutex_lock(&lge_adc_chip->lock_for_usb_id);
 
 				usb_pd_psy = power_supply_get_by_name("usb_pd");
@@ -247,9 +253,18 @@ static int lge_power_adc_get_property(struct lge_power *lpc,
 				}else{
 					pr_info("battery_psy is not ready\n");
 				}
-
+#if defined(CONFIG_MACH_MSM8996_FALCON)
+				if ((!waterproof && POWER_SUPPLY_TYPE_CTYPE_DEBUG_ACCESSORY == typec_accessory) ||
+			        lge_get_board_rev_no() >= HW_REV_0) {
+#else
+#ifdef CONFIG_MACH_MSM8996_LUCYE_KR_F
+				if ((!waterproof && POWER_SUPPLY_TYPE_CTYPE_DEBUG_ACCESSORY == typec_accessory) ||
+				    lge_get_board_rev_no() >= HW_REV_A) {
+#else
 				if ((!waterproof && POWER_SUPPLY_TYPE_CTYPE_DEBUG_ACCESSORY == typec_accessory) ||
 				    lge_get_board_rev_no() >= HW_REV_1_3) {
+#endif
+#endif
 					/* SBU_EN low, SBU_SEL high */
 					data = 0x11;
 					set_pm_gpio_value(lge_adc_chip->pm_vadc, 0xc240, &data, 1);
@@ -327,6 +342,34 @@ static int lge_power_adc_get_property(struct lge_power *lpc,
 		}
 		break;
 
+#ifdef CONFIG_MACH_MSM8996_LUCYE_KR_F
+	case LGE_POWER_PROP_USB_EDGE_PHY:
+		if (!IS_ERR(lge_adc_chip->pm_vadc)) {
+			if (lge_adc_chip->usb_edge_channel != 0xFF) {
+				pr_debug("USB EDGE channel : %d!!\n",
+					lge_adc_chip->usb_edge_channel);
+				mutex_lock(&lge_adc_chip->lock_for_usb_id);
+				rc = qpnp_vadc_read(lge_adc_chip->pm_vadc,
+						lge_adc_chip->usb_edge_channel, &results);
+
+				mutex_unlock(&lge_adc_chip->lock_for_usb_id);
+			} else {
+				pr_err("VADC is not used for \
+						USB_EDGE!!!\n");
+				rc = -1;
+			}
+			if (rc) {
+				pr_err("Unable to read usb edge adc! rc : %d!!\n", rc);
+				ret_val = -EINVAL;
+			} else {
+				val->int64val = results.physical;
+			}
+		} else {
+			pr_err("VADC is not ready\n");
+			val->intval = 0;
+		}
+		break;
+#endif
 	case LGE_POWER_PROP_PA0_THERM_PHY:
 		if (!IS_ERR(lge_adc_chip->pm_vadc)) {
 			if (lge_adc_chip->pa0_therm_channel != 0xFF) {
@@ -542,7 +585,7 @@ static int lge_adc_qct_probe(struct platform_device *pdev)
 	if (!lge_adc_chip->lge_cc_lpc)
 		pr_err("No yet charging_cotroller\n");
 
-#ifdef CONFIG_MACH_MSM8996_LUCYE
+#if defined (CONFIG_MACH_MSM8996_LUCYE) || defined (CONFIG_MACH_MSM8996_FALCON)
 	mutex_init(&lge_adc_chip->lock_for_usb_id);
 
 	lge_adc_chip->sbu_en = of_get_named_gpio(pdev->dev.of_node, "lge,gpio-sbu-en", 0);
@@ -587,6 +630,10 @@ static int lge_adc_qct_probe(struct platform_device *pdev)
 #endif
 	ret = of_property_read_u32(pdev->dev.of_node, "lge,usb_id_chan",
 				&lge_adc_chip->usb_id_channel);
+#ifdef CONFIG_MACH_MSM8996_LUCYE_KR_F
+	ret = of_property_read_u32(pdev->dev.of_node, "lge,usb_edge_chan",
+				&lge_adc_chip->usb_edge_channel);
+#endif
 
 	pr_err("XO_THERM_CH : %d, PA0_THERM_CH : %d, PA1_THERM_CH : %d\n",
 				lge_adc_chip->xo_therm_channel,
@@ -600,6 +647,10 @@ static int lge_adc_qct_probe(struct platform_device *pdev)
 	pr_err("BATT_THERM_CH : %d, USB_ID_CH : %d\n",
 				lge_adc_chip->batt_therm_channel,
 				lge_adc_chip->usb_id_channel);
+#ifdef CONFIG_MACH_MSM8996_LUCYE_KR_F
+	pr_err("USB_EDGE_CH : %d\n",
+				lge_adc_chip->usb_edge_channel);
+#endif
 
 	lge_power_adc = &lge_adc_chip->lge_adc_lpc;
 
@@ -621,7 +672,7 @@ static int lge_adc_qct_probe(struct platform_device *pdev)
 	return 0;
 
 err_free:
-#ifdef CONFIG_MACH_MSM8996_LUCYE
+#if defined (CONFIG_MACH_MSM8996_LUCYE) || defined (CONFIG_MACH_MSM8996_FALCON)
 	gpio_free(lge_adc_chip->sbu_en);
 #endif
 	kfree(lge_adc_chip);

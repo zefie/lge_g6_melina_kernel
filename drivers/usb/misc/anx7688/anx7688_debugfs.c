@@ -987,15 +987,15 @@ static ssize_t anx7688_debugfs_fw_verify(struct file *file, char __user *ubuf,
 
 	pr_err("%s : offset %d / %d\n", __func__, dbgfs->offset, size);
 
-	if (dbgfs->offset >= size) {
-		goto done;
-	}
-
 	buf_size = (DEBUG_BUF_SIZE < count) ? DEBUG_BUF_SIZE : count;
 	buf = kmalloc(sizeof(char) *buf_size, GFP_KERNEL);
 	if (ZERO_OR_NULL_PTR(buf)) {
 		pr_err("%s: Error allocating memory\n", __func__);
 		return -ENOMEM;
+	}
+
+	if (dbgfs->offset >= size) {
+		goto done;
 	}
 
 	if (dbgfs->offset == 0) {

@@ -983,7 +983,6 @@ static int print_wakeup_source_active_stats(struct seq_file *m,
 	unsigned long active_count;
 	ktime_t active_time;
 	ktime_t prevent_sleep_time;
-	int ret;
 
 	spin_lock_irqsave(&ws->lock, flags);
 
@@ -1007,7 +1006,7 @@ static int print_wakeup_source_active_stats(struct seq_file *m,
 	}
 
 	if (ktime_to_ms(active_time) > 0)
-		ret = seq_printf(m, "%-12s\t%lu\t\t%lu\t\t%lu\t\t%lu\t\t"
+		seq_printf(m, "%-12s\t%lu\t\t%lu\t\t%lu\t\t%lu\t\t"
 			"%lld\t\t%lld\t\t%lld\t\t%lld\t\t%lld\t\t%lu\n",
 			ws->name, active_count, ws->event_count,
 			ws->wakeup_count, ws->expire_count,
@@ -1017,7 +1016,7 @@ static int print_wakeup_source_active_stats(struct seq_file *m,
 
 	spin_unlock_irqrestore(&ws->lock, flags);
 
-	return ret;
+	return 0;
 }
 #endif
 

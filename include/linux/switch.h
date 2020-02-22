@@ -50,4 +50,8 @@ static inline int switch_get_state(struct switch_dev *sdev)
 
 extern void switch_set_state(struct switch_dev *sdev, int state);
 
+#if defined(CONFIG_LGE_DP_UNSUPPORT_NOTIFY)
+extern void dp_notify_set_state(struct switch_dev *sdev, int state);
+#endif
+
 #endif /* __LINUX_SWITCH_H__ */

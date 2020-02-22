@@ -39,7 +39,7 @@
 #include <linux/platform_device.h>
 #include <asm/uaccess.h>
 #include <asm/atomic.h>
-#include "tspdrv.h"
+#include <tspdrv.h>
 
 static int g_nTimerPeriodMs = 5; /* 5ms timer by default. This variable could be used by the SPI.*/
 
@@ -48,13 +48,13 @@ static int g_nTimerPeriodMs = 5; /* 5ms timer by default. This variable could be
 static atomic_t g_bRuntimeRecord;
 #endif
 
-#include "ImmVibeSPI.c"
+#include <ImmVibeSPI.c>
 #if (defined(VIBE_DEBUG) && defined(VIBE_RECORD)) || defined(VIBE_RUNTIME_RECORD)
 #include <tspdrvRecorder.c>
 #endif
 
 /* Device name and version information */
-#define VERSION_STR " v5.4.4.1\n"                   /* DO NOT CHANGE - this is auto-generated */
+#define VERSION_STR " v5.4.25.6\n"                   /* DO NOT CHANGE - this is auto-generated */
 #define VERSION_STR_LEN 16                          /* account extra space for future extra digits in version number */
 static char g_szDeviceName[  (VIBE_MAX_DEVICE_NAME_LENGTH
                             + VERSION_STR_LEN)
@@ -89,11 +89,11 @@ static int g_nMajor = 0;
 
 
 /* Needs to be included after the global variables because they use them */
-#include "tspdrvOutputDataHandler.c"
+#include <tspdrvOutputDataHandler.c>
 #ifdef CONFIG_HIGH_RES_TIMERS
-    #include "VibeOSKernelLinuxHRTime.c"
+    #include <VibeOSKernelLinuxHRTime.c>
 #else
-    #include "VibeOSKernelLinuxTime.c"
+    #include <VibeOSKernelLinuxTime.c>
 #endif
 
 asmlinkage void _DbgOut(int level, const char *fmt,...)

@@ -16,8 +16,8 @@
  */
 #define TS_MODULE "[asc]"
 
-#include <touch_core.h>
-#include "touch_sw49407.h"
+#include <touch_core_nos.h>
+#include "touch_sw49407_lucye.h"
 
 #define TOUCH_SHOW(ret, buf, fmt, args...) \
 	(ret += snprintf(buf + ret, PAGE_SIZE - ret, fmt, ##args))

@@ -475,6 +475,9 @@ static int update_sys_frequency
 	if(ret)
 		return -ENOTTY;
 
+	if (freq.req_cluster < 0||freq.req_cluster >= NUM_CLUSTER);
+		return -ENOTTY;
+
 	ret = copy_to_user((void __user*)arg,
 			&platform_data.ioctl.freq_per_cluster[freq.req_cluster],
 		    sizeof(struct sys_cmd_freq_req));
