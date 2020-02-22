@@ -1,3 +1,4 @@
+#!/bin/sh
 # AnyKernel3 Ramdisk Mod Script
 # osm0sis @ xda-developers
 
@@ -72,36 +73,48 @@ ui_print " "
 
 # remove /sbin/rctd if it exists
 if [ -f "$ramdisk/sbin/rctd" ]; then
-	PATCHED=1
 	ui_print "Removing /sbin/rctd..."
 	rm -f "$ramdisk/sbin/rctd"
 fi
 
 if [ -f "$ramdisk/init.lge.rc" ]; then
-	if [ "$(grep /sbin/rctd $ramdisk/init.lge.rc | wc -l)" -gt "0" ]; then
-		PATCHED=1
+	if [ "$(grep -c /sbin/rctd $ramdisk/init.lge.rc)" -gt "0" ]; then
 		ui_print "Removing rctd service from init.lge.rc..."
 		sed -ie '/\/sbin\/rctd/,+4d' "$ramdisk/init.lge.rc"
 	fi
 fi
 
 if [ -f "$ramdisk/fstab.lucye" ]; then
-	if [ "$(grep forceencrypt $ramdisk/fstab.lucye | wc -l)" -gt "0" ]; then
-		PATCHED=1
+	if [ "$(grep -c forceencrypt $ramdisk/fstab.lucye)" -gt "0" ]; then
 		ui_print "Disabling forceencrypt..."
 		sed -ie 's/forceencrypt/encryptable/' "$ramdisk/fstab.lucye"
 	fi
 fi
 
 if [ -f "$ramdisk/init.rc" ]; then
-	if [ "$(grep /system/bin/install-recovery $ramdisk/init.rc | wc -l)" -gt "0" ]; then
-		PATCHED=1
+	if [ "$(grep -c /system/bin/install-recovery $ramdisk/init.rc)" -gt "0" ]; then
 		ui_print "Removing custom recovery killer..."
 		sed -ie '/\/system\/bin\/install-recovery/,+2d' "$ramdisk/init.rc"
 	fi
 fi
 
 write_boot;
+
+# Manual module install
+ui_print "Installing modules...";
+mount -o rw,remount -t auto /system;
+
+for d in /system/lib/modules /system/vendor/lib/modules /system/system/lib/modules /system/vendor/lib/modules; do
+	if [ -d "${d}" ]; then
+		echo "Found module directory: ${d}"
+		rm -rf "${d}"
+		mkdir -p "${d}"
+		cp -rf /tmp/anykernel/modules/* "${d}";
+		set_perm_recursive 0 0 0755 0644 "${d}";
+		break
+	fi
+done
+
 
 ui_print "******************************************"
 ui_print "If you find this release useful, please"
