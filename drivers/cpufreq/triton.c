@@ -377,7 +377,7 @@ static void frequency_process(struct work_struct *work)
 		goto exit;
 	if(!platform_data->notify_info.enable)
 		goto exit;
-	if(!platform_data->state & RUNNING)
+	if(!platform_data->state && RUNNING)
 		goto exit;
 	if(ccm) {
 		pr_info("exclusive working \n");
@@ -472,11 +472,13 @@ static int update_sys_frequency
 	ret = copy_from_user(&freq,
 				argp,
 				sizeof(struct sys_cmd_freq_req));
-	if(ret)
+	if (ret) {
 		return -ENOTTY;
+	}
 
-	if (freq.req_cluster < 0||freq.req_cluster >= NUM_CLUSTER);
+	if (freq.req_cluster < 0||freq.req_cluster >= NUM_CLUSTER) {
 		return -ENOTTY;
+	}
 
 	ret = copy_to_user((void __user*)arg,
 			&platform_data.ioctl.freq_per_cluster[freq.req_cluster],
