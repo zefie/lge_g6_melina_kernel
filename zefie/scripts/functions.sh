@@ -442,6 +442,9 @@ function buildzip() {
 		errchk rm -rf "${TMPDIR}/_modtmp"
 		errchk mkdir -p "${TMPDIR}/_modtmp"
 		errchk mkdir -p "${MODDIR}"
+		errchk echo " * Building modules ..."
+		errchk kernel_make modules >> "${LOGFILE}" 2>&1
+		errchk echo " * Preparing modules ..."
 		errchk kernel_make INSTALL_MOD_PATH="${TMPDIR}/_modtmp" modules_install >> "${LOGFILE}" 2>&1
 
 	        # Rename exfat module for compatiblity (LG uses propritary Tuxera, we use open source)
