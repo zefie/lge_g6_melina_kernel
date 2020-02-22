@@ -33,10 +33,10 @@ if [ ! -z "${WORKSPACE}" ]; then
 	export TOOLCHAIN32="${WORKSPACE}/ubertc/arm-linux-androideabi-6.x/bin/arm-linux-androideabi-"
 fi
 
-export KERNEL_NAME="MelinaReborn" # please change from Melina for custom builds
+export KERNEL_NAME="Melina" # please change from Melina for custom builds
 export KERNEL_DEVNAME="${USER}" # can be normal name, defaults to linux username ;)
 
-export ANDROID_TARGET="AOSP" # Could be Lineage-14.0, or whatever. Just for zip name.
+export ANDROID_TARGET="Stock" # Could be Lineage-14.0, or whatever. Just for zip name.
 export KERNEL_BUILD_DIR="build" # A subdirectory in this repo that is in .gitignore and doesn't already exist. Best just leave it be.
 
 # These can be overridden by the env, using vars that replace DEFAULT_ with KERNEL_, ex: KERNEL_DEVMODEL
