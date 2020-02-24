@@ -131,6 +131,22 @@ for f in /system/vendor/bin/time_daemon /system/bin/time_daemon; do
 	fi
 done
 
+for f in /system/vendor/etc/init/hw/init.qcom.rc /vendor/etc/init/hw/init.qcom.rc; do
+	if [ -f "${f}" ]; then
+		if [ $(grep -c time_daemon "${f}") -gt 0 ]; then
+			if [ $(grep -c time_daemon "$(dirname "${f}")/init.target.rc") -gt 0 ]; then
+				ui_print "Fixing LGE's double definition of time_daemon"
+				awk '/service time_daemon/{n=5}; n {n--; next}; 1' < "${f}" > /tmp/init.qcom.rc
+				mv "${f}" "${f}.bak"
+				mv /tmp/init.qcom.rc "${f}"
+				chmod 644 "${f}"
+				restorecon "${f}"
+			fi
+		fi
+		break;
+	fi
+done
+
 ui_print "******************************************"
 ui_print "If you find this release useful, please"
 ui_print "consider supporting zefie on Patreon"
