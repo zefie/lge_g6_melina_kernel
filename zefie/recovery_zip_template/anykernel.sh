@@ -101,31 +101,35 @@ fi
 write_boot;
 
 # Manual module install
-ui_print "Installing modules...";
-mount -o rw,remount -t auto /system;
+mount -o rw,remount -t auto /system || mount -o rw -t auto /system;
 
 for d in /system/lib/modules /system/vendor/lib/modules /system/system/lib/modules /system/vendor/lib/modules; do
 	if [ -d "${d}" ]; then
-		echo "Found module directory: ${d}"
+		ui_print "Found module directory: ${d}"
 		rm -rf "${d}"
 		mkdir -p "${d}"
+		ui_print "Installing modules...";
 		cp -rf /tmp/anykernel/modules/* "${d}";
+		restorecon -R "${d}"
 		set_perm_recursive 0 0 0755 0644 "${d}";
 		break
 	fi
 done
 
-if [ -f "/system/vendor/bin/time_daemon" ]; then
-	if [ "$(md5sum /system/vendor/bin/time_daemon | awk ' { print $1 } ')" != "2059de25a3ce753123214025ba81cbd6" ]; then
-		# Upgrade to vDSO compatible time_daemon (from Android 10)
-		echo "Upgrading /system/vendor/bin/time_daemon..."
-		cp /system/vendor/bin/time_daemon /system/vendor/bin/time_daemon.bak
-		chmod 644 /system/vendor/bin/time_daemon.bak
-		cp /tmp/anykernel/time_daemon /system/vendor/bin/time_daemon
-		chmod 755 /system/vendor/bin/time_daemon
-		restorecon -Rv /system/vendor/bin/time_daemon
+for f in /system/vendor/bin/time_daemon /system/bin/time_daemon; do
+	if [ -f "${f}" ]; then
+		if [ "$(md5sum "${f}" | awk ' { print $1 } ')" != "2059de25a3ce753123214025ba81cbd6" ]; then
+			# Upgrade to vDSO compatible time_daemon (from Android 10)
+			ui_print "Upgrading ${f} for vDSO compatiblity..."
+			cp "${f}" "${f}.bak"
+			chmod 644 "${f}.bak"
+			cp /tmp/anykernel/time_daemon "${f}"
+			chmod 755 "${f}"
+			restorecon "${f}"
+		fi
+		break;
 	fi
-fi
+done
 
 ui_print "******************************************"
 ui_print "If you find this release useful, please"
